@@ -9,6 +9,16 @@
   },
   "scripts": {
     "auth": "node --env-file=.env scripts/auth.mjs",
-    "pull": "node --env-file=.env scripts/pull.mjs"
+    "pull": "node --env-file=.env scripts/pull.mjs",
+    "keygen": "node scripts/keygen.mjs",
+    "migrate": "node --env-file=.env scripts/migrate.mjs",
+    "connect": "node --env-file=.env scripts/connect.mjs",
+    "sync": "node --env-file=.env scripts/sync.mjs",
+    "worker": "node --env-file=.env src/worker.mjs",
+    "selftest": "node --env-file=.env scripts/selftest.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.23.0",
+    "pg-boss": "^12.30.0"
   }
 }

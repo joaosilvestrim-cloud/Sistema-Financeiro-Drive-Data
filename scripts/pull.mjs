@@ -4,9 +4,11 @@
 
 import { mkdir, writeFile } from 'node:fs/promises'
 import { config } from '../src/config.mjs'
-import { ContaAzul, monthWindows, stats } from '../src/contaazul.mjs'
+import { ContaAzulClient, monthWindows } from '../src/contaazul.mjs'
+import { ensureFreshToken } from '../src/tokens.mjs'
 
-const ca = new ContaAzul()
+const ca = new ContaAzulClient({ getToken: async () => (await ensureFreshToken()).access_token })
+const stats = ca.stats
 const report = []
 
 await mkdir(config.dataDir, { recursive: true })
