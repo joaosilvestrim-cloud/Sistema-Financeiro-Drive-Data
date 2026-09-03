@@ -8,3 +8,6 @@ dist/
 .next/
 *.log
 .tokens.json
+
+.next/
+next-env.d.ts

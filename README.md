@@ -10,7 +10,7 @@ O plano completo de arquitetura está em [docs/PLANO.md](docs/PLANO.md).
 |---|---|---|
 | 0 | Prova de conexão via CLI | pronta |
 | 1 | Núcleo de ingestão (schema, worker, CDC) | pronta, falta rodar contra a API real |
-| 2 | Marts e dashboard | a fazer |
+| 2 | Marts e dashboard | pronta |
 | 3 | Inteligência (previsão, cenário, anomalia) | a fazer |
 | 4 | Produto vendável | a fazer |
 
@@ -42,10 +42,24 @@ Se perder a `TOKEN_ENCRYPTION_KEY`, todas as conexões precisam ser autorizadas 
 ```bash
 npm run migrate     # aplica migrations/ no banco
 npm run selftest    # testa ingestao ponta a ponta, sem tocar na API
+npm run seed        # cria o tenant _demo com dados sinteticos
+npm run invite -- --email voce@dominio --senha "..." --tenant _demo
+npm run dev         # dashboard em http://localhost:3000
 npm run connect     # autoriza uma empresa e cria a conexao no banco
 npm run sync        # sincroniza as conexoes vencidas
 npm run worker      # sobe o worker continuo (fila + cron)
+npm run report      # resumo dos marts no terminal
 ```
+
+## Dashboard
+
+Next.js com App Router. Login pelo Supabase Auth, e o middleware barra qualquer rota que nao seja a de login. Os dados nao passam pelo PostgREST: as telas rodam SQL direto nas views de `mart`, sempre filtrando por tenant a partir da sessao verificada. A RLS continua ligada nas tabelas como segunda barreira.
+
+Telas: visao geral (KPIs, fluxo de caixa, aging, maiores clientes), recebiveis, DRE gerencial, clientes e conexoes.
+
+O seletor no topo da barra lateral troca entre uma empresa e o consolidado do tenant.
+
+Os graficos sao SVG proprio, sem biblioteca. A paleta e validada para daltonismo e contraste, e o realizado se distingue do que esta em aberto por hachura, nao so por cor.
 
 Carga inicial de uma conexão nova:
 

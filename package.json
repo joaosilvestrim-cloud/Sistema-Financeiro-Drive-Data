@@ -15,10 +15,21 @@
     "connect": "node --env-file=.env scripts/connect.mjs",
     "sync": "node --env-file=.env scripts/sync.mjs",
     "worker": "node --env-file=.env src/worker.mjs",
-    "selftest": "node --env-file=.env scripts/selftest.mjs"
+    "selftest": "node --env-file=.env scripts/selftest.mjs",
+    "seed": "node --env-file=.env scripts/seed.mjs",
+    "report": "node --env-file=.env scripts/report.mjs",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "invite": "node --env-file=.env scripts/invite.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.5",
+    "@supabase/supabase-js": "^2.115.0",
+    "next": "^16.3.4",
     "pg": "^8.23.0",
-    "pg-boss": "^12.30.0"
+    "pg-boss": "^12.30.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   }
 }
