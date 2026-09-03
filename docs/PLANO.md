@@ -170,7 +170,7 @@ Misturar esses três é o erro clássico desse tipo de produto. O seletor de reg
 
 ### 3.5 Multi-tenant
 - Um banco, `tenant_id` em toda tabela, RLS ligada em tudo. Mesmo padrão do CRM.
-- Um tenant pode ter N conexões de ERP. Contador com várias empresas é caso de uso real e cliente bom.
+- Um tenant tem N conexões de ERP já no v1. Ver decisão 2 na seção 6. Chave natural de todo registro externo é `(connection_id, external_id)`.
 - Papéis: owner, financeiro, leitura, contador externo.
 - Escape hatch para cliente grande ou exigente: banco dedicado com o mesmo schema. A camada de app já lê a connection string por tenant.
 
@@ -227,15 +227,29 @@ Onboarding self-service com "Conectar Conta Azul", planos e cobrança, convite d
 **Fase 5 · Expansão**
 Segundo provider (Omie ou Bling), API pública de leitura, white label para contabilidade.
 
-Sequência obrigatória: 0, depois 1, depois 2. As fases 3, 4 e 5 podem ser reordenadas conforme o primeiro cliente.
+Ordem definida: 0, 1, 2, 3, depois 4 e 5. Como o primeiro cliente é a própria DriveData, a Fase 4 (cobrança, planos, onboarding self-service) só faz sentido quando existir cliente externo em vista.
 
 ---
 
-## 6. Decisões em aberto
-1. O primeiro cliente é a própria DriveData ou já tem cliente externo em vista? Muda a prioridade entre Fase 3 e Fase 4.
-2. Precisa de multiempresa por tenant já no v1 ou uma empresa por conta resolve?
-3. Dashboard próprio ou também embutir Power BI? Já existe o portal-bi na casa.
-4. Cadência de sync do plano base: 15 min, 1 h ou diária. Impacta custo de infra e proposta de valor.
+## 6. Decisões tomadas (03/09/2026)
+
+**1. Primeiro cliente é a própria DriveData.**
+Consequência: a Fase 3 (inteligência) vem antes da Fase 4 (produto vendável). Nada de cobrança, plano ou onboarding self-service no começo. O tenant da DriveData é criado por script. O tempo economizado vai para previsão, cenário e alerta, que é o que decide se o produto se vende depois. Vantagem colateral: dogfooding. Se o DRE gerencial não bater com o que o financeiro da casa enxerga, o erro aparece antes de qualquer cliente pagar.
+
+**2. Multiempresa por tenant já no v1.**
+Essa é a decisão que mais mexe no modelo de dados, e é bem mais barata agora do que depois.
+- Toda tabela de fato carrega `tenant_id` **e** `connection_id`. Uma conexão é uma empresa autorizada na Conta Azul, com o seu próprio par de tokens e o seu próprio watermark de sync.
+- `core.connection(id, tenant_id, provider, external_company_id, nome, status, access_token_enc, refresh_token_enc, expires_at, last_sync_at)`.
+- Os IDs da Conta Azul (categoria, conta financeira, centro de custo, pessoa) só são únicos dentro de uma empresa. A chave natural em todo lugar é `(connection_id, external_id)`. Nunca só `external_id`. Errar isso mistura o dado de duas empresas e é quase impossível de desfazer depois.
+- Rate limit é por empresa conectada, então cada conexão tem o seu próprio balde de vazão. Duas empresas sincronizam em paralelo sem uma atrapalhar a outra.
+- Interface: seletor de empresa no topo, mais a opção "consolidado".
+- Pegadinha do consolidado: cada empresa tem o seu plano de contas. Somar categoria por nome dá número errado. Precisa de `core.canonical_category` e um de-para por conexão. No v1 o de-para é manual, com sugestão automática por similaridade de nome e por `entrada_dre`. Sem isso o DRE consolidado é ficção.
+
+**3. Dashboard próprio.**
+Next.js e componentes próprios. Sem Power BI embutido, sem licença por usuário, sem dependência de Azure. O portal-bi continua sendo produto separado. Isso mantém o produto vendável por assinatura simples e o gráfico interativo dentro da nossa stack.
+
+### Ainda em aberto
+4. Cadência de sync. Assumido para o v1: **1 hora** por conexão, mais um botão "sincronizar agora" que enfileira com prioridade alta. Uso interno não justifica 15 min, e 1 h corta o custo de worker e o consumo de rate limit. Fácil de baixar para 15 min quando entrar cliente externo, é só configuração por conexão.
 
 ---
 

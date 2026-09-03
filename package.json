@@ -1,0 +1,14 @@
+{
+  "name": "sistema-financeiro-drivedata",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Analytics financeiro sobre a API Conta Azul v2",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "auth": "node --env-file=.env scripts/auth.mjs",
+    "pull": "node --env-file=.env scripts/pull.mjs"
+  }
+}
