@@ -8,6 +8,8 @@ import { desde } from '@/lib/format'
 const PAGINAS = [
   ['/', 'Visão geral'],
   ['/recebiveis', 'Recebíveis'],
+  ['/previsao', 'Previsão'],
+  ['/indicadores', 'Indicadores'],
   ['/dre', 'DRE gerencial'],
   ['/clientes', 'Clientes'],
   ['/conexoes', 'Conexões'],

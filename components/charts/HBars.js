@@ -10,7 +10,7 @@ import { brl } from '@/lib/format'
 //
 // O detalhe do tooltip vem pronto em cada item (`detalhes`), porque função não
 // atravessa a fronteira entre Server e Client Component.
-export default function HBars({ dados, cor = 'var(--series-1)', altura = 30 }) {
+export default function HBars({ dados, cor = 'var(--series-1)', altura = 30, formato = 'brl' }) {
   const [ativo, setAtivo] = useState(null)
   if (!dados.length) return <p className="empty">Sem dados.</p>
 
@@ -44,7 +44,7 @@ export default function HBars({ dados, cor = 'var(--series-1)', altura = 30 }) {
                   minWidth: 3,
                 }} />
                 <div style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                  {brl(valor)}
+                  {formato === 'brl' ? brl(valor) : valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   {d.nota && <span style={{ color: 'var(--text-muted)' }}> · {d.nota}</span>}
                 </div>
               </div>

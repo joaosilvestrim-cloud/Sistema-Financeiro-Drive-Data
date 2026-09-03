@@ -11,7 +11,7 @@ O plano completo de arquitetura está em [docs/PLANO.md](docs/PLANO.md).
 | 0 | Prova de conexão via CLI | pronta |
 | 1 | Núcleo de ingestão (schema, worker, CDC) | pronta, falta rodar contra a API real |
 | 2 | Marts e dashboard | pronta |
-| 3 | Inteligência (previsão, cenário, anomalia) | a fazer |
+| 3 | Inteligência (previsão, cenário, anomalia) | pronta, falta metas e orçamento |
 | 4 | Produto vendável | a fazer |
 
 Decidido: primeiro cliente é a própria DriveData, multiempresa por tenant já no v1, dashboard próprio sem Power BI, sync de 1 hora por conexão.
@@ -55,11 +55,23 @@ npm run report      # resumo dos marts no terminal
 
 Next.js com App Router. Login pelo Supabase Auth, e o middleware barra qualquer rota que nao seja a de login. Os dados nao passam pelo PostgREST: as telas rodam SQL direto nas views de `mart`, sempre filtrando por tenant a partir da sessao verificada. A RLS continua ligada nas tabelas como segunda barreira.
 
-Telas: visao geral (KPIs, fluxo de caixa, aging, maiores clientes), recebiveis, DRE gerencial, clientes e conexoes.
+Telas: visao geral (alertas, KPIs, fluxo de caixa, aging, maiores clientes), recebiveis, previsao, indicadores, DRE gerencial, clientes e conexoes.
 
 O seletor no topo da barra lateral troca entre uma empresa e o consolidado do tenant.
 
 Os graficos sao SVG proprio, sem biblioteca. A paleta e validada para daltonismo e contraste, e o realizado se distingue do que esta em aberto por hachura, nao so por cor.
+
+## Como a previsao e montada
+
+Tres partes, todas visiveis na propria tela para ninguem precisar adivinhar de onde saiu o numero:
+
+1. **Carteira.** O que ja esta lancado no ERP com vencimento no mes.
+2. **Taxa de recebimento.** Quanto do que vence costuma entrar ate 30 dias depois, medido na propria empresa. A projecao desconta isso do que esta a receber.
+3. **Novos negocios.** Media dos ultimos 12 meses de competencia ajustada pelo indice sazonal do mes, menos o que ja esta lancado, deslocada pelo prazo medio observado entre competencia e caixa.
+
+Quatro cenarios ajustam a projecao ao vivo: atraso no recebimento, corte de despesa, perda do maior cliente e variacao de novos negocios.
+
+Os indicadores usam mediana e desvio absoluto mediano, nao media e desvio padrao. Financeiro de PME tem outlier demais, e a media se deixa levar justamente pelo caso que se quer detectar.
 
 Carga inicial de uma conexão nova:
 
