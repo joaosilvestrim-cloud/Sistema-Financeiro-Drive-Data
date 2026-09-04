@@ -17,6 +17,7 @@ const PAGINAS = [
   ['/dre', 'DRE gerencial'],
   ['/clientes', 'Clientes'],
   ['/dados', 'Dados auxiliares'],
+  ['/fatura', 'Fatura de cartão'],
   ['/conexoes', 'Conexões'],
 ]
 

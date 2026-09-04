@@ -1,5 +1,5 @@
 import { requireSession } from '@/lib/session'
-import { kpis, fluxoMensal, aging, topClientes } from '@/lib/queries'
+import { kpis, fluxoMensal, aging, topClientes, saldosPorConta } from '@/lib/queries'
 import { alertas } from '@/lib/alerts'
 import { analiseSalva, gerarAnalise } from '@/lib/analise'
 import Alerts from '@/components/Alerts'
@@ -22,6 +22,25 @@ const FAIXAS = {
   d90_mais: ['mais de 90 dias', 'var(--ramp-650)'],
 }
 
+const TIPO_CONTA = {
+  CONTA_CORRENTE: 'Conta corrente',
+  POUPANCA: 'Poupança',
+  CAIXINHA: 'Caixinha',
+  CARTAO_CREDITO: 'Cartão de crédito',
+  INVESTIMENTO: 'Investimento',
+  OUTROS: 'Outros',
+}
+
+// O saldo vem de uma foto tirada na sincronização. Se a foto é de ontem ou
+// antes, o número na tela não é mais o saldo de agora, e a tela precisa dizer
+// isso em vez de fingir que está atual.
+function desatualizada(data) {
+  if (!data) return true
+  const hoje = new Date()
+  const d = new Date(data)
+  return (hoje - d) / 86400000 > 1
+}
+
 function runwayTexto(saldo, burn) {
   if (!burn || burn <= 0) return ['Caixa positivo', 'entra mais do que sai nos últimos 90 dias', 'good']
   const dias = Math.floor(saldo / burn)
@@ -33,9 +52,9 @@ export default async function VisaoGeral() {
   const sessao = await requireSession()
   // Os KPIs vao primeiro porque os alertas se apoiam neles. O resto corre junto.
   const k = await kpis(sessao)
-  const [fluxo, agingRec, clientes, avisos, analise] = await Promise.all([
+  const [fluxo, agingRec, clientes, avisos, analise, contas] = await Promise.all([
     fluxoMensal(sessao), aging(sessao, 'receivable'), topClientes(sessao, 8),
-    alertas(sessao, k), analiseSalva(sessao),
+    alertas(sessao, k), analiseSalva(sessao), saldosPorConta(sessao),
   ])
 
   async function gerar() {
@@ -84,6 +103,39 @@ export default async function VisaoGeral() {
               insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="a_pagar" /></Suspense>} />
         <Tile label="Fôlego de caixa" valor={runway} nota={runwayNota} tom={runwayTom} 
               insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="folego" /></Suspense>} />
+      </div>
+
+
+      <div className="card" style={{ marginBottom: 14 }}>
+        <h2>Saldo por conta</h2>
+        <p className="sub">
+          Saldo atual de cada conta financeira, como o Conta Azul devolveu na última sincronização.
+        </p>
+        <table>
+          <thead>
+            <tr><th>Conta</th><th>Tipo</th><th className="num">Saldo</th><th>Apurado em</th></tr>
+          </thead>
+          <tbody>
+            {contas.map((c, i) => (
+              <tr key={i}>
+                <td>{c.nome}</td>
+                <td>{TIPO_CONTA[c.tipo] ?? c.tipo ?? '—'}</td>
+                <td className="num" style={Number(c.saldo) < 0 ? { color: 'var(--critical)' } : undefined}>
+                  {brl(c.saldo)}
+                </td>
+                <td style={desatualizada(c.snapshot_date) ? { color: 'var(--warning)' } : undefined}>
+                  {dataCurta(c.snapshot_date)}
+                  {desatualizada(c.snapshot_date) && ' · desatualizado'}
+                </td>
+              </tr>
+            ))}
+            <tr style={{ fontWeight: 600 }}>
+              <td>Total</td><td></td>
+              <td className="num">{brl(contas.reduce((a, c) => a + Number(c.saldo), 0))}</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <Alerts itens={avisos} />

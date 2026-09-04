@@ -67,6 +67,53 @@ export class ContaAzulClient {
     return text ? JSON.parse(text) : null
   }
 
+  // Escrita. Mesma vazao e mesmo backoff da leitura, porque o limite da API e
+  // por conta conectada e nao separa um do outro.
+  //
+  // Sem retry automatico no 5xx, ao contrario do GET: repetir uma criacao que
+  // talvez tenha entrado no ERP duplicaria despesa, e nao existe endpoint para
+  // apagar. Erro aqui sobe para quem chamou decidir.
+  async post(path, corpo, attempt = 0) {
+    const token = await this.getToken()
+    await this.limiter.take()
+    const started = Date.now()
+
+    const res = await fetch(config.apiUrl + path, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(corpo),
+    })
+    const text = await res.text()
+    this.stats.requests++
+    this.stats.bytes += text.length
+    this.stats.ms += Date.now() - started
+
+    // Só o 429 é seguro repetir: nele a requisicao foi recusada antes de
+    // produzir efeito.
+    if (res.status === 429 && attempt < 4) {
+      const retryAfter = Number(res.headers.get('retry-after'))
+      const wait = Number.isFinite(retryAfter) && retryAfter > 0
+        ? retryAfter * 1000
+        : 2 ** attempt * 1000 + Math.random() * 400
+      this.stats.retries++
+      await sleep(wait)
+      return this.post(path, corpo, attempt + 1)
+    }
+
+    if (!res.ok) {
+      const err = new Error(`${res.status} em ${path}: ${text.slice(0, 400)}`)
+      err.status = res.status
+      err.body = text
+      throw err
+    }
+
+    return text ? JSON.parse(text) : null
+  }
+
   // Percorre todas as paginas.
   //
   // A API nao tem uma convencao unica de envelope. Ate agora apareceram tres:
