@@ -47,11 +47,16 @@ export async function middleware(request) {
   // pode ser trocado uma vez: se o middleware mandar para o login, o codigo se
   // perde no caminho e a autorizacao inteira e desperdicada. Quem protege essa
   // rota e o `state` assinado, que carrega o tenant e tem prazo proprio.
+  // As rotas de maquina passam sem sessao e se protegem sozinhas: o cron pelo
+  // CRON_SECRET no cabecalho, o webhook pela assinatura do gateway. A auditoria
+  // pegou o cron faltando aqui, o que fazia a Vercel receber um 307 para o
+  // login e a sincronizacao nunca rodar, em silencio.
   const publica = path.startsWith('/login')
     || path.startsWith('/comecar')
     || path.startsWith('/termos')
     || path.startsWith('/privacidade')
     || path.startsWith('/api/billing')
+    || path.startsWith('/api/cron')
     || path.startsWith('/auth')
     || path.startsWith('/api/oauth')
 
