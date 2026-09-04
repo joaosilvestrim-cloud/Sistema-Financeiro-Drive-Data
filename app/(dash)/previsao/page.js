@@ -1,13 +1,17 @@
 import { requireSession } from '@/lib/session'
 import { projecao } from '@/lib/forecast'
-import { brl, pct } from '@/lib/format'
+import { pipelineFuturo, tiposPreenchidos } from '@/lib/indicadoresAux'
+import { brl, pct, rotuloMes } from '@/lib/format'
 import ForecastChart from '@/components/charts/ForecastChart'
+import FaltaSerie from '@/components/FaltaSerie'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Previsao() {
   const sessao = await requireSession()
-  const base = await projecao(sessao, 6)
+  const [base, pipeline, tipos] = await Promise.all([
+    projecao(sessao, 6), pipelineFuturo(sessao), tiposPreenchidos(sessao),
+  ])
 
   if (!base.linhas.length) {
     return (
@@ -29,6 +33,55 @@ export default async function Previsao() {
 
       <div className="card" style={{ marginBottom: 14 }}>
         <ForecastChart base={base} />
+      </div>
+
+      <div className="card" style={{ marginBottom: 14 }}>
+        <h2>Pipeline contra o que a projeção espera</h2>
+        <p className="sub">
+          A projeção estima novos negócios pela média histórica. O pipeline diz o que está de fato
+          em negociação. Quando o pipeline fica bem abaixo, a projeção conta com receita que
+          ninguém está vendendo.
+        </p>
+        {tipos.has('pipeline') ? (
+          <table>
+            <thead>
+              <tr>
+                <th>Mês</th>
+                <th className="num">Projeção espera</th>
+                <th className="num">Pipeline informado</th>
+                <th className="num">Diferença</th>
+              </tr>
+            </thead>
+            <tbody>
+              {base.linhas.map((l) => {
+                const esperado = l.novosEntradas
+                const informado = Number(pipeline.find((p) => p.competencia === l.competencia)?.pipeline ?? 0)
+                const dif = informado - esperado
+                // Só cobra quando a projeção espera algo relevante daquele mês.
+                const relevante = esperado > 0
+                return (
+                  <tr key={l.competencia}>
+                    <td>{rotuloMes(l.competencia)}</td>
+                    <td className="num">{brl(esperado)}</td>
+                    <td className="num">{informado > 0 ? brl(informado) : '—'}</td>
+                    <td className="num" style={{
+                      color: !relevante ? undefined : dif >= 0 ? 'var(--good-text)' : 'var(--critical)',
+                    }}>
+                      {relevante ? brl(dif) : '—'}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        ) : (
+          <FaltaSerie
+            titulo="Sem pipeline informado"
+            serie="Pipeline comercial"
+            oQueMostra="mês a mês, quanto a projeção espera de negócio novo contra quanto está em negociação"
+            exemplo="Use o valor ponderado pela probabilidade de fechar, e não o total bruto do funil."
+          />
+        )}
       </div>
 
       <div className="card">

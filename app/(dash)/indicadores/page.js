@@ -1,8 +1,11 @@
 import { requireSession } from '@/lib/session'
 import { prazosMedios, sazonalidade, concentracao, indiceHhi, anomalias } from '@/lib/queries'
+import { receitaReal, tiposPreenchidos } from '@/lib/indicadoresAux'
 import { brl, rotuloMes, indice } from '@/lib/format'
 import Tile from '@/components/Tile'
 import HBars from '@/components/charts/HBars'
+import LinhaKpi from '@/components/charts/LinhaKpi'
+import FaltaSerie from '@/components/FaltaSerie'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,9 +20,10 @@ function leituraHhi(hhi) {
 
 export default async function Indicadores() {
   const sessao = await requireSession()
-  const [prazos, sazonal, conc, hhi, anomalos] = await Promise.all([
+  const [prazos, sazonal, conc, hhi, anomalos, real, tipos] = await Promise.all([
     prazosMedios(sessao), sazonalidade(sessao, 'receivable'),
     concentracao(sessao, 10), indiceHhi(sessao), anomalias(sessao, 3.5, 12),
+    receitaReal(sessao, 24), tiposPreenchidos(sessao),
   ])
 
   const receber = prazos.find((p) => p.kind === 'receivable')
@@ -104,6 +108,37 @@ export default async function Indicadores() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 14 }}>
+        <h2>Crescimento real</h2>
+        <p className="sub">
+          Receita nominal contra receita deflacionada pelo índice informado. Crescer 8% num ano de
+          6% de inflação não é crescer 8%.
+        </p>
+        {tipos.has('indice_economico') && real.length >= 2 ? (
+          <>
+            <LinhaKpi
+              dados={real}
+              series={[
+                { chave: 'nominal', rotulo: 'Receita nominal', cor: 'var(--series-1)' },
+                { chave: 'real', rotulo: 'Receita real', cor: 'var(--series-3)' },
+              ]}
+              titulo="Receita nominal e real"
+            />
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 10, marginBottom: 0 }}>
+              A receita real está em poder de compra de {rotuloMes(real[0].competencia)}, o primeiro
+              mês da série do índice. O deflator acumulado hoje é {indice(real.at(-1).deflator)}.
+            </p>
+          </>
+        ) : (
+          <FaltaSerie
+            titulo="Sem índice econômico"
+            serie="Índice econômico"
+            oQueMostra="a receita descontada da inflação, separando crescimento real de reajuste de preço"
+            exemplo="Digite o IPCA de cada mês em percentual, por exemplo 0,45 para 0,45%."
+          />
+        )}
       </div>
 
       <div className="card">

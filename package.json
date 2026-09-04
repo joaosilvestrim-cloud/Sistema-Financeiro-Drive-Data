@@ -26,7 +26,8 @@
     "connect-token": "node --env-file=.env scripts/connect-token.mjs",
     "reprocess": "node --env-file=.env scripts/reprocess.mjs",
     "audit": "node --env-file=.env scripts/audit.mjs",
-    "csvtest": "node scripts/csvtest.mjs"
+    "csvtest": "node scripts/csvtest.mjs",
+    "auxtest": "node --conditions=react-server --env-file=.env scripts/auxtest.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
@@ -35,6 +36,7 @@
     "pg": "^8.23.0",
     "pg-boss": "^12.30.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "server-only": "^0.0.1"
   }
 }

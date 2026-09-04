@@ -11,6 +11,8 @@ const PAGINAS = [
   ['/recebiveis', 'Recebíveis'],
   ['/previsao', 'Previsão'],
   ['/indicadores', 'Indicadores'],
+  ['/metas', 'Metas'],
+  ['/produtividade', 'Produtividade'],
   ['/dre', 'DRE gerencial'],
   ['/clientes', 'Clientes'],
   ['/dados', 'Dados auxiliares'],
