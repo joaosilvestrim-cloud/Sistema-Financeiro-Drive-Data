@@ -49,6 +49,9 @@ export async function middleware(request) {
   // rota e o `state` assinado, que carrega o tenant e tem prazo proprio.
   const publica = path.startsWith('/login')
     || path.startsWith('/comecar')
+    || path.startsWith('/termos')
+    || path.startsWith('/privacidade')
+    || path.startsWith('/api/billing')
     || path.startsWith('/auth')
     || path.startsWith('/api/oauth')
 
