@@ -151,22 +151,32 @@ export function contaAzulProvider(client) {
       const lista = detalhe?.baixas
         ?? await client.get(`/v1/financeiro/eventos-financeiros/parcelas/${installmentId}/baixa`)
       const baixas = Array.isArray(lista) ? lista : lista?.itens ?? (lista ? [lista] : [])
-      return baixas.map((b) => ({
-        external_id: id(first(b.id, b.baixa_id)) ?? `${installmentId}-baixa`,
-        installment_external_id: String(installmentId),
-        data_pagamento: first(b.data_pagamento, b.data_baixa, b.data) ?? null,
-        valor: num(first(b.valor, b.valor_pago, b.valor_liquido, b.total)),
-        juros: num(first(b.juros, b.acrescimo, b.multa)),
-        desconto: num(b.desconto),
-        account_external_id: id(first(b.id_conta_financeira, b.conta_financeira?.id)),
-        raw: b,
-      }))
+      return baixas.map(mapBaixa(installmentId))
     },
 
     async getBalance(accountId) {
       const r = await client.get(`/v1/conta-financeira/${accountId}/saldo-atual`)
       return num(first(r?.saldo, r?.saldo_atual, r?.valor))
     },
+  }
+}
+
+// A baixa nao tem valor no topo. Tudo o que e dinheiro mora em
+// `valor_composicao`, e o liquido e o que de fato entrou ou saiu da conta.
+// Ler `b.valor` devolve indefinido sem erro nenhum, e o efeito e um fluxo de
+// caixa realizado zerado com as datas todas certas, que parece problema de
+// periodo e nao de mapeamento.
+export const mapBaixa = (installmentId) => (b) => {
+  const v = b.valor_composicao ?? {}
+  return {
+    external_id: id(first(b.id, b.baixa_id)) ?? `${installmentId}-baixa`,
+    installment_external_id: String(first(b.id_parcela, installmentId)),
+    data_pagamento: first(b.data_pagamento, b.data_baixa, b.data) ?? null,
+    valor: num(first(v.valor_liquido, v.valor_bruto, b.valor, b.valor_pago, b.total)),
+    juros: num(first(v.juros, b.juros)) + num(first(v.multa, b.multa)) || null,
+    desconto: num(first(v.desconto, b.desconto)),
+    account_external_id: id(first(b.id_conta_financeira, b.conta_financeira?.id)),
+    raw: b,
   }
 }
 
