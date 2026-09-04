@@ -14,6 +14,11 @@ marcando Production, Preview e Development.
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://<ref>.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | a chave `anon` do projeto |
 | `DATABASE_URL_POOLED` | string do **pooler em modo transação** |
+| `CONTAAZUL_CLIENT_ID` | do app de produção no portal |
+| `CONTAAZUL_CLIENT_SECRET` | do app de produção no portal |
+| `CONTAAZUL_REDIRECT_URI` | `https://<dominio>/api/oauth/contaazul/callback`, igual à cadastrada no portal |
+| `OAUTH_STATE_SECRET` | assina o `state` do OAuth |
+| `TOKEN_ENCRYPTION_KEY` | **a mesma da sua máquina e do worker** |
 
 A string do pooler tem esta forma, e repare que o usuário leva o ref do projeto:
 
@@ -30,9 +35,13 @@ Dois detalhes que quebram o deploy em silêncio:
   corta a string no meio e o erro que aparece é de autenticação, que manda você
   procurar no lugar errado.
 
-Não cadastre a `SUPABASE_SERVICE_ROLE_KEY` nem as chaves da Conta Azul na
-Vercel. O app web não usa nenhuma das duas. Elas ficam só na sua máquina e no
-worker, que é quem fala com a API e com o Supabase Auth como administrador.
+A `TOKEN_ENCRYPTION_KEY` precisa ser exatamente a mesma nos três lugares: sua
+máquina, o worker e a Vercel. Quem cifra o token é quem recebe a autorização, e
+quem decifra é quem sincroniza. Chaves diferentes e a conexão nasce ilegível
+para o worker, com um erro de autenticação que não explica a causa.
+
+Não cadastre a `SUPABASE_SERVICE_ROLE_KEY` na Vercel. O app web não usa: ela só
+serve para o script que cria usuário, que roda na sua máquina.
 
 Depois de cadastrar, refaça o deploy. Variável nova não entra em deploy antigo.
 
