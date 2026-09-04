@@ -4,6 +4,7 @@ import { brl, dataCurta, pct, rotuloMes } from '@/lib/format'
 import Tile from '@/components/Tile'
 import SaldoChart from '@/components/charts/SaldoChart'
 import MovimentoChart from '@/components/charts/MovimentoChart'
+import LinhasFluxo from '@/components/charts/LinhasFluxo'
 
 export const dynamic = 'force-dynamic'
 
@@ -104,9 +105,18 @@ export default async function Fluxo({ searchParams }) {
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
-        <h2>Entradas e saídas por mês</h2>
+        <h2>Entradas, saídas e resultado</h2>
         <p className="sub">
-          Sólido é o que passou pelo caixa. Hachurado é projeção.
+          A distância entre as duas linhas é a margem do mês. Clique na legenda para isolar uma série.
+        </p>
+        <LinhasFluxo meses={f.meses} mesAtual={f.mesAtual} fracaoDoMes={f.fracaoDoMes} />
+      </div>
+
+      <div className="card" style={{ marginBottom: 14 }}>
+        <h2>Entradas e saídas mês a mês</h2>
+        <p className="sub">
+          A mesma informação em barras, para comparar os dois lados dentro de cada mês.
+          Sólido é o que passou pelo caixa, hachurado é projeção.
         </p>
         <MovimentoChart meses={f.meses} mesAtual={f.mesAtual} />
       </div>
