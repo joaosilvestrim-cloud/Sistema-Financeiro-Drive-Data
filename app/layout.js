@@ -1,8 +1,8 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'Sistema Financeiro DriveData',
-  description: 'Analytics financeiro sobre a Conta Azul',
+  title: 'DriveAzul',
+  description: 'Inteligência financeira sobre a Conta Azul',
 }
 
 export default function RootLayout({ children }) {

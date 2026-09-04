@@ -1,9 +1,9 @@
 {
-  "name": "sistema-financeiro-drivedata",
+  "name": "driveazul",
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "Analytics financeiro sobre a API Conta Azul v2",
+  "description": "DriveAzul, inteligencia financeira sobre a Conta Azul",
   "engines": {
     "node": ">=20"
   },

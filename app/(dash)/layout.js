@@ -37,8 +37,8 @@ export default async function DashLayout({ children }) {
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">
-          DriveData
-          <span>Financeiro</span>
+          DriveAzul
+          <span>Inteligência financeira</span>
         </div>
 
         <EmpresaSelect

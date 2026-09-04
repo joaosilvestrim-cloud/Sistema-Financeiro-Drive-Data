@@ -35,7 +35,7 @@ export default function LoginForm() {
     <div className="login">
       <form onSubmit={entrar}>
         <div className="brand" style={{ marginBottom: 6 }}>
-          DriveData<span>Financeiro</span>
+          DriveAzul<span>Inteligência financeira</span>
         </div>
         <input
           type="email" placeholder="E-mail" value={email} autoComplete="username"

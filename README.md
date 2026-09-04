@@ -1,6 +1,8 @@
-# Sistema Financeiro DriveData
+# DriveAzul
 
-Plataforma de analytics financeiro que consome a API da Conta Azul (v2) e entrega fluxo de caixa, DRE gerencial, aging, projeção e alertas.
+Inteligência financeira sobre a Conta Azul. Consome a API v2 do ERP e entrega fluxo de caixa, DRE gerencial, aging, projeção e alertas.
+
+O produto é o DriveAzul. A DriveData é a empresa que o desenvolve e o primeiro cliente.
 
 O plano completo de arquitetura está em [docs/PLANO.md](docs/PLANO.md).
 

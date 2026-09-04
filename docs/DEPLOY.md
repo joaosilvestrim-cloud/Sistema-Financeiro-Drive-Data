@@ -1,4 +1,4 @@
-# Deploy
+# Deploy do DriveAzul
 
 O app web vai para a Vercel. O worker de sincronização não vai, porque função
 serverless tem limite de tempo e a carga inicial leva minutos.

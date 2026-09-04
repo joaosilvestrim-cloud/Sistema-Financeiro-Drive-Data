@@ -1,7 +1,14 @@
-# Plataforma de Analytics Financeiro sobre Conta Azul
+# DriveAzul
+
+Plataforma de analytics financeiro sobre a Conta Azul.
 
 Documento de arquitetura e plano de execução.
-Data: 03/09/2026. Status: proposta técnica, nada implementado ainda.
+Escrito em 03/09/2026 como proposta técnica. As Fases 0 a 3 foram implementadas.
+
+**Aviso sobre a seção 1.** Ela registra o que a documentação pública da Conta Azul
+dizia na época. Ao integrar de verdade, vários pontos se mostraram diferentes,
+principalmente os hosts de autorização e de token. O que vale é o que está no
+README, conferido contra respostas reais guardadas em `data/amostras`.
 
 ---
 
@@ -63,7 +70,7 @@ Cobranças (`charge-apis-openapi`): consulta de cobrança por id
 
 ## 2. Produto
 
-Nome de trabalho: **DriveData Finance** (ou CA Insights).
+Nome do produto: **DriveAzul**.
 
 Uma camada de inteligência financeira sobre o ERP. O cliente conecta a Conta Azul em dois cliques e passa a ter o que o ERP não dá: histórico versionado, projeção, cenário, alerta e comparação entre períodos.
 

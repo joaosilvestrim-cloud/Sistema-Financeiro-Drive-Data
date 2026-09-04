@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import LoginForm from '@/components/LoginForm'
 
-export const metadata = { title: 'Entrar · Financeiro DriveData' }
+export const metadata = { title: 'Entrar · DriveAzul' }
 
 export default function LoginPage() {
   return (
