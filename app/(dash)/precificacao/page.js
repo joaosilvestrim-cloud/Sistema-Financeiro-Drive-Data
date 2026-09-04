@@ -2,6 +2,7 @@ import { revalidatePath } from 'next/cache'
 import { requireSession } from '@/lib/session'
 import {
   estruturaCusto, categoriasParaClassificar, classificar, receitaPorCliente,
+  resultadoPorCentro,
 } from '@/lib/precificacao'
 import { brl } from '@/lib/format'
 import Tile from '@/components/Tile'
@@ -19,8 +20,9 @@ const pct = (v) => (v === null || v === undefined ? '—' : `${(v * 100).toFixed
 
 export default async function Precificacao() {
   const sessao = await requireSession()
-  const [e, categorias, clientes] = await Promise.all([
+  const [e, categorias, clientes, centros] = await Promise.all([
     estruturaCusto(sessao), categoriasParaClassificar(sessao), receitaPorCliente(sessao, 12, 15),
+    resultadoPorCentro(sessao),
   ])
 
   async function salvarClasse(formData) {
@@ -154,6 +156,39 @@ export default async function Precificacao() {
           dinheiro, porque são poucas categorias que mudam o número.
         </p>
         <Classificador categorias={categorias} acao={salvarClasse} />
+      </div>
+
+      <div className="card" style={{ marginBottom: 14 }}>
+        <h2>Resultado por centro de custo</h2>
+        <p className="sub">
+          Últimos 12 meses fechados. Não é resultado por produto, mas onde o
+          centro de custo acompanha a linha de serviço, já responde o que dá
+          lucro e o que consome. O que não tem centro aparece separado, e não
+          rateado nos outros.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Centro de custo</th><th className="num">Receita</th>
+              <th className="num">Despesa</th><th className="num">Resultado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {centros.map((c, i) => (
+              <tr key={i}>
+                <td>{c.centro}</td>
+                <td className="num">{Number(c.receita) ? brl(c.receita) : '—'}</td>
+                <td className="num">{Number(c.despesa) ? brl(c.despesa) : '—'}</td>
+                <td className="num" style={{
+                  fontWeight: 600,
+                  color: Number(c.resultado) >= 0 ? 'var(--good-text)' : 'var(--critical)',
+                }}>
+                  {brl(c.resultado)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       <div className="card">

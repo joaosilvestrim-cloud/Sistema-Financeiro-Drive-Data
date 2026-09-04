@@ -57,34 +57,66 @@ como ele sugeriu, em segundo lugar.
 > "eu sei que vocês gostam de preto, mas tenta uma cor mais [clara]"
 > "não precisa ser aquele brancão, pode ser um fundinho meio acinzentado"
 
-Tema claro por padrão, fundo levemente acinzentado, escuro como opção.
-
-**Status: pendente.**
+**Status: feito.** O tema claro já existia; o que faltava era ser o padrão e ter
+como trocar. Agora um script inline decide antes da primeira pintura, para não
+piscar, e o padrão é claro mesmo em sistema escuro. O fundo é `#f9f9f7`, que é o
+acinzentado que ele pediu, e não branco puro. O botão fica no canto e a escolha
+é guardada.
 
 ---
 
-## 4. O que ele quer e ainda não existe
+## 4. O que ele pediu e agora existe
 
-**Rentabilidade por produto e por serviço.** Cada produto com código único,
+**Multiplicador de precificação.** A ideia mais original da reunião. Partindo da
+rentabilidade real, dizer ao dono: o seu preço tem que ser N vezes o custo para
+dar lucro.
+
+Está em `/precificacao`. A conta separa custo direto, variável e fixo, coisa
+que o ERP mistura; o `entrada_dre` da Conta Azul vira palpite e a classificação
+fica editável por categoria.
+
+Duas honestidades no cálculo. O que não foi classificado nunca é distribuído nas
+outras classes, aparece separado com o valor à vista, porque multiplicador
+calculado sobre metade da despesa é pior que nenhum. E quando não sobra nada
+depois de imposto e estrutura, não existe multiplicador, existe um problema, e a
+tela diz isso em vez de mostrar um número enorme.
+
+Na base da DriveData já achou erro: R$ 240 mil em "Antecipação de Lucros" sem
+classificação nenhuma no ERP, que se entrasse como custo fixo distorceria o
+multiplicador inteiro.
+
+**DRE com comparativo.** Mês, trimestre e ano, com variação contra o período
+equivalente anterior e margem por período. O período em curso fica marcado e
+fora da comparação, senão toda linha pareceria em queda.
+
+**Detector de lançamento duplicado.** Aparece no resumo executivo quando há o
+que conferir. Pontua e nunca grita: mesmo valor e mesma data acontece de
+verdade. O sinal forte é a proximidade do cadastro, porque dois idênticos
+criados no mesmo minuto são clique duplo, e foi exatamente o diagnóstico de
+vocês na reunião. Achou 12 grupos na DriveData, nove com descrição idêntica e
+mesmo minuto.
+
+**Resultado por centro de custo.** O mais perto que a base chega da
+rentabilidade por produto. Onde o centro acompanha a linha de serviço, já
+responde. O que não tem centro aparece separado e não rateado.
+
+**Receita por cliente.** Com o aviso na tela de que não é lucro por cliente.
+
+---
+
+## 5. O que ele quer e ainda não existe
+
+**Rentabilidade por produto e por serviço, de verdade.** Cada produto com código único,
 despesa direta contra despesa indireta, e a resposta para "qual produto dá
 lucro, qual dá prejuízo, e qual vocês mantêm por causa do nome". A Tamires
 admitiu que hoje só olham venda, mão de obra, imposto e administrativo.
 
 **Rentabilidade por cliente.** "você sabe qual é o cliente que te dá mais lucro e
-o cliente que te traz prejuízo?"
+o cliente que te traz prejuízo?" Hoje só temos receita por cliente. Para chegar
+no lucro, falta amarrar despesa a cliente, e o ERP não tem essa amarração: seria
+preciso apontamento de hora ou centro de custo por cliente.
 
-**Custo fixo contra custo variável, até o EBITDA.**
-
-**Multiplicador de precificação.** A ideia mais original da reunião. Partindo da
-rentabilidade real, dizer ao dono: o seu preço de venda tem que ser 3,5 vezes o
-custo para dar lucro. Abaixo disso você vende no prejuízo. A Tamires reconheceu
-na hora que o fator comercial que ela usa não inclui o custo dela.
-
-E foi aqui que ele disse quanto vale:
-> "eu pagaria R$ 100 a mais para ter uma análise já pronta do que eu vou precisar
-> pegar dentro de um sistema e ter que fazer na mão."
-
-**DRE gerencial com comparativo.** Mês, trimestre e ano, com variação.
+**EBITDA.** A estrutura de custo já separa o que precisa; falta a linha.
 
 **Orçado contra realizado**, e a pergunta que ele fez junto e que define o
 desenho: de onde vem o orçado e de onde vem o realizado. Procedência visível.
@@ -102,7 +134,7 @@ intercompany.
 
 ---
 
-## 5. Preço, com números reais do mercado
+## 6. Preço, com números reais do mercado
 
 O que ele levantou na própria pesquisa:
 
@@ -131,7 +163,7 @@ E o mais importante: **ele confirmou que a carteira dele compraria.**
 
 ---
 
-## 6. Processo, que muda a integração com o CRM
+## 7. Processo, que muda a integração com o CRM
 
 Fecha o assunto que a Tamires levantou na call da manhã sobre duplicidade entre
 o CRM e o Conta Azul.
@@ -160,7 +192,7 @@ não o boleto.
 
 ---
 
-## 7. Fora do escopo do DriveAzul
+## 8. Fora do escopo do DriveAzul
 
 Ele propôs um segundo produto: revender emissor de nota fiscal em white label,
 usando um fornecedor que cobra R$ 548/mês com CNPJ ilimitado e 4000 notas, para
@@ -172,7 +204,7 @@ registrado para não se perder.
 
 ---
 
-## 8. O pano de fundo
+## 9. O pano de fundo
 
 O Diogo insistiu num ponto que explica a urgência do produto: a DriveData não
 tem receita recorrente, o último projeto termina em janeiro, e a empresa depende
