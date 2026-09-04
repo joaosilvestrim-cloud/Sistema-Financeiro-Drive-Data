@@ -6,7 +6,9 @@ import Alerts from '@/components/Alerts'
 import AnaliseIA from '@/components/AnaliseIA'
 import { brl, dataCurta } from '@/lib/format'
 import { revalidatePath } from 'next/cache'
+import { Suspense } from 'react'
 import Tile from '@/components/Tile'
+import BulletIA from '@/components/BulletIA'
 import CashflowChart from '@/components/charts/CashflowChart'
 import HBars from '@/components/charts/HBars'
 
@@ -70,14 +72,18 @@ export default async function VisaoGeral() {
 
       <div className="grid cols-4" style={{ marginBottom: 14 }}>
         <Tile label="Saldo em conta" valor={brl(k.saldo_atual)}
-              nota={`${brl(k.entradas_90d)} entraram em 90 dias`} />
+              nota={`${brl(k.entradas_90d)} entraram em 90 dias`} 
+              insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="saldo" /></Suspense>} />
         <Tile label="A receber" valor={brl(k.a_receber)}
               nota={Number(k.receber_vencido) > 0 ? `${brl(k.receber_vencido)} vencidos` : 'nada vencido'}
-              tom={Number(k.receber_vencido) > 0 ? 'bad' : 'good'} />
+              tom={Number(k.receber_vencido) > 0 ? 'bad' : 'good'} 
+              insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="a_receber" /></Suspense>} />
         <Tile label="A pagar" valor={brl(k.a_pagar)}
               nota={Number(k.pagar_vencido) > 0 ? `${brl(k.pagar_vencido)} vencidos` : 'nada vencido'}
-              tom={Number(k.pagar_vencido) > 0 ? 'bad' : null} />
-        <Tile label="Fôlego de caixa" valor={runway} nota={runwayNota} tom={runwayTom} />
+              tom={Number(k.pagar_vencido) > 0 ? 'bad' : null} 
+              insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="a_pagar" /></Suspense>} />
+        <Tile label="Fôlego de caixa" valor={runway} nota={runwayNota} tom={runwayTom} 
+              insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="folego" /></Suspense>} />
       </div>
 
       <Alerts itens={avisos} />

@@ -2,7 +2,9 @@ import { requireSession } from '@/lib/session'
 import { prazosMedios, sazonalidade, concentracao, indiceHhi, anomalias } from '@/lib/queries'
 import { receitaReal, tiposPreenchidos } from '@/lib/indicadoresAux'
 import { brl, rotuloMes, indice } from '@/lib/format'
+import { Suspense } from 'react'
 import Tile from '@/components/Tile'
+import BulletIA from '@/components/BulletIA'
 import HBars from '@/components/charts/HBars'
 import LinhaKpi from '@/components/charts/LinhaKpi'
 import FaltaSerie from '@/components/FaltaSerie'
@@ -51,16 +53,20 @@ export default async function Indicadores() {
       </div>
 
       <div className="grid cols-4" style={{ marginBottom: 14 }}>
-        <Tile label="Prazo de recebimento" valor={`${prazoReceber.toFixed(0)} dias`}
-              nota={`atraso médio de ${Number(receber?.atraso ?? 0).toFixed(0)} dias`}
-              tom={Number(receber?.atraso ?? 0) > 15 ? 'bad' : null} />
-        <Tile label="Prazo de pagamento" valor={`${prazoPagar.toFixed(0)} dias`}
-              nota="da competência até sair do caixa" />
-        <Tile label="Ciclo financeiro" valor={`${ciclo.toFixed(0)} dias`}
+        <Tile label="Prazo de recebimento" valor={`${Math.round(prazoReceber)} dias`}
+              nota={`atraso médio de ${Math.round(Number(receber?.atraso ?? 0))} dias`}
+              tom={Number(receber?.atraso ?? 0) > 15 ? 'bad' : null} 
+              insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="prazo_receber" /></Suspense>} />
+        <Tile label="Prazo de pagamento" valor={`${Math.round(prazoPagar)} dias`}
+              nota="da competência até sair do caixa" 
+              insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="prazo_pagar" /></Suspense>} />
+        <Tile label="Ciclo financeiro" valor={`${Math.round(ciclo)} dias`}
               nota={ciclo > 0 ? 'você financia o cliente nesse intervalo' : 'você recebe antes de pagar'}
-              tom={ciclo > 0 ? 'bad' : 'good'} />
+              tom={ciclo > 0 ? 'bad' : 'good'} 
+              insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="ciclo" /></Suspense>} />
         <Tile label="Concentração (HHI)" valor={hhi?.hhi ? indice(hhi.hhi) : '—'}
-              nota={`${leitura} · ${hhi?.clientes ?? 0} clientes`} tom={tomHhi} />
+              nota={`${leitura} · ${hhi?.clientes ?? 0} clientes`} tom={tomHhi} 
+              insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="concentracao" /></Suspense>} />
       </div>
 
       <div className="grid cols-2" style={{ marginBottom: 14 }}>

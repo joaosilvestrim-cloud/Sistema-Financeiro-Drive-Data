@@ -1,7 +1,9 @@
 import { requireSession } from '@/lib/session'
 import { fluxoDeCaixa } from '@/lib/cashflow'
 import { brl, dataCurta, pct, rotuloMes } from '@/lib/format'
+import { Suspense } from 'react'
 import Tile from '@/components/Tile'
+import BulletIA from '@/components/BulletIA'
 import SaldoChart from '@/components/charts/SaldoChart'
 import MovimentoChart from '@/components/charts/MovimentoChart'
 import LinhasFluxo from '@/components/charts/LinhasFluxo'
@@ -72,17 +74,21 @@ export default async function Fluxo({ searchParams }) {
 
       <div className="grid cols-4" style={{ marginBottom: 14 }}>
         <Tile label="Saldo hoje" valor={brl(f.saldoHoje)}
-              nota={`${f.contas.length} conta${f.contas.length === 1 ? '' : 's'} financeira${f.contas.length === 1 ? '' : 's'}`} />
+              nota={`${f.contas.length} conta${f.contas.length === 1 ? '' : 's'} financeira${f.contas.length === 1 ? '' : 's'}`}
+              insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="saldo" /></Suspense>} />
         <Tile label={`Saldo projetado em ${frente} meses`} valor={brl(f.saldoFinal)}
               nota={`${variacao >= 0 ? 'crescimento' : 'queda'} de ${brl(Math.abs(variacao))}`}
-              tom={variacao >= 0 ? 'good' : 'bad'} />
+              tom={variacao >= 0 ? 'good' : 'bad'} 
+              insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="saldo_projetado" /></Suspense>} />
         <Tile label="Menor saldo do período"
               valor={f.pior ? brl(f.pior.saldoFim) : '—'}
               nota={f.pior ? `em ${rotuloMes(f.pior.competencia)}` : 'sem projeção'}
-              tom={f.pior && f.pior.saldoFim < 0 ? 'bad' : apertaAbaixoDe ? 'bad' : 'good'} />
+              tom={f.pior && f.pior.saldoFim < 0 ? 'bad' : apertaAbaixoDe ? 'bad' : 'good'} 
+              insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="menor_saldo" /></Suspense>} />
         <Tile label="Resultado projetado" valor={brl(entradasPrev - saidasPrev)}
               nota={`${brl(entradasPrev)} a entrar, ${brl(saidasPrev)} a sair`}
-              tom={entradasPrev - saidasPrev >= 0 ? 'good' : 'bad'} />
+              tom={entradasPrev - saidasPrev >= 0 ? 'good' : 'bad'} 
+              insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="resultado_projetado" /></Suspense>} />
       </div>
 
       {f.pior && f.pior.saldoFim < 0 && (
