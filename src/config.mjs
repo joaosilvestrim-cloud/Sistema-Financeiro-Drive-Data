@@ -1,9 +1,9 @@
+// Lanca em vez de encerrar o processo. Nos scripts o efeito e o mesmo, mas
+// dentro do app web um process.exit derrubaria o servidor inteiro em vez de
+// devolver um erro legivel na requisicao.
 const required = (name) => {
   const v = process.env[name]
-  if (!v) {
-    console.error(`Faltou a variavel ${name} no .env`)
-    process.exit(1)
-  }
+  if (!v) throw new Error(`Faltou a variavel de ambiente ${name}`)
   return v
 }
 

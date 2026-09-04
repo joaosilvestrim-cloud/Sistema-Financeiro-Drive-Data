@@ -1,6 +1,9 @@
+import { redirect } from 'next/navigation'
 import { requireSession } from '@/lib/session'
 import { conexoes, ultimasRodadas } from '@/lib/queries'
 import { desde, dataCurta } from '@/lib/format'
+import { criarState } from '@/lib/oauthState'
+import { buildAuthorizeUrl } from '@/src/oauth.mjs'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,11 +17,22 @@ const STATUS = {
   error: ['Com erro', 'bad'],
 }
 
-export default async function Conexoes() {
+export default async function Conexoes({ searchParams }) {
   const sessao = await requireSession()
+  const busca = await searchParams
   const [lista, rodadas] = await Promise.all([
     conexoes(sessao.tenantId), ultimasRodadas(sessao.tenantId, 15),
   ])
+
+  async function conectar() {
+    'use server'
+    const s = await requireSession()
+    // O state vai assinado com prazo curto: ele volta pelo navegador e sem
+    // assinatura daria para ligar a conta de uma empresa ao tenant de outra.
+    redirect(buildAuthorizeUrl(criarState(s.tenantId)))
+  }
+
+  const precisaReconectar = lista.some((c) => c.status !== 'connected')
 
   return (
     <>
@@ -27,7 +41,46 @@ export default async function Conexoes() {
           <h1>Conexões</h1>
           <p>Cada empresa autorizada no ERP é uma conexão, com tokens e ritmo próprios.</p>
         </div>
+        <form action={conectar}>
+          <button className="btn" type="submit">
+            {lista.length ? 'Conectar outra empresa' : 'Conectar Conta Azul'}
+          </button>
+        </form>
       </div>
+
+      {busca?.erro && (
+        <p style={{
+          background: 'color-mix(in srgb, var(--critical) 12%, transparent)',
+          border: '1px solid var(--critical)', borderRadius: 8, padding: '10px 14px',
+          fontSize: 13, marginTop: 0,
+        }}>
+          <strong>Não deu para conectar.</strong> {busca.erro}
+        </p>
+      )}
+
+      {busca?.ok && (
+        <p style={{
+          background: 'color-mix(in srgb, var(--good) 12%, transparent)',
+          border: '1px solid var(--good)', borderRadius: 8, padding: '10px 14px',
+          fontSize: 13, marginTop: 0,
+        }}>
+          <strong>Conexão {busca.ok}.</strong>{' '}
+          {busca.renova === '1'
+            ? 'A autorização se renova sozinha. Rode a carga inicial para trazer o histórico.'
+            : 'Atenção: a Conta Azul não devolveu refresh_token, então esta conexão expira em uma hora.'}
+        </p>
+      )}
+
+      {precisaReconectar && !busca?.ok && (
+        <p style={{
+          background: 'color-mix(in srgb, var(--warning) 14%, transparent)',
+          border: '1px solid var(--warning)', borderRadius: 8, padding: '10px 14px',
+          fontSize: 13, marginTop: 0,
+        }}>
+          <strong>Sincronização parada.</strong> Uma ou mais conexões perderam a autorização.
+          Os números das outras telas param no último sync que deu certo.
+        </p>
+      )}
 
       <div className="grid cols-3" style={{ marginBottom: 14 }}>
         {lista.map((c) => {
@@ -44,6 +97,11 @@ export default async function Conexoes() {
               <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
                 <div>último sync {desde(c.last_sync_at)}</div>
                 <div>{Number(c.parcelas).toLocaleString('pt-BR')} parcelas carregadas</div>
+                {c.external_company_id && (
+                  <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>
+                    {c.external_company_id}
+                  </div>
+                )}
                 {c.last_error && (
                   <div style={{ color: 'var(--critical)', marginTop: 6, fontSize: 12 }}>{c.last_error}</div>
                 )}
@@ -52,7 +110,9 @@ export default async function Conexoes() {
           )
         })}
         {lista.length === 0 && (
-          <p className="empty">Nenhuma empresa conectada. Rode <code>npm run connect</code>.</p>
+          <p className="empty">
+            Nenhuma empresa conectada. Use o botão Conectar Conta Azul aí em cima.
+          </p>
         )}
       </div>
 
