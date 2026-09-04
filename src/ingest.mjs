@@ -112,7 +112,10 @@ function estadoResultante(it, maps, atual) {
 // desse histórico que sai a comparação entre o que estava previsto num momento
 // passado e o que de fato aconteceu, que o ERP não guarda.
 export async function ingestInstallments(ctx, maps, itens) {
-  const resumo = { novos: 0, alterados: 0, inalterados: 0 }
+  // `mudaram` carrega as parcelas que entraram ou foram alteradas nesta rodada.
+  // Baixa nova sempre mexe no valor pago, entao parcela inalterada nao tem baixa
+  // nova, e rebuscar as dela e chamada jogada fora na cota do cliente.
+  const resumo = { novos: 0, alterados: 0, inalterados: 0, mudaram: [] }
   if (!itens.length) return resumo
 
   await tx(async (client) => {
@@ -188,6 +191,7 @@ export async function ingestInstallments(ctx, maps, itens) {
         [id, ctx.tenantId, ctx.connectionId, ...CAMPOS_VERSAO.map((c) => estado[c] ?? null), hash],
       )
 
+      resumo.mudaram.push(it)
       if (atual) resumo.alterados++
       else resumo.novos++
     }
@@ -204,19 +208,20 @@ export async function ingestSettlements(ctx, maps, baixas) {
       await client.query(
         `insert into core.settlement (
            tenant_id, connection_id, external_id, installment_id,
-           data_pagamento, valor, juros, desconto, account_id, hash
+           data_pagamento, valor, valor_bruto, taxa, juros, desconto, account_id, hash
          )
-         select $1, $2, $3, i.id, $5, $6, $7, $8, $9, $10
+         select $1, $2, $3, i.id, $5, $6, $7, $8, $9, $10, $11, $12
            from core.installment i
           where i.connection_id = $2 and i.external_id = $4
          on conflict (connection_id, external_id) do update set
            data_pagamento = excluded.data_pagamento,
-           valor = excluded.valor, juros = excluded.juros, desconto = excluded.desconto,
+           valor = excluded.valor, valor_bruto = excluded.valor_bruto, taxa = excluded.taxa,
+           juros = excluded.juros, desconto = excluded.desconto,
            account_id = coalesce(excluded.account_id, core.settlement.account_id),
            hash = excluded.hash, last_seen_at = now()`,
         [
           ctx.tenantId, ctx.connectionId, b.external_id, b.installment_external_id,
-          b.data_pagamento, b.valor, b.juros, b.desconto,
+          b.data_pagamento, b.valor, b.valor_bruto, b.taxa, b.juros, b.desconto,
           maps.account.get(b.account_external_id) ?? null, hash,
         ],
       )

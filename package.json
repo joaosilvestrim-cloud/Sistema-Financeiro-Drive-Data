@@ -24,7 +24,8 @@
     "invite": "node --env-file=.env scripts/invite.mjs",
     "doctor": "node --env-file=.env scripts/doctor.mjs",
     "connect-token": "node --env-file=.env scripts/connect-token.mjs",
-    "reprocess": "node --env-file=.env scripts/reprocess.mjs"
+    "reprocess": "node --env-file=.env scripts/reprocess.mjs",
+    "audit": "node --env-file=.env scripts/audit.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

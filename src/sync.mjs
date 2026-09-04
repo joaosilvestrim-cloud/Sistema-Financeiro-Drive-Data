@@ -104,8 +104,8 @@ export async function syncConnection(connectionId, kind = 'incremental') {
         let doTipo = 0
         for (const [de, ate] of janelas) {
           const parcelas = await api.listInstallments({ kind: tipo, dueFrom: de, dueTo: ate })
-          await ingestInstallments(ctx, maps, parcelas)
-          await sincronizarBaixas(ctx, api, maps, parcelas)
+          const r = await ingestInstallments(ctx, maps, parcelas)
+          await sincronizarBaixas(ctx, api, maps, r.mudaram)
           doTipo += parcelas.length
         }
         detail[tipo] = doTipo
@@ -127,7 +127,7 @@ export async function syncConnection(connectionId, kind = 'incremental') {
       for (const eventId of ids) {
         const parcelas = await api.listInstallmentsByEvent(eventId)
         const r = await ingestInstallments(ctx, maps, parcelas)
-        await sincronizarBaixas(ctx, api, maps, parcelas)
+        await sincronizarBaixas(ctx, api, maps, r.mudaram)
         itens += parcelas.length
         detail.novos = (detail.novos ?? 0) + r.novos
         detail.alterados = (detail.alterados ?? 0) + r.alterados

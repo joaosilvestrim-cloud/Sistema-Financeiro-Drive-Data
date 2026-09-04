@@ -172,7 +172,12 @@ export const mapBaixa = (installmentId) => (b) => {
     external_id: id(first(b.id, b.baixa_id)) ?? `${installmentId}-baixa`,
     installment_external_id: String(first(b.id_parcela, installmentId)),
     data_pagamento: first(b.data_pagamento, b.data_baixa, b.data) ?? null,
+    // Liquido move a conta financeira, bruto quita a parcela, e a diferenca e
+    // a taxa do meio de pagamento. Guardar so um dos dois faz o pago da parcela
+    // nunca fechar com a soma das baixas.
     valor: num(first(v.valor_liquido, v.valor_bruto, b.valor, b.valor_pago, b.total)),
+    valor_bruto: num(first(v.valor_bruto, v.valor_liquido, b.valor, b.total)),
+    taxa: num(first(v.taxa, b.taxa)),
     juros: num(first(v.juros, b.juros)) + num(first(v.multa, b.multa)) || null,
     desconto: num(first(v.desconto, b.desconto)),
     account_external_id: id(first(b.id_conta_financeira, b.conta_financeira?.id)),
