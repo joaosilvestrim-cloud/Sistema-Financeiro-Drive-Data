@@ -181,6 +181,9 @@ export const mapBaixa = (installmentId) => (b) => {
     juros: num(first(v.juros, b.juros)) + num(first(v.multa, b.multa)) || null,
     desconto: num(first(v.desconto, b.desconto)),
     account_external_id: id(first(b.id_conta_financeira, b.conta_financeira?.id)),
+    // Preenchido quer dizer casado com o extrato do banco. Nulo quer dizer que
+    // o lancamento existe no ERP e ninguem conferiu contra o banco ainda.
+    reconciliacao_external_id: id(first(b.id_reconciliacao, b.reconciliacao?.id)),
     raw: b,
   }
 }

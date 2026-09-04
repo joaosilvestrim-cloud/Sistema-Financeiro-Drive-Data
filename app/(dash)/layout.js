@@ -7,6 +7,7 @@ import EmpresaSelect from '@/components/EmpresaSelect'
 import { desde } from '@/lib/format'
 
 const PAGINAS = [
+  ['/resumo', 'Resumo executivo'],
   ['/', 'Visão geral'],
   ['/fluxo', 'Fluxo de caixa'],
   ['/recebiveis', 'Recebíveis'],

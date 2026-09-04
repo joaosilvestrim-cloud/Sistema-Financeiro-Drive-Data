@@ -208,9 +208,10 @@ export async function ingestSettlements(ctx, maps, baixas) {
       await client.query(
         `insert into core.settlement (
            tenant_id, connection_id, external_id, installment_id,
-           data_pagamento, valor, valor_bruto, taxa, juros, desconto, account_id, hash
+           data_pagamento, valor, valor_bruto, taxa, juros, desconto, account_id,
+           reconciliacao_external_id, hash
          )
-         select $1, $2, $3, i.id, $5, $6, $7, $8, $9, $10, $11, $12
+         select $1, $2, $3, i.id, $5, $6, $7, $8, $9, $10, $11, $12, $13
            from core.installment i
           where i.connection_id = $2 and i.external_id = $4
          on conflict (connection_id, external_id) do update set
@@ -218,11 +219,16 @@ export async function ingestSettlements(ctx, maps, baixas) {
            valor = excluded.valor, valor_bruto = excluded.valor_bruto, taxa = excluded.taxa,
            juros = excluded.juros, desconto = excluded.desconto,
            account_id = coalesce(excluded.account_id, core.settlement.account_id),
+           -- Sem coalesce de propósito. Conciliação pode ser desfeita no ERP, e
+           -- guardar o valor antigo faria a tela dizer que está conciliado o que
+           -- voltou a estar pendente.
+           reconciliacao_external_id = excluded.reconciliacao_external_id,
            hash = excluded.hash, last_seen_at = now()`,
         [
           ctx.tenantId, ctx.connectionId, b.external_id, b.installment_external_id,
           b.data_pagamento, b.valor, b.valor_bruto, b.taxa, b.juros, b.desconto,
-          maps.account.get(b.account_external_id) ?? null, hash,
+          maps.account.get(b.account_external_id) ?? null,
+          b.reconciliacao_external_id ?? null, hash,
         ],
       )
     }
