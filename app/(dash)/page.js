@@ -26,9 +26,11 @@ function runwayTexto(saldo, burn) {
 
 export default async function VisaoGeral() {
   const sessao = await requireSession()
-  const [k, fluxo, agingRec, clientes, avisos] = await Promise.all([
-    kpis(sessao), fluxoMensal(sessao), aging(sessao, 'receivable'), topClientes(sessao, 8),
-    alertas(sessao),
+  // Os KPIs vao primeiro porque os alertas se apoiam neles. O resto corre junto.
+  const k = await kpis(sessao)
+  const [fluxo, agingRec, clientes, avisos] = await Promise.all([
+    fluxoMensal(sessao), aging(sessao, 'receivable'), topClientes(sessao, 8),
+    alertas(sessao, k),
   ])
 
   if (!k || (!Number(k.a_receber) && !Number(k.a_pagar) && !fluxo.length)) {
