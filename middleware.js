@@ -42,7 +42,14 @@ export async function middleware(request) {
 
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
-  const publica = path.startsWith('/login') || path.startsWith('/auth')
+
+  // O retorno do OAuth precisa passar sem sessao. O codigo dura 3 minutos e so
+  // pode ser trocado uma vez: se o middleware mandar para o login, o codigo se
+  // perde no caminho e a autorizacao inteira e desperdicada. Quem protege essa
+  // rota e o `state` assinado, que carrega o tenant e tem prazo proprio.
+  const publica = path.startsWith('/login')
+    || path.startsWith('/auth')
+    || path.startsWith('/api/oauth')
 
   if (!user && !publica) {
     const url = request.nextUrl.clone()
