@@ -64,7 +64,9 @@ Existe um gerador de dados sinteticos em `scripts/seed.mjs`, previsto no plano p
 
 Next.js com App Router. Login pelo Supabase Auth, e o middleware barra qualquer rota que nao seja a de login. Os dados nao passam pelo PostgREST: as telas rodam SQL direto nas views de `mart`, sempre filtrando por tenant a partir da sessao verificada. A RLS continua ligada nas tabelas como segunda barreira.
 
-Telas: visao geral (alertas, KPIs, fluxo de caixa, aging, maiores clientes), recebiveis, previsao, indicadores, DRE gerencial, clientes e conexoes.
+Telas: visao geral (alertas, KPIs, aging, maiores clientes), fluxo de caixa, recebiveis, previsao, indicadores, DRE gerencial, clientes e conexoes.
+
+O `npm run audit` recalcula cada numero das telas por um caminho diferente do que a tela usa e compara os dois. Rode depois de cada carga.
 
 O seletor no topo da barra lateral troca entre uma empresa e o consolidado do tenant.
 

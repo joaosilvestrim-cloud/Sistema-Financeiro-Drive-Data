@@ -8,13 +8,30 @@ export const dynamic = 'force-dynamic'
 // caixa. Quando a parcela não tem competência preenchida, a view cai para o
 // vencimento, o que é o comportamento menos errado possível.
 
+// O ERP devolve o grupo em maiuscula com underscore. Os que aparecem com mais
+// frequencia ganham um nome escrito por extenso; o resto e humanizado na hora,
+// para nunca sobrar RECEITA_VENDA_PRODUTOS_SERVICOS na tela do financeiro.
 const NOMES = {
   RECEITA_BRUTA: 'Receita bruta',
+  RECEITA_VENDA_PRODUTOS_SERVICOS: 'Receita de produtos e serviços',
+  OUTRAS_RECEITAS: 'Outras receitas',
+  CUSTO_SERVICOS_PRESTADOS: 'Custo dos serviços prestados',
+  CUSTO_MERCADORIA_VENDIDA: 'Custo da mercadoria vendida',
+  CUSTOS_OPERACIONAIS: 'Custos operacionais',
   DESPESAS_ADMINISTRATIVAS: 'Despesas administrativas',
   DESPESAS_COMERCIAIS: 'Despesas comerciais',
-  CUSTOS_OPERACIONAIS: 'Custos operacionais',
+  DESPESAS_FINANCEIRAS: 'Despesas financeiras',
+  DESPESAS_COM_PESSOAL: 'Despesas com pessoal',
   IMPOSTOS: 'Impostos',
+  IMPOSTOS_SOBRE_VENDAS: 'Impostos sobre vendas',
+  INVESTIMENTOS_IMOBILIZADO: 'Investimentos e imobilizado',
   SEM_GRUPO: 'Sem classificação',
+}
+
+function nomeDoGrupo(g) {
+  if (NOMES[g]) return NOMES[g]
+  const texto = String(g ?? '').toLowerCase().replaceAll('_', ' ').trim()
+  return texto ? texto[0].toUpperCase() + texto.slice(1) : 'Sem classificação'
 }
 
 export default async function Dre() {
@@ -31,6 +48,9 @@ export default async function Dre() {
   }
 
   const meses = [...new Set(linhas.map((l) => l.competencia))].sort()
+  // O mes corrente ainda esta rodando. Sem avisar, quem le compara um mes pela
+  // metade com meses inteiros e conclui que a receita despencou.
+  const mesAtual = new Date().toISOString().slice(0, 7)
   const chave = (kind, grupo) => `${kind}|${grupo}`
 
   const grupos = new Map()
@@ -79,13 +99,22 @@ export default async function Dre() {
           <thead>
             <tr>
               <th>Grupo</th>
-              {meses.map((m) => <th className="num" key={m}>{rotuloMes(m)}</th>)}
+              {meses.map((m) => (
+                <th className="num" key={m}>
+                  {rotuloMes(m)}
+                  {m === mesAtual && (
+                    <div style={{ fontWeight: 400, fontSize: 10, color: 'var(--text-muted)' }}>
+                      em curso
+                    </div>
+                  )}
+                </th>
+              ))}
               <th className="num">Total</th>
             </tr>
           </thead>
           <tbody>
             {receitas.map((g) => (
-              <Linha key={g.grupo} rotulo={NOMES[g.grupo] ?? g.grupo} porMes={g.porMes} total={g.total} />
+              <Linha key={g.grupo} rotulo={nomeDoGrupo(g.grupo)} porMes={g.porMes} total={g.total} />
             ))}
             <Linha
               rotulo="Total de receitas" forte
@@ -94,7 +123,7 @@ export default async function Dre() {
             />
             <tr><td colSpan={meses.length + 2} style={{ padding: 4 }} /></tr>
             {despesas.map((g) => (
-              <Linha key={g.grupo} rotulo={NOMES[g.grupo] ?? g.grupo} porMes={g.porMes} total={g.total} />
+              <Linha key={g.grupo} rotulo={nomeDoGrupo(g.grupo)} porMes={g.porMes} total={g.total} />
             ))}
             <Linha
               rotulo="Total de despesas" forte
@@ -113,7 +142,13 @@ export default async function Dre() {
       </div>
 
       <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 12 }}>
-        Quando houver mais de uma empresa somada, categorias com nomes diferentes ainda entram
+        A coluna do mês em curso cobre apenas o que já foi lançado até hoje, então não se compara
+        de igual para igual com os meses fechados.
+        {despesas.some((g) => g.grupo === 'SEM_GRUPO') && (
+          <> Linhas em <strong>Sem classificação</strong> são categorias sem grupo de DRE definido
+          no próprio ERP: classificá-las lá melhora este relatório sem mexer em nada aqui.</>
+        )}
+        {' '}Quando houver mais de uma empresa somada, categorias com nomes diferentes ainda entram
         separadas. O de-para canônico resolve isso e está previsto para a próxima etapa.
       </p>
     </>

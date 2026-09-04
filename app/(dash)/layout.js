@@ -7,6 +7,7 @@ import { desde } from '@/lib/format'
 
 const PAGINAS = [
   ['/', 'Visão geral'],
+  ['/fluxo', 'Fluxo de caixa'],
   ['/recebiveis', 'Recebíveis'],
   ['/previsao', 'Previsão'],
   ['/indicadores', 'Indicadores'],
