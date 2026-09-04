@@ -13,11 +13,23 @@ export const MODELO = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 // max_tokens inclui os tokens de raciocinio do modelo, nao so a resposta. Com
 // teto curto ele gasta o orcamento pensando e devolve conteudo vazio, sem erro
 // nenhum: a chamada volta 200 e o texto some. Por isso o teto e folgado.
+const dormir = (ms) => new Promise((r) => setTimeout(r, ms))
+
+// O plano gratuito da Groq limita tokens por minuto, e cada analise consome
+// alguns milhares. Duas perguntas seguidas ja estouram. A propria resposta do
+// 429 diz quanto esperar, entao esperamos e tentamos de novo uma vez: para
+// quem clicou, isso vira uma pausa de alguns segundos em vez de um erro.
+function segundosDeEspera(corpo) {
+  const m = /try again in ([\d.]+)s/i.exec(corpo)
+  const s = m ? Number(m[1]) : 0
+  return Number.isFinite(s) && s > 0 ? Math.min(s + 0.5, 30) : 0
+}
+
 export async function conversar(mensagens, { temperatura = 0.2, maxTokens = 2500 } = {}) {
   const chave = process.env.GROQ_API_KEY
   if (!chave) throw new Error('Falta GROQ_API_KEY no ambiente')
 
-  const res = await fetch(URL, {
+  const chamar = () => fetch(URL, {
     method: 'POST',
     headers: { Authorization: `Bearer ${chave}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -28,7 +40,28 @@ export async function conversar(mensagens, { temperatura = 0.2, maxTokens = 2500
     }),
   })
 
-  const corpo = await res.text()
+  let res = await chamar()
+  let corpo = await res.text()
+
+  if (res.status === 429) {
+    const espera = segundosDeEspera(corpo)
+    if (espera) {
+      await dormir(espera * 1000)
+      res = await chamar()
+      corpo = await res.text()
+    }
+  }
+
+  if (res.status === 429) {
+    const espera = segundosDeEspera(corpo)
+    const err = new Error(
+      'A conta da IA atingiu o limite de uso por minuto.'
+      + (espera ? ` Tente de novo em ${Math.ceil(espera)} segundos.` : ' Tente de novo em instantes.'),
+    )
+    err.status = 429
+    throw err
+  }
+
   if (!res.ok) {
     const err = new Error(`Groq ${res.status}: ${corpo.slice(0, 300)}`)
     err.status = res.status
