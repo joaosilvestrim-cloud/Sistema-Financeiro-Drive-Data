@@ -92,3 +92,21 @@ npm run worker
 
 Com as variáveis certas, o middleware passa a responder com o diagnóstico em
 texto em vez de derrubar a função, então a própria página diz o que falta.
+
+## Variáveis novas do modelo de venda
+
+`CRON_SECRET` é obrigatória. Sem ela a rota `/api/cron/sync` se recusa a rodar,
+e a sincronização automática não acontece. A Vercel gera essa variável sozinha
+quando você cria o cron, e manda o valor no cabeçalho `Authorization: Bearer`.
+Se preferir outro agendador, mande o mesmo cabeçalho. A origem da chamada não
+importa: quem fala com a Conta Azul é a função, que roda em `gru1`.
+
+O cron está declarado em `vercel.json`, de 30 em 30 minutos. Plano Hobby só
+aceita um disparo por dia, então esse ritmo exige o Pro.
+
+`BILLING_GATEWAY` e `BILLING_WEBHOOK_SECRET` só fazem falta quando o gateway de
+pagamento entrar. Sem elas, `/api/billing/webhook` responde 503 e a tela de
+planos apenas registra a intenção de compra. Nada mais quebra.
+
+`GROQ_API_KEY` e `GROQ_MODEL` continuam opcionais. Sem elas o produto funciona
+inteiro, só sem as leituras de IA.
