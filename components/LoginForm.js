@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
+import Marca from '@/components/Marca'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -34,8 +35,8 @@ export default function LoginForm() {
   return (
     <div className="login">
       <form onSubmit={entrar}>
-        <div className="brand" style={{ marginBottom: 6 }}>
-          DriveAzul<span>Inteligência financeira</span>
+        <div style={{ marginBottom: 6 }}>
+          <Marca tamanho={38} />
         </div>
         <input
           type="email" placeholder="E-mail" value={email} autoComplete="username"

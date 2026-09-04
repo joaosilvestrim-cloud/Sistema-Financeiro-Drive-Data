@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { requireSession } from '@/lib/session'
+import Marca from '@/components/Marca'
 import NavLink from '@/components/NavLink'
 import EmpresaSelect from '@/components/EmpresaSelect'
 import { desde } from '@/lib/format'
@@ -40,10 +41,7 @@ export default async function DashLayout({ children }) {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="brand">
-          DriveAzul
-          <span>Inteligência financeira</span>
-        </div>
+        <Marca />
 
         <EmpresaSelect
           conexoes={sessao.conexoes}
