@@ -1,6 +1,6 @@
 import { requireSession } from '@/lib/session'
 import { prazosMedios, sazonalidade, concentracao, indiceHhi, anomalias } from '@/lib/queries'
-import { brl, rotuloMes } from '@/lib/format'
+import { brl, rotuloMes, indice } from '@/lib/format'
 import Tile from '@/components/Tile'
 import HBars from '@/components/charts/HBars'
 
@@ -55,7 +55,7 @@ export default async function Indicadores() {
         <Tile label="Ciclo financeiro" valor={`${ciclo.toFixed(0)} dias`}
               nota={ciclo > 0 ? 'você financia o cliente nesse intervalo' : 'você recebe antes de pagar'}
               tom={ciclo > 0 ? 'bad' : 'good'} />
-        <Tile label="Concentração (HHI)" valor={hhi?.hhi ? Number(hhi.hhi).toFixed(3) : '—'}
+        <Tile label="Concentração (HHI)" valor={hhi?.hhi ? indice(hhi.hhi) : '—'}
               nota={`${leitura} · ${hhi?.clientes ?? 0} clientes`} tom={tomHhi} />
       </div>
 
@@ -95,9 +95,9 @@ export default async function Indicadores() {
               {acumulado.map((c) => (
                 <tr key={c.cliente}>
                   <td>{c.cliente}</td>
-                  <td className="num">{(Number(c.participacao) * 100).toFixed(1)}%</td>
+                  <td className="num">{(Number(c.participacao) * 100).toFixed(1).replace('.', ',')}%</td>
                   <td className="num" style={{ color: c.acumulado >= 0.8 ? 'var(--text-muted)' : undefined }}>
-                    {(c.acumulado * 100).toFixed(1)}%
+                    {(c.acumulado * 100).toFixed(1).replace('.', ',')}%
                   </td>
                 </tr>
               ))}

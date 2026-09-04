@@ -36,7 +36,7 @@ export default async function Recebiveis() {
           <h1>Recebíveis</h1>
           <p>
             {brl(emAberto)} em aberto, sendo {brl(vencido)} vencidos
-            {emAberto > 0 && ` (${((vencido / emAberto) * 100).toFixed(1)}%)`}.
+            {emAberto > 0 && ` (${((vencido / emAberto) * 100).toFixed(1).replace('.', ',')}%)`}.
           </p>
         </div>
       </div>

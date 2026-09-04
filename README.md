@@ -43,14 +43,20 @@ Se perder a `TOKEN_ENCRYPTION_KEY`, todas as conexões precisam ser autorizadas 
 npm run doctor      # diagnostica ambiente, banco e credenciais da Conta Azul
 npm run migrate     # aplica migrations/ no banco
 npm run selftest    # testa ingestao ponta a ponta, sem tocar na API
-npm run seed        # cria o tenant _demo com dados sinteticos
-npm run invite -- --email voce@dominio --senha "..." --tenant _demo
+                    # (cria e apaga um tenant _selftest temporario)
+npm run invite -- --email voce@dominio --senha "..." --tenant drivedata
 npm run dev         # dashboard em http://localhost:3000
 npm run connect     # autoriza uma empresa e cria a conexao no banco
 npm run sync        # sincroniza as conexoes vencidas
 npm run worker      # sobe o worker continuo (fila + cron)
 npm run report      # resumo dos marts no terminal
 ```
+
+## Dados
+
+O banco tem apenas o que veio da conexao real com a Conta Azul. Nao ha dado ficticio em nenhuma tabela.
+
+Existe um gerador de dados sinteticos em `scripts/seed.mjs`, previsto no plano para virar o modo de demonstracao comercial. Ele nao roda por engano: exige `--confirmo` e se recusa a executar quando ja existe qualquer conexao de ERP real no banco.
 
 ## Dashboard
 

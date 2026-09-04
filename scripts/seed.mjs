@@ -19,6 +19,25 @@ import {
 const SLUG = '_demo'
 const args = new Set(process.argv.slice(2))
 
+// Trava proposital. Dado sintetico e util para demonstracao comercial e para
+// desenvolver sem depender do ERP, mas nao pode entrar por engano num ambiente
+// que ja tem dado real. Precisa de --confirmo, e mesmo assim recusa quando
+// existe conexao de ERP de verdade no banco.
+if (!args.has('--drop') && !args.has('--confirmo')) {
+  console.error('Este script cria dados ficticios no tenant _demo.')
+  console.error('Se e isso mesmo que voce quer, rode com --confirmo.')
+  await pool.end()
+  process.exit(1)
+}
+if (!args.has('--drop')) {
+  const { rows } = await query(`select count(*)::int c from core.connection where provider <> 'demo'`)
+  if (rows[0].c > 0) {
+    console.error(`Existem ${rows[0].c} conexao(oes) reais no banco. Recusando criar dado ficticio ao lado.`)
+    await pool.end()
+    process.exit(1)
+  }
+}
+
 // Gerador determinístico. Rodar duas vezes produz o mesmo cenário.
 let semente = 42
 const rnd = () => {

@@ -1,13 +1,13 @@
 // Resumo do banco no terminal. Serve para conferir os marts sem abrir o dashboard
 // e para validar a carga logo depois de um sync.
 //
-//   npm run report                 tenant _demo
+//   npm run report                 tenant drivedata
 //   npm run report -- --tenant drivedata
 
 import { pool, query } from '../src/db.mjs'
 
 const slugArg = process.argv.indexOf('--tenant')
-const SLUG = slugArg > -1 ? process.argv[slugArg + 1] : '_demo'
+const SLUG = slugArg > -1 ? process.argv[slugArg + 1] : 'drivedata'
 
 const brl = (v) => Number(v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 

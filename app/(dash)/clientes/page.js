@@ -20,7 +20,7 @@ export default async function Clientes() {
         <div>
           <h1>Clientes</h1>
           <p>
-            Os cinco maiores respondem por {(concentracao * 100).toFixed(1)}% do faturado
+            Os cinco maiores respondem por {(concentracao * 100).toFixed(1).replace('.', ',')}% do faturado
             {concentracao > 0.6 ? '. Concentração alta, vale acompanhar.' : '.'}
           </p>
         </div>
@@ -52,7 +52,7 @@ export default async function Clientes() {
                   <td className="num">
                     {c.atraso_medio_dias === null ? '—' : `${Number(c.atraso_medio_dias).toFixed(0)} d`}
                   </td>
-                  <td className="num">{(part * 100).toFixed(1)}%</td>
+                  <td className="num">{(part * 100).toFixed(1).replace('.', ',')}%</td>
                 </tr>
               )
             })}
