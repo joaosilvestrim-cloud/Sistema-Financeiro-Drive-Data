@@ -40,6 +40,7 @@ Se perder a `TOKEN_ENCRYPTION_KEY`, todas as conexões precisam ser autorizadas 
 ## Comandos
 
 ```bash
+npm run doctor      # diagnostica ambiente, banco e credenciais da Conta Azul
 npm run migrate     # aplica migrations/ no banco
 npm run selftest    # testa ingestao ponta a ponta, sem tocar na API
 npm run seed        # cria o tenant _demo com dados sinteticos
