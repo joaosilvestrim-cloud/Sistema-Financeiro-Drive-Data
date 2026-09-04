@@ -35,7 +35,11 @@
     "cargateste": "node --env-file=.env scripts/cargateste.mjs",
     "privacidadeteste": "node --conditions=react-server --env-file=.env scripts/privacidadeteste.mjs",
     "executivoteste": "node --conditions=react-server --env-file=.env scripts/executivoteste.mjs",
-    "precoteste": "node --conditions=react-server --env-file=.env scripts/precoteste.mjs"
+    "precoteste": "node --conditions=react-server --env-file=.env scripts/precoteste.mjs",
+    "telas": "node --conditions=react-server --env-file=.env scripts/telas.mjs",
+    "agendateste": "node --env-file=.env scripts/agendateste.mjs",
+    "cursorteste": "node --env-file=.env scripts/cursorteste.mjs",
+    "vendateste": "node --conditions=react-server --env-file=.env scripts/vendateste.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

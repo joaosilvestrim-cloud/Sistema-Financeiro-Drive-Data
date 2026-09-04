@@ -1,6 +1,6 @@
 import { query } from './db.mjs'
 import { accessTokenFor } from './connections.mjs'
-import { syncConnection } from './sync.mjs'
+import { syncConnection, fecharRodadasOrfas } from './sync.mjs'
 import { avancarCarga } from './carga.mjs'
 
 // Agenda de manutenção, feita para rodar dentro de uma função serverless.
@@ -38,6 +38,10 @@ export async function rodarAgenda({ orcamentoMs = ORCAMENTO_MS } = {}) {
   const limite = Date.now() + orcamentoMs
   const feito = { cargas: [], tokens: [], syncs: [], erros: [] }
   const acabou = () => Date.now() > limite
+
+  // Rodada morta no meio deixa a linha aberta e a tela diz rodando para
+  // sempre. Fechar antes de comecar mantem o historico honesto.
+  feito.orfas = await fecharRodadasOrfas()
 
   // 1. Carga inicial pendente. Alguém pode ter fechado a aba no meio, e essa é
   // a pessoa mais perto de desistir do produto.
@@ -90,8 +94,11 @@ export async function rodarAgenda({ orcamentoMs = ORCAMENTO_MS } = {}) {
   for (const c of vencidas) {
     if (acabou()) break
     try {
-      const r = await syncConnection(c.id, 'incremental')
-      feito.syncs.push({ nome: c.nome, itens: r.itens })
+      // O orcamento entra aqui dentro. Sem ele uma unica conexao grande
+      // consumiria a funcao inteira e seria morta no meio, sem nunca terminar.
+      const r = await syncConnection(c.id, 'incremental', { orcamentoMs: Math.max(5_000, limite - Date.now()) })
+      feito.syncs.push({ nome: c.nome, itens: r.itens, incompleto: !!r.incompleto })
+      if (r.incompleto) feito.pendenteSync = true
     } catch (e) {
       feito.erros.push({ etapa: 'sync', nome: c.nome, erro: e.message.slice(0, 200) })
     }
