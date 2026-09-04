@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
+import Link from 'next/link'
 import Marca from '@/components/Marca'
 
 export default function LoginForm() {
@@ -50,6 +51,9 @@ export default function LoginForm() {
         <button className="btn" type="submit" disabled={enviando}>
           {enviando ? 'Entrando...' : 'Entrar'}
         </button>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>
+          Ainda não tem conta? <Link href="/comecar">Testar 14 dias grátis</Link>
+        </p>
       </form>
     </div>
   )

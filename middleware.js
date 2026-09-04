@@ -48,6 +48,7 @@ export async function middleware(request) {
   // perde no caminho e a autorizacao inteira e desperdicada. Quem protege essa
   // rota e o `state` assinado, que carrega o tenant e tem prazo proprio.
   const publica = path.startsWith('/login')
+    || path.startsWith('/comecar')
     || path.startsWith('/auth')
     || path.startsWith('/api/oauth')
 
@@ -57,7 +58,7 @@ export async function middleware(request) {
     url.searchParams.set('proxima', path)
     return NextResponse.redirect(url)
   }
-  if (user && path === '/login') {
+  if (user && (path === '/login' || path === '/comecar')) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     url.search = ''

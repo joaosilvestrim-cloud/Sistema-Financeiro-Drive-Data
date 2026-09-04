@@ -34,7 +34,7 @@ async function fecharRun(id, { status, requests, items, error, detail }) {
   )
 }
 
-async function sincronizarDimensoes(ctx, api) {
+export async function sincronizarDimensoes(ctx, api) {
   const [contas, categorias, dre, centros, pessoas] = await Promise.all([
     api.listAccounts(), api.listCategories(), api.listDreCategories(),
     api.listCostCenters(), api.listPeople(),
@@ -49,7 +49,7 @@ async function sincronizarDimensoes(ctx, api) {
 }
 
 // Busca as baixas das parcelas que têm valor pago. É o que dá o regime de caixa.
-async function sincronizarBaixas(ctx, api, maps, parcelas) {
+export async function sincronizarBaixas(ctx, api, maps, parcelas) {
   // Quando a parcela veio pelo detalhe, as baixas já estão no payload e não
   // custam uma requisição a mais. Isso corta a maior parte das chamadas do
   // caminho incremental.
@@ -67,7 +67,7 @@ async function sincronizarBaixas(ctx, api, maps, parcelas) {
   return total
 }
 
-async function fotografarSaldos(ctx, api) {
+export async function fotografarSaldos(ctx, api) {
   const { rows } = await query(
     'select id, external_id from core.account where connection_id = $1 and coalesce(ativo, true)',
     [ctx.connectionId],

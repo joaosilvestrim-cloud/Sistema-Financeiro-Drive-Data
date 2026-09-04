@@ -5,6 +5,7 @@ import Marca from '@/components/Marca'
 import NavLink from '@/components/NavLink'
 import EmpresaSelect from '@/components/EmpresaSelect'
 import { desde } from '@/lib/format'
+import { assinatura } from '@/lib/conta'
 
 const PAGINAS = [
   ['/', 'Visão geral'],
@@ -23,6 +24,7 @@ const PAGINAS = [
 
 export default async function DashLayout({ children }) {
   const sessao = await requireSession()
+  const conta = await assinatura(sessao.tenantId)
 
   async function selecionarEmpresa(formData) {
     'use server'
@@ -58,6 +60,13 @@ export default async function DashLayout({ children }) {
 
         <footer>
           <div>{sessao.tenantNome}</div>
+          {conta?.emTeste && (
+            <div style={{ color: conta.diasRestantes <= 3 ? 'var(--warning)' : undefined }}>
+              {conta.testeVencido
+                ? 'teste encerrado'
+                : `teste: ${conta.diasRestantes} ${conta.diasRestantes === 1 ? 'dia' : 'dias'}`}
+            </div>
+          )}
           <div>sincronizado {desde(ultimoSync)}</div>
           <form action="/auth/signout" method="post">
             <button className="toggle" style={{ marginTop: 8 }} type="submit">Sair</button>

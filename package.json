@@ -31,7 +31,8 @@
     "analise": "node --conditions=react-server --env-file=.env scripts/analise.mjs",
     "insights": "node --conditions=react-server --env-file=.env scripts/insights.mjs",
     "faturateste": "node scripts/faturateste.mjs",
-    "faturadry": "node --conditions=react-server --env-file=.env scripts/faturadry.mjs"
+    "faturadry": "node --conditions=react-server --env-file=.env scripts/faturadry.mjs",
+    "cargateste": "node --env-file=.env scripts/cargateste.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

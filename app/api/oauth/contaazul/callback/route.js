@@ -3,6 +3,7 @@ import { exchangeCode } from '@/src/oauth.mjs'
 import { encrypt } from '@/src/crypto.mjs'
 import { q, q1 } from '@/lib/db'
 import { lerState } from '@/lib/oauthState'
+import { criarCarga } from '@/src/carga.mjs'
 
 export const dynamic = 'force-dynamic'
 
@@ -72,6 +73,15 @@ export async function GET(request) {
         tokens.expires_at,
       ],
     )
+
+    // A carga inicial nasce aqui. Sem isso o cliente autoriza, volta para uma
+    // tela vazia e vai embora achando que nao funcionou.
+    const cargaNova = await criarCarga(dados.t, conn.id)
+    if (cargaNova) {
+      const url = new URL('/carregando', request.url)
+      url.searchParams.set('conexao', conn.id)
+      return NextResponse.redirect(url)
+    }
 
     return voltar(request, {
       ok: conn.criada ? 'criada' : 'atualizada',
