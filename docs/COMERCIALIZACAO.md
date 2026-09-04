@@ -4,7 +4,9 @@ Plano para vender o DriveAzul na Loja de aplicativos da Conta Azul e, depois,
 para clientes de Omie e Nibo. Complementa o `docs/PLANO.md`, que trata da
 arquitetura, e o `docs/DEPLOY.md`, que trata do ambiente.
 
-Escrito em 04/09/2026. O que está marcado como **a confirmar** depende de
+Escrito em 04/09/2026 e revisado no mesmo dia, depois de pesquisar a
+concorrência. A seção 3 é a que mudou o plano, e as seções 8 e 10 foram
+reescritas por causa dela. O que está marcado como **a confirmar** depende de
 resposta da Conta Azul e não deve virar promessa comercial antes disso.
 
 ---
@@ -77,7 +79,118 @@ compra suporte de gente que nunca vai conseguir conectar.
 
 ---
 
-## 3. Os três ERPs lado a lado
+## 3. A prateleira já está cheia
+
+Esta seção é a mais importante do documento e foi escrita depois das outras,
+quando a pesquisa de concorrência derrubou parte do plano original.
+
+### Quem já está lá
+
+**Data4Company.** Faz exatamente o que o plano acima descreve. Mais de 500 BPOs
+e consultorias, os mesmos três ERPs, aceleração de Google e Microsoft. Está
+listada na loja da Conta Azul, na categoria "Dashboards, Relatórios e BI", e na
+loja da Omie. Três módulos: **Fechamento**, que gera o relatório mensal de toda
+a carteira do escritório de uma vez, com análise de IA e PDF na marca do
+escritório; **Gestão**, com dashboards prontos de fluxo de caixa, DRE,
+indicadores e vendas; e **Studio**, com dashboard personalizado, orçamento,
+metas, três cenários e insight de IA. Preço a partir de R$ 550/mês no site
+próprio. Na loja da Omie, R$ 347/mês até R$ 10 milhões de faturamento, R$ 447
+acima disso, e R$ 150 por CNPJ adicional.
+
+**Treasy.** Vem do outro lado, do planejamento orçamentário, e desceu para cá.
+Oito ERPs conectáveis por token, contra os nossos um: Conta Azul, onde é
+**parceiro oficial**, mais Omie, Nibo, Granatum, Kamino, Asaas, e Sankhya e
+Conexa a caminho. Tem copiloto de IA. A promessa de entrada é literalmente
+"coloque o token, os dados aparecem como mágica", com 7 dias grátis, sem cartão
+e especialista incluso.
+
+**E mais cinco.** Só na categoria de BI da loja da Conta Azul: Ultradash,
+Erathos, Nekt, FinDrive, Chat BI e Controladoria 4.0.
+
+### O que isso significa
+
+Duas conclusões desconfortáveis e necessárias.
+
+**Conexão fácil virou obrigação, não vantagem.** O plano da seção 6 descreve uma
+tela de conectar bonita, com validação imediata e carga com progresso. Está
+certo, e continua necessário. Mas a Treasy já vende isso como manchete, e para
+oito ERPs. Ninguém vai comprar de nós porque conectar é fácil. Vai deixar de
+comprar se for difícil.
+
+**Ser o oitavo dashboard automático para Conta Azul não é estratégia.** É
+prateleira de commodity, e quem ganha prateleira de commodity é quem tem mais
+verba de aquisição. Não somos nós. Se o nosso material de venda disser
+"dashboards financeiros automáticos integrados ao Conta Azul", perdemos antes de
+começar, porque essa frase já é de outros oito.
+
+### As duas lojas cobram de jeitos opostos
+
+Este é o achado mais acionável de toda a pesquisa.
+
+A Conta Azul afirma que não há taxa de publicação para parceiro aprovado e que
+**o modelo de monetização é definido pelo próprio parceiro**. Ela distribui, não
+cobra comissão e não cobra pelo parceiro. A cobrança é inteiramente nossa.
+
+A loja da Omie cobra pelo parceiro. A assinatura da Data4Company entra na mesma
+fatura do ERP do cliente. Isso elimina cadastro de cartão, inadimplência e régua
+de cobrança, e derruba o atrito de conversão.
+
+A Omie é canal comercial. A Conta Azul é vitrine. O plano original tinha a Omie
+como fase 4. Ela sobe.
+
+### O que nenhum dos dois anuncia
+
+Leitura de material público, não de produto. Trate como hipótese a confirmar
+numa demonstração antes de virar promessa de venda.
+
+**Memória da previsão.** Ninguém anuncia comparar o que o próprio ERP previa
+para setembro, no momento em que julho fechou, com o que setembro virou de
+verdade. Cuidado para não confundir com orçado contra realizado, que é o
+território de casa da Treasy e é outra coisa: lá o número previsto foi digitado
+por uma pessoa, aqui ele saiu do razão. O que medimos é o viés sistemático da
+carteira, e por cliente. Isso exige guardar versão de cada parcela desde o
+primeiro dia, que é o que o nosso SCD2 faz. Não existe como recuperar histórico
+que nunca foi gravado. Se eles começarem amanhã, começam com zero mês de
+memória.
+
+**Escrever de volta no ERP.** Os dois são BI de leitura. O importador de fatura
+de cartão conserta o DRE dentro do Conta Azul, de forma permanente. É a
+diferença entre relatar o problema e resolver o problema.
+
+**Dado que não está no ERP.** Hora apontada, colaborador, pipeline, meta. O
+Studio da Data4Company personaliza dado do ERP. Os cinco indicadores auxiliares
+que já estão construídos aqui misturam ERP com operação, e é exatamente o que a
+Tamires pediu na call de 04/09: o custo de mão de obra que só entra no Conta
+Azul quando o mês fecha.
+
+### O que eles têm e nós não
+
+Planejar contra uma versão fraca do concorrente é enganar a si mesmo.
+
+**Fechamento em lote com a marca do escritório.** Um BPO com 40 clientes gera 40
+relatórios num clique, em PDF com a marca dele. É o motivo de 500 escritórios
+pagarem. Sem isso, o canal BPO está fechado para nós.
+
+**Cobertura de ERP.** Oito contra um.
+
+**Marca, base instalada e prova social.** Eles exibem depoimento de escritório
+conhecido. Nós temos uma empresa usando, que é a nossa.
+
+### A conclusão que muda o plano
+
+O produto horizontal está tomado. O que não está tomado é a empresa que vende
+hora.
+
+Nenhum dos dois cruza ERP com apontamento de hora, custo por colaborador,
+utilização e pipeline. É onde os cinco indicadores auxiliares já construídos
+viram vantagem em vez de enfeite, é o problema que a própria DriveData tem, e é
+uma conversa que a Data4Company e a Treasy não conseguem ter sem construir uma
+integração de CRM que não é o negócio delas.
+
+A posição passa a ser essa: **inteligência financeira para empresa que vende
+hora**. O dashboard de ERP é o piso, não a oferta.
+
+## 4. Os três ERPs lado a lado
 
 O produto é o mesmo. O que muda é a porta de entrada e o jeito de descobrir o
 que mudou desde a última sincronização.
@@ -113,7 +226,7 @@ diferenciar 425 de 429.
 
 ---
 
-## 4. O que trava a venda hoje
+## 5. O que trava a venda hoje
 
 Vale ser direto: o produto funciona, o negócio não. Hoje só a DriveData usa, e
 foi conectada por mim, no terminal, com script. Nada disso escala para um
@@ -147,7 +260,7 @@ primeiro tem que ser a gente.
 
 ---
 
-## 5. Como a conexão vai funcionar
+## 6. Como a conexão vai funcionar
 
 Uma tela só, `/conectar`, com um cartão por ERP. Cada cartão sabe a sua forma.
 
@@ -183,7 +296,7 @@ Perder cliente por token expirado seria o churn mais burro possível.
 
 ---
 
-## 6. O que muda na arquitetura
+## 7. O que muda na arquitetura
 
 Pouco, porque o desenho já previu isso. Só o `src/providers/contaazul.mjs`
 conhece nome de campo de ERP. Ingestão, marts e telas falam o formato interno.
@@ -224,31 +337,34 @@ por trás, e é assim que tem que ficar.
 
 ---
 
-## 7. Preço
+## 8. Preço
 
-Ancorado no que o cliente já paga de ERP, sabendo que o custo marginal por
-cliente é de poucos reais por mês entre banco, hospedagem e IA.
+A pesquisa de concorrência derrubou a primeira proposta, que estava barata
+demais. O mercado paga entre R$ 347 e R$ 550 por mês, mais R$ 150 por CNPJ
+adicional. Preço baixo aqui não é vantagem, é sinal de produto menor.
 
 | Plano | Preço | O que leva |
 |---|---|---|
-| Essencial | R$ 149/mês | 1 empresa, visão geral, fluxo de caixa, recebíveis, alertas |
-| Profissional | R$ 349/mês | até 3 empresas, IA em cada KPI, previsão, DRE gerencial, importador de fatura, dados auxiliares, metas |
-| Escritório | R$ 99 por empresa/mês, a partir de 5 | tudo do Profissional, mais painel consolidado entre empresas |
+| Essencial | R$ 197/mês | 1 empresa, visão geral, fluxo de caixa, recebíveis, alertas, IA em cada KPI |
+| Profissional | R$ 449/mês | até 3 empresas, previsão, DRE gerencial, qualidade da previsão, importador de fatura, indicadores de hora e colaborador, metas |
+| Escritório | R$ 449 mais R$ 89 por CNPJ adicional | tudo, mais painel consolidado e fechamento em lote com a marca do escritório |
 
-Teste de 14 dias sem cartão. Dá para fazer isso porque o valor aparece em
-minutos, não em semanas. Quem conectou e viu o próprio fôlego de caixa já
-entendeu o produto.
+Três escolhas de posicionamento estão embutidas aí.
+
+**O Essencial não briga por preço, briga por atrito.** R$ 197, teste de 14 dias
+sem cartão e primeiro número na tela em minutos é decisão que o dono toma
+sozinho. R$ 550 exige reunião e proposta.
+
+**O CNPJ adicional a R$ 89 é o único lugar onde vale brigar por preço.** Um
+escritório com 40 clientes paga à Data4Company R$ 347 mais 39 vezes R$ 150, algo
+perto de R$ 6.200 por mês. O mesmo escritório aqui pagaria perto de R$ 3.900.
+Essa diferença abre conversa, e conversa é o que falta para quem não tem marca.
+
+**A qualidade da previsão fica no Profissional, não no Essencial.** É o que não
+se copia, então é o que faz subir de plano.
 
 Anual com dois meses de desconto, para segurar caixa e reduzir churn.
-
-O plano Escritório é o mais interessante e não é para o mesmo comprador. Um
-contador com 40 clientes vale mais que 40 vendas avulsas, e o esforço de venda é
-o mesmo. Esse é o motivo comercial de fazer o Nibo, que é forte em escritório de
-contabilidade, e não só o motivo técnico.
-
----
-
-## 8. Canais, em ordem de esforço
+## 9. Canais, em ordem de esforço
 
 **Loja da Conta Azul.** É o pedido original e é o de maior alavanca, porque o
 cliente já está dentro do ERP procurando o que plugar. Depende de listar como
@@ -259,17 +375,20 @@ argumento de que quem construiu usa. Não depende de aprovação de ninguém e p
 começar antes da loja.
 
 **Contador com carteira, via Nibo.** Venda consultiva, ticket maior, ciclo mais
-longo. Entra na fase 5.
+longo. Entra na fase 6.
 
-**Loja da Omie.** A Omie tem programa de parceiro e app_key por aplicação, mas a
-documentação pública não descreve vitrine igual à da Conta Azul. Precisa de
-contato direto com eles. **A confirmar.**
+**Loja da Omie.** O melhor canal dos quatro, e a descoberta desta pesquisa. A
+assinatura do parceiro entra na mesma fatura do ERP do cliente, então a Omie
+cobra por nós. Isso elimina cadastro de cartão, inadimplência e régua de
+cobrança. O concorrente já está lá a R$ 347.
 
 ---
 
-## 9. Fases
+## 10. Fases
 
-Cada fase tem um critério de pronto que não é opinião.
+Mudou em relação à primeira versão deste documento. A Omie subiu, porque a loja
+dela cobra pelo parceiro. A vitrine da Conta Azul desceu, porque a prateleira
+está cheia e estar nela sem diferencial só gera comparação desfavorável.
 
 ### Fase 1. Deixar de depender de mim
 Worker no ar, em host no Brasil, com sincronização automática e renovação de
@@ -280,7 +399,17 @@ visível e e-mail de aviso antes do token vencer.
 terminal, e o dado dela continua atualizado uma semana depois sem eu tocar em
 nada.
 
-### Fase 2. Poder cobrar
+### Fase 2. Construir o que o concorrente não tem
+Antes de vender, ter na tela o que nos tira da prateleira de commodity. A
+qualidade da previsão contada em linguagem de dono, e não como gráfico de
+estatística. O importador de fatura promovido a recurso de vitrine, com nome e
+página própria, e não como ferramenta interna. Os indicadores que cruzam ERP com
+hora apontada, colaborador e pipeline, que hoje existem mas não são a oferta.
+
+*Pronto quando:* numa demonstração de dez minutos eu mostro três telas que nem a
+Data4Company nem a Treasy conseguem mostrar.
+
+### Fase 3. Poder cobrar
 Assinatura com Pix e cartão, teste de 14 dias, bloqueio suave por falta de
 pagamento. Termos de uso, política de privacidade, lista de subprocessadores,
 exclusão de conta. IA sem nome próprio no que sai para a Groq, e com chave para
@@ -288,29 +417,31 @@ desligar por cliente.
 
 *Pronto quando:* alguém de fora assina, paga, usa e cancela sozinho.
 
-### Fase 3. Loja da Conta Azul
-Integração marcada como pública, contato com `integracoes@contaazul.com`,
-material de vitrine, escopos mínimos, homologação contra conta real.
+### Fase 4. Omie, junto com a loja
+Adaptador com webhook e tratamento do bloqueio de 425, tela de credenciais com
+máscara, e listagem na loja da Omie, onde a assinatura entra na fatura do ERP do
+cliente. Fase comercialmente mais valiosa que a da Conta Azul, e é por isso que
+subiu.
 
-*Pronto quando:* o app aparece na Loja de aplicativos e um cliente que não
-conhecemos conecta sozinho.
+*Pronto quando:* uma empresa Omie de verdade roda no DriveAzul com os números
+conferidos ao centavo, como fizemos na auditoria da DriveData, e a primeira
+assinatura é cobrada dentro da fatura da Omie.
 
-### Fase 4. Omie
-Adaptador novo com webhook e respeito ao bloqueio de 425. Tela de credenciais
-com máscara, do jeito que eles exigem.
+### Fase 5. Loja da Conta Azul
+Integração marcada como pública, aprovação com `integracoes@contaazul.com`,
+material de vitrine, escopos mínimos, homologação contra conta real. Sabendo que
+é vitrine e não caixa, e que a página de apresentação precisa dizer em uma linha
+o que os outros sete não fazem.
 
-*Pronto quando:* uma empresa Omie de verdade roda no DriveAzul com os mesmos
-números do ERP dela, conferidos ao centavo, como fizemos na auditoria da
-DriveData.
+*Pronto quando:* o app aparece na loja e um cliente que não conhecemos conecta
+sozinho.
 
-### Fase 5. Nibo e o canal contábil
-Adaptador com OData. Painel consolidado do plano Escritório.
+### Fase 6. Nibo e o canal contábil
+Adaptador com OData. Fechamento em lote com a marca do escritório, que é o
+ingresso do canal BPO. Painel consolidado do plano Escritório.
 
 *Pronto quando:* um escritório com pelo menos dez empresas usa em produção.
-
----
-
-## 10. Riscos
+## 11. Riscos
 
 **A Conta Azul pode não querer nos listar, ou pode construir o mesmo.** É o
 risco de plataforma, e a resposta é não depender dela. Por isso a venda direta
@@ -333,3 +464,11 @@ fatura com impressão digital.
 por que o saldo dele difere em R$ 300 consome uma tarde. A auditoria e o
 relatório de conferência que já existem nos scripts precisam virar tela, senão o
 suporte come a margem.
+
+**O concorrente chega antes e com mais dinheiro.** A Data4Company tem 500
+escritórios, os mesmos três ERPs e aceleração de Google e Microsoft. Numa briga
+de vitrine, quem tem mais verba de aquisição ganha. A resposta não é correr
+mais rápido na mesma pista, é escolher outra: memória da previsão, escrita de
+volta no ERP e dado que não está no ERP. Se em seis meses o nosso material de
+venda ainda disser "dashboards financeiros automáticos para Conta Azul", o plano
+falhou, mesmo que o produto esteja bom.
