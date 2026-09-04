@@ -46,35 +46,13 @@ try {
 }
 
 console.log('\n== Conta Azul ==')
-// O authorize diz na cara se o client_id existe. É o teste mais barato e o que
-// pega o problema mais comum: app apagado, expirado ou de outro ambiente.
+// A tela de autorizacao virou uma SPA e os parametros vao dentro do fragmento,
+// que o servidor nao enxerga. Entao nao da para testar o client_id por ali.
+// O teste confiavel e o endpoint de token com um code proposital invalido:
+// invalid_grant quer dizer que o par client_id e secret foi aceito,
+// invalid_client quer dizer que nao foi.
 try {
-  const url = new URL(`${config.authUrl}/login`)
-  url.searchParams.set('response_type', 'code')
-  url.searchParams.set('client_id', config.clientId)
-  url.searchParams.set('redirect_uri', config.redirectUri)
-  url.searchParams.set('state', 'doctor')
-  url.searchParams.set('scope', config.scope)
-
-  const res = await fetch(url, { redirect: 'manual' })
-  const destino = res.headers.get('location') || ''
-
-  if (destino.includes('error=')) {
-    const motivo = decodeURIComponent(new URL(destino).searchParams.get('error') || 'desconhecido')
-    erro('client_id nao aceito', `${motivo}. Confira o app em https://developers-portal.contaazul.com`)
-  } else if (res.status === 200 || destino.includes('login')) {
-    ok('client_id aceito', 'a tela de autorizacao abre')
-  } else {
-    aviso('resposta inesperada do authorize', `HTTP ${res.status} ${destino}`)
-  }
-} catch (e) {
-  erro('authorize inacessivel', e.message)
-}
-
-// Com um code proposital invalido: invalid_grant quer dizer que o par
-// client_id e secret foi aceito. invalid_client quer dizer que nao foi.
-try {
-  const res = await fetch(`${config.authUrl}/oauth2/token`, {
+  const res = await fetch(config.tokenUrl, {
     method: 'POST',
     headers: {
       Authorization: 'Basic ' + Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64'),
@@ -88,18 +66,38 @@ try {
     }).toString(),
   })
   const corpo = await res.text()
-  if (corpo.includes('invalid_grant')) ok('client_secret aceito', 'o par credencial esta valido')
-  else if (corpo.includes('invalid_client')) erro('client_secret recusado', 'client_id ou secret errados, ou app inexistente')
-  else aviso('resposta inesperada do token', `HTTP ${res.status} ${corpo.slice(0, 120)}`)
+  // invalid_client e o unico erro que fala das credenciais. Reclamar do codigo
+  // (invalid_grant ou invalid_request) significa que o par ja foi aceito.
+  if (corpo.includes('invalid_client')) {
+    erro('credenciais recusadas', 'client_id ou secret errados, ou app expirado')
+  } else if (corpo.includes('invalid_grant') || corpo.includes('invalid_request')) {
+    ok('credenciais aceitas', 'client_id e secret validos')
+  } else {
+    aviso('resposta inesperada do token', `HTTP ${res.status} ${corpo.slice(0, 140)}`)
+  }
 } catch (e) {
   erro('endpoint de token inacessivel', e.message)
 }
 
-if (/google\.com/.test(config.redirectUri)) {
-  aviso('redirect_uri aponta para o Google',
-    'funciona no modo colar URL, mas para o produto cadastre a sua propria no portal')
+// A API responde 401 sem token. Serve para confirmar que o host esta de pe.
+try {
+  const res = await fetch(`${config.apiUrl}/v1/categorias?pagina=1&tamanho_pagina=10`)
+  // Sem token a API responde erro. Qualquer resposta serve para provar que o
+  // host esta de pe, que e tudo que este teste precisa saber.
+  res.status >= 400
+    ? ok('API respondendo', `HTTP ${res.status} sem token, como esperado`)
+    : aviso('API respondeu sem token', `HTTP ${res.status}`)
+} catch (e) {
+  erro('API inacessivel', e.message)
+}
+
+if (!/\/\/(localhost|.*vercel\.app|.*drivedata)/.test(config.redirectUri)) {
+  aviso(`redirect_uri e ${config.redirectUri}`,
+    'e a do app de desenvolvimento. Para producao cadastre a nossa no portal')
 }
 
 await pool.end()
-console.log(falhas ? `\n${falhas} problema(s) impedindo o funcionamento.\n` : '\nTudo pronto para conectar.\n')
+console.log(falhas
+  ? `\n${falhas} problema(s) impedindo o funcionamento.\n`
+  : '\nTudo pronto para conectar.\n')
 process.exit(falhas ? 1 : 0)

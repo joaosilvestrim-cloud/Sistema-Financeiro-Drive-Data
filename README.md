@@ -9,7 +9,7 @@ O plano completo de arquitetura está em [docs/PLANO.md](docs/PLANO.md).
 | Fase | O que é | Situação |
 |---|---|---|
 | 0 | Prova de conexão via CLI | pronta |
-| 1 | Núcleo de ingestão (schema, worker, CDC) | pronta, falta rodar contra a API real |
+| 1 | Núcleo de ingestão (schema, worker, CDC) | pronta e validada contra a API real |
 | 2 | Marts e dashboard | pronta |
 | 3 | Inteligência (previsão, cenário, anomalia) | pronta, falta metas e orçamento |
 | 4 | Produto vendável | a fazer |
@@ -86,6 +86,18 @@ Fase 0, sem banco, só para medir a API:
 npm run auth        # OAuth, salva em .tokens.json
 npm run pull        # baixa tudo para JSON em data/ e imprime volume e latencia
 ```
+
+## O que a API real ensinou
+
+Os mapeamentos foram conferidos contra respostas de verdade, guardadas em `data/amostras`. Cinco coisas divergem da documentação publica e quebram a integracao em silencio:
+
+1. **Os hosts sao tres.** Autorizacao em `login.contaazul.com/#/oauth/authorize`, com os parametros dentro do fragmento. Token em `api-v2.contaazul.com/oauth/token`, nao no host de auth. Recursos em `api-v2.contaazul.com`.
+2. **`tamanho_pagina` so aceita 10, 20, 50, 100, 200, 500 ou 1000.** Qualquer outro valor devolve 400.
+3. **Tres envelopes de paginacao diferentes.** Financeiro usa `itens_totais/itens`, pessoas usa `totalItems/items`, vendas usa `total_itens/itens`, e categorias de DRE devolve um array puro, sem envelope. Ler so um formato faz o recurso parecer vazio em vez de dar erro.
+4. **O endpoint de alteracoes recusa data com fuso ou milissegundo.** Quer `YYYY-MM-DDTHH:mm:ss` exato, e a mensagem de erro cita ISO 8601, o que leva a tentar justamente o `toISOString()` que ele nao aceita.
+5. **Busca e detalhe da parcela sao formatos diferentes.** A busca traz cliente e `total`, e nao traz o id do evento. O detalhe traz o evento com rateio e as baixas embutidas, e nao traz o cliente. Centro de custo vem em `centros_de_custo`, no plural.
+
+A quinta tem uma consequencia sutil. Como a mesma parcela chega diferente conforme o caminho, o hash que decide se houve mudanca nao pode olhar o payload: ele descreve o **estado resultante** da linha, com o valor novo quando veio e o guardado quando nao veio. Sem isso, cada sincronizacao abriria uma versao fantasma e o historico versionado, que e o diferencial do produto, viraria ruido.
 
 ## Como funciona a sincronização
 

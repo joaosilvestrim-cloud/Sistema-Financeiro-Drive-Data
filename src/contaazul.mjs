@@ -67,15 +67,26 @@ export class ContaAzulClient {
     return text ? JSON.parse(text) : null
   }
 
-  // Percorre todas as paginas de um recurso que responde { itens_totais, itens }.
+  // Percorre todas as paginas.
+  //
+  // A API nao tem uma convencao unica de envelope. Ate agora apareceram tres:
+  //   { itens_totais, itens }   financeiro, categorias, centro de custo
+  //   { totalItems, items }     pessoas
+  //   { total_itens, itens }    vendas
+  // e categorias-dre devolve um array puro, sem envelope nenhum.
+  // Ler so uma delas faz o recurso parecer vazio em vez de dar erro, que e o
+  // pior tipo de bug: silencioso e com cara de "o cliente nao tem dado".
   async getAll(path, params = {}) {
     const itens = []
     let pagina = 1
     let total = null
     for (;;) {
       const page = await this.get(path, { ...params, pagina, tamanho_pagina: config.pageSize })
-      const lote = page?.itens ?? []
-      if (total === null) total = page?.itens_totais ?? lote.length
+
+      if (Array.isArray(page)) return { itens: page, itens_totais: page.length, paginas: 1 }
+
+      const lote = page?.itens ?? page?.items ?? []
+      if (total === null) total = page?.itens_totais ?? page?.total_itens ?? page?.totalItems ?? lote.length
       itens.push(...lote)
       if (lote.length === 0 || itens.length >= total || pagina > 500) break
       pagina++
@@ -83,6 +94,11 @@ export class ContaAzulClient {
     return { itens, itens_totais: total ?? itens.length, paginas: pagina }
   }
 }
+
+// A API recusa data-hora com fuso ou milissegundo. Quer exatamente
+// YYYY-MM-DDTHH:mm:ss, e a mensagem de erro fala de ISO 8601, o que leva a
+// pessoa a tentar justamente o toISOString() que ela nao aceita.
+export const dataHora = (d) => new Date(d).toISOString().slice(0, 19)
 
 // Janelas mensais [inicio, fim] em ISO date. A busca de contas a pagar e a
 // receber exige faixa de data_vencimento, entao a carga precisa ser fatiada.

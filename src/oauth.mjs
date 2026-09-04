@@ -1,13 +1,17 @@
 import { config, basicAuthHeader } from './config.mjs'
 
+// A tela de autorização fica em login.contaazul.com e os parâmetros vão dentro
+// do fragmento, depois do #. Por isso a URL é montada como string: URL e
+// searchParams colocariam a query antes do fragmento e o app não receberia nada.
 export function buildAuthorizeUrl(state) {
-  const url = new URL(`${config.authUrl}/login`)
-  url.searchParams.set('response_type', 'code')
-  url.searchParams.set('client_id', config.clientId)
-  url.searchParams.set('redirect_uri', config.redirectUri)
-  url.searchParams.set('state', state)
-  url.searchParams.set('scope', config.scope)
-  return url.toString()
+  const p = new URLSearchParams({
+    response_type: 'code',
+    client_id: config.clientId,
+    redirect_uri: config.redirectUri,
+    state,
+    scope: config.scope,
+  })
+  return `${config.loginUrl}/#/oauth/authorize?${p.toString()}`
 }
 
 function normalize(raw, previous) {
@@ -23,8 +27,9 @@ function normalize(raw, previous) {
   }
 }
 
+// O endpoint de token fica na própria API, não no host de login.
 async function postToken(body, previous) {
-  const res = await fetch(`${config.authUrl}/oauth2/token`, {
+  const res = await fetch(config.tokenUrl, {
     method: 'POST',
     headers: {
       Authorization: basicAuthHeader(),

@@ -2,7 +2,7 @@ import { query } from './db.mjs'
 import { config } from './config.mjs'
 import { clientFor, getConnection } from './connections.mjs'
 import { contaAzulProvider } from './providers/contaazul.mjs'
-import { monthWindows } from './contaazul.mjs'
+import { monthWindows, dataHora } from './contaazul.mjs'
 import {
   ingestDimension, ingestInstallments, ingestSettlements, loadDimensionMaps,
   snapshotBalances, getWatermark, setWatermark,
@@ -50,11 +50,14 @@ async function sincronizarDimensoes(ctx, api) {
 
 // Busca as baixas das parcelas que têm valor pago. É o que dá o regime de caixa.
 async function sincronizarBaixas(ctx, api, maps, parcelas) {
-  const comPagamento = parcelas.filter((p) => (p.pago ?? 0) > 0)
+  // Quando a parcela veio pelo detalhe, as baixas já estão no payload e não
+  // custam uma requisição a mais. Isso corta a maior parte das chamadas do
+  // caminho incremental.
+  const comPagamento = parcelas.filter((p) => (p.pago ?? 0) > 0 || p.raw?.baixas?.length)
   let total = 0
   for (const p of comPagamento) {
     try {
-      const baixas = await api.listSettlements(p.external_id)
+      const baixas = await api.listSettlements(p.external_id, p.raw)
       await ingestSettlements(ctx, maps, baixas)
       total += baixas.length
     } catch (e) {
@@ -117,7 +120,8 @@ export async function syncConnection(connectionId, kind = 'incremental') {
         : new Date(new Date(await getWatermark(connectionId, 'eventos') ?? inicio).getTime() - OVERLAP_MIN * 60_000)
 
       detail.desde = desde.toISOString()
-      const ids = await api.listChangedEventIds({ from: desde.toISOString(), to: inicio.toISOString() })
+      // A API recusa data com fuso ou milissegundo neste endpoint.
+      const ids = await api.listChangedEventIds({ from: dataHora(desde), to: dataHora(inicio) })
       detail.eventos_alterados = ids.length
 
       for (const eventId of ids) {

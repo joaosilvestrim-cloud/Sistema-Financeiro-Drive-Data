@@ -22,7 +22,8 @@
     "build": "next build",
     "start": "next start",
     "invite": "node --env-file=.env scripts/invite.mjs",
-    "doctor": "node --env-file=.env scripts/doctor.mjs"
+    "doctor": "node --env-file=.env scripts/doctor.mjs",
+    "connect-token": "node --env-file=.env scripts/connect-token.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

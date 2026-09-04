@@ -52,6 +52,61 @@ export async function loadDimensionMaps(ctx) {
 
 const CAMPOS_VERSAO = ['data_vencimento', 'data_competencia', 'status', 'total', 'pago', 'nao_pago']
 
+// Campos que definem se a parcela mudou de verdade, já no formato em que ficam
+// gravados.
+//
+// O hash sai daqui e não do payload cru por dois motivos, ambos descobertos com
+// dado real:
+//
+// 1. A mesma parcela chega com formatos diferentes conforme o endpoint. A busca
+//    traz um conjunto de campos, o detalhe traz outro. Hash sobre o payload
+//    abriria versão nova a cada troca de caminho, sem mudança de negócio.
+// 2. O detalhe não traz o cliente. Um campo ausente não é um campo que mudou.
+//    Por isso o que entra no hash é o estado resultante, com o valor novo
+//    quando existe e o valor guardado quando não veio, exatamente como o upsert
+//    faz. Assim o hash sempre descreve a linha que está no banco.
+//
+// Sem isso, o histórico versionado, que é o diferencial do produto, encheria de
+// versão fantasma e a comparação entre previsto e realizado perderia o sentido.
+const CAMPOS_NEGOCIO = [
+  'descricao', 'data_vencimento', 'data_competencia', 'status', 'kind',
+  'total', 'pago', 'nao_pago',
+  'person_id', 'account_id', 'category_id', 'cost_center_id',
+]
+
+const naoVeio = (v) => v === null || v === undefined
+
+function estadoResultante(it, maps, atual) {
+  const entrada = {
+    descricao: it.descricao,
+    data_vencimento: it.data_vencimento,
+    data_competencia: it.data_competencia,
+    status: it.status,
+    kind: it.kind,
+    total: it.total,
+    pago: it.pago,
+    nao_pago: it.nao_pago,
+    person_id: maps.person.get(it.person_external_id) ?? null,
+    account_id: maps.account.get(it.account_external_id) ?? null,
+    category_id: maps.category.get(it.category_external_id) ?? null,
+    cost_center_id: maps.costCenter.get(it.cost_center_external_id) ?? null,
+  }
+  const estado = {}
+  for (const campo of CAMPOS_NEGOCIO) {
+    estado[campo] = naoVeio(entrada[campo]) ? (atual?.[campo] ?? null) : entrada[campo]
+  }
+  // Datas voltam do banco como Date e da API como string. Sem normalizar, o
+  // hash mudaria só por causa do tipo.
+  for (const campo of ['data_vencimento', 'data_competencia']) {
+    const v = estado[campo]
+    if (v instanceof Date) estado[campo] = v.toISOString().slice(0, 10)
+  }
+  for (const campo of ['total', 'pago', 'nao_pago']) {
+    if (estado[campo] !== null) estado[campo] = Number(estado[campo])
+  }
+  return estado
+}
+
 // Grava parcelas com versionamento SCD tipo 2.
 // Quando o conteúdo muda, a versão vigente é fechada e uma nova é aberta. É
 // desse histórico que sai a comparação entre o que estava previsto num momento
@@ -62,55 +117,61 @@ export async function ingestInstallments(ctx, maps, itens) {
 
   await tx(async (client) => {
     for (const it of itens) {
-      const hash = stableHash(it.raw)
-      await saveRaw(client, ctx, 'installment', it.external_id, it.raw, hash)
+      await saveRaw(client, ctx, 'installment', it.external_id, it.raw, stableHash(it.raw))
 
       const { rows: existentes } = await client.query(
-        `select id, hash from core.installment where connection_id = $1 and external_id = $2`,
+        `select id, hash, ${CAMPOS_NEGOCIO.join(', ')}
+           from core.installment where connection_id = $1 and external_id = $2`,
         [ctx.connectionId, it.external_id],
       )
       const atual = existentes[0]
+      const estado = estadoResultante(it, maps, atual)
+      const hash = stableHash(estado)
 
       if (atual && atual.hash === hash) {
-        await client.query('update core.installment set last_seen_at = now() where id = $1', [atual.id])
+        // Sem mudança de negócio, então nenhuma versão nova. Ainda assim vale
+        // preencher identificador que só um dos caminhos fornece: a busca não
+        // devolve o id do evento e o detalhe devolve. Sem esta linha, o vínculo
+        // com o evento nunca chegaria para uma parcela que não muda mais.
+        await client.query(
+          `update core.installment
+              set last_seen_at = now(),
+                  event_external_id = coalesce(event_external_id, $2)
+            where id = $1`,
+          [atual.id, it.event_external_id ?? null],
+        )
         resumo.inalterados++
         continue
       }
 
       const { rows } = await client.query(
         `insert into core.installment (
-           tenant_id, connection_id, external_id, event_external_id, kind, descricao,
-           data_vencimento, data_competencia, status, status_traduzido,
-           total, pago, nao_pago, person_id, account_id, category_id, cost_center_id,
-           data_criacao, data_alteracao, hash
+           tenant_id, connection_id, external_id, event_external_id, status_traduzido,
+           data_criacao, data_alteracao, hash,
+           ${CAMPOS_NEGOCIO.join(', ')}
          ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
          on conflict (connection_id, external_id) do update set
            event_external_id = coalesce(excluded.event_external_id, core.installment.event_external_id),
-           kind = coalesce(excluded.kind, core.installment.kind),
+           status_traduzido = excluded.status_traduzido,
+           data_alteracao = excluded.data_alteracao,
+           hash = excluded.hash,
            descricao = excluded.descricao,
            data_vencimento = excluded.data_vencimento,
            data_competencia = excluded.data_competencia,
            status = excluded.status,
-           status_traduzido = excluded.status_traduzido,
+           kind = excluded.kind,
            total = excluded.total, pago = excluded.pago, nao_pago = excluded.nao_pago,
-           person_id = coalesce(excluded.person_id, core.installment.person_id),
-           account_id = coalesce(excluded.account_id, core.installment.account_id),
-           category_id = coalesce(excluded.category_id, core.installment.category_id),
-           cost_center_id = coalesce(excluded.cost_center_id, core.installment.cost_center_id),
-           data_alteracao = excluded.data_alteracao,
-           hash = excluded.hash,
+           person_id = excluded.person_id,
+           account_id = excluded.account_id,
+           category_id = excluded.category_id,
+           cost_center_id = excluded.cost_center_id,
            last_seen_at = now(),
            deleted_at = null
          returning id`,
         [
-          ctx.tenantId, ctx.connectionId, it.external_id, it.event_external_id, it.kind, it.descricao,
-          it.data_vencimento, it.data_competencia, it.status, it.status_traduzido,
-          it.total, it.pago, it.nao_pago,
-          maps.person.get(it.person_external_id) ?? null,
-          maps.account.get(it.account_external_id) ?? null,
-          maps.category.get(it.category_external_id) ?? null,
-          maps.costCenter.get(it.cost_center_external_id) ?? null,
-          it.data_criacao, it.data_alteracao, hash,
+          ctx.tenantId, ctx.connectionId, it.external_id, it.event_external_id,
+          it.status_traduzido, it.data_criacao, it.data_alteracao, hash,
+          ...CAMPOS_NEGOCIO.map((c) => estado[c]),
         ],
       )
       const id = rows[0].id
@@ -124,7 +185,7 @@ export async function ingestInstallments(ctx, maps, itens) {
         `insert into core.installment_version
            (installment_id, tenant_id, connection_id, ${CAMPOS_VERSAO.join(', ')}, hash)
          values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-        [id, ctx.tenantId, ctx.connectionId, ...CAMPOS_VERSAO.map((c) => it[c] ?? null), hash],
+        [id, ctx.tenantId, ctx.connectionId, ...CAMPOS_VERSAO.map((c) => estado[c] ?? null), hash],
       )
 
       if (atual) resumo.alterados++
