@@ -13,6 +13,7 @@ const PAGINAS = [
   ['/indicadores', 'Indicadores'],
   ['/dre', 'DRE gerencial'],
   ['/clientes', 'Clientes'],
+  ['/dados', 'Dados auxiliares'],
   ['/conexoes', 'Conexões'],
 ]
 
