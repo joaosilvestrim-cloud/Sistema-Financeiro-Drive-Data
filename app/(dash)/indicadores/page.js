@@ -92,6 +92,7 @@ export default async function Indicadores() {
               Menos de dois anos de histórico. O índice sazonal só passa a valer com dois ciclos completos.
             </p>
           )}
+          <Suspense fallback={null}><BulletIA sessao={sessao} chave="sazonalidade" /></Suspense>
         </div>
 
         <div className="card">
@@ -113,6 +114,7 @@ export default async function Indicadores() {
               ))}
             </tbody>
           </table>
+          <Suspense fallback={null}><BulletIA sessao={sessao} chave="pareto" /></Suspense>
         </div>
       </div>
 
@@ -145,6 +147,7 @@ export default async function Indicadores() {
             exemplo="Digite o IPCA de cada mês em percentual, por exemplo 0,45 para 0,45%."
           />
         )}
+        <Suspense fallback={null}><BulletIA sessao={sessao} chave="crescimento_real" /></Suspense>
       </div>
 
       <div className="card">
@@ -183,6 +186,7 @@ export default async function Indicadores() {
         ) : (
           <p className="empty">Nenhum desvio relevante nos últimos 6 meses.</p>
         )}
+        <Suspense fallback={null}><BulletIA sessao={sessao} chave="desvios" /></Suspense>
       </div>
     </>
   )

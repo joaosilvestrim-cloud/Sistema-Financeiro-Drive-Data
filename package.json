@@ -28,7 +28,8 @@
     "audit": "node --env-file=.env scripts/audit.mjs",
     "csvtest": "node scripts/csvtest.mjs",
     "auxtest": "node --conditions=react-server --env-file=.env scripts/auxtest.mjs",
-    "analise": "node --conditions=react-server --env-file=.env scripts/analise.mjs"
+    "analise": "node --conditions=react-server --env-file=.env scripts/analise.mjs",
+    "insights": "node --conditions=react-server --env-file=.env scripts/insights.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

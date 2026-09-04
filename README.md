@@ -53,6 +53,7 @@ npm run sync        # sincroniza as conexoes vencidas
 npm run worker      # sobe o worker continuo (fila + cron)
 npm run report      # resumo dos marts no terminal
 npm run analise     # gera a leitura do mes pela IA
+npm run insights    # prepara os bullets de cada indicador (rodar apos o sync)
 ```
 
 ## Dados

@@ -108,6 +108,7 @@ export default async function Fluxo({ searchParams }) {
           Até hoje é o saldo reconstruído a partir das baixas. Daí em diante é projeção.
         </p>
         <SaldoChart meses={f.meses} mesAtual={f.mesAtual} fracaoDoMes={f.fracaoDoMes} />
+        <Suspense fallback={null}><BulletIA sessao={sessao} chave="curva_saldo" /></Suspense>
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
@@ -116,6 +117,7 @@ export default async function Fluxo({ searchParams }) {
           A distância entre as duas linhas é a margem do mês. Clique na legenda para isolar uma série.
         </p>
         <LinhasFluxo meses={f.meses} mesAtual={f.mesAtual} fracaoDoMes={f.fracaoDoMes} />
+        <Suspense fallback={null}><BulletIA sessao={sessao} chave="movimento" /></Suspense>
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
@@ -160,6 +162,7 @@ export default async function Fluxo({ searchParams }) {
             taxa de {pct(f.premissas.taxaNoPrazo)}, que é quanto do que vence costuma entrar
             até 30 dias depois nesta empresa.
           </p>
+          <Suspense fallback={null}><BulletIA sessao={sessao} chave="composicao_previsto" /></Suspense>
         </div>
 
         <div className="card">
@@ -187,6 +190,7 @@ export default async function Fluxo({ searchParams }) {
               </tr>
             </tfoot>
           </table>
+          <Suspense fallback={null}><BulletIA sessao={sessao} chave="contas" /></Suspense>
         </div>
       </div>
     </>
