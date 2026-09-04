@@ -2,6 +2,9 @@
 //
 //   npm run invite -- --email joao@drivedata.com.br --senha "..." --tenant _demo --role owner
 //
+// Rodar de novo com o mesmo e-mail troca a senha e atualiza o papel. É também
+// o caminho para redefinir senha de alguém sem mexer no painel do Supabase.
+//
 // Usa a service_role, então roda só na sua máquina ou no worker, nunca no
 // navegador.
 
@@ -53,7 +56,13 @@ if (criado.error) {
     await pool.end()
     process.exit(1)
   }
-  console.log('usuario ja existia, apenas vinculando')
+  const troca = await admin.auth.admin.updateUserById(userId, { password: senha })
+  if (troca.error) {
+    console.error('nao consegui trocar a senha:', troca.error.message)
+    await pool.end()
+    process.exit(1)
+  }
+  console.log('usuario ja existia, senha atualizada')
 } else {
   userId = criado.data.user.id
   console.log('usuario criado')

@@ -49,6 +49,9 @@ Isso cria o usuário no Supabase Auth e o vincula ao tenant. Sem o vínculo o
 login funciona mas a aplicação devolve para a tela de entrada, porque a sessão
 não resolve nenhum tenant.
 
+Rodar de novo com o mesmo e-mail troca a senha e atualiza o papel. É o caminho
+para redefinir senha sem abrir o painel do Supabase.
+
 ## 3. Worker
 
 O worker é um processo contínuo. Sobe em Koyeb, Fly ou qualquer lugar que rode
