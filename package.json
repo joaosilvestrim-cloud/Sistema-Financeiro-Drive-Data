@@ -34,7 +34,8 @@
     "faturadry": "node --conditions=react-server --env-file=.env scripts/faturadry.mjs",
     "cargateste": "node --env-file=.env scripts/cargateste.mjs",
     "privacidadeteste": "node --conditions=react-server --env-file=.env scripts/privacidadeteste.mjs",
-    "executivoteste": "node --conditions=react-server --env-file=.env scripts/executivoteste.mjs"
+    "executivoteste": "node --conditions=react-server --env-file=.env scripts/executivoteste.mjs",
+    "precoteste": "node --conditions=react-server --env-file=.env scripts/precoteste.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

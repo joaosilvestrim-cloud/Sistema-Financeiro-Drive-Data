@@ -59,6 +59,35 @@
   }
 }
 
+/* Escuro por escolha explícita.
+   O bloco de media query cobre quem já usa o sistema no escuro. Este cobre quem
+   apertou o botão, inclusive num sistema claro. Sem ele o botão só funcionaria
+   num sentido. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --plane:          #0d0d0d;
+  --surface:        #1a1a19;
+  --text-primary:   #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted:     #898781;
+  --grid:           #2c2c2a;
+  --axis:           #383835;
+  --border:         rgba(255, 255, 255, 0.10);
+
+  --series-1:       #3987e5;
+  --series-2:       #d95926;
+  --series-3:       #199e70;
+
+  --ramp-250:       #184f95;
+  --ramp-350:       #1c5cab;
+  --ramp-450:       #256abf;
+  --ramp-550:       #3987e5;
+  --ramp-650:       #5598e7;
+
+  --good-text:      #0ca30c;
+}
+
 * { box-sizing: border-box; }
 
 html, body {

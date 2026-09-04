@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { requireSession } from '@/lib/session'
 import { conciliacao, agingDuplo, duasSemanas, dezMaiores } from '@/lib/executivo'
+import { possiveisDuplicados } from '@/lib/duplicidade'
 import { brl, dataCurta } from '@/lib/format'
 import Tile from '@/components/Tile'
 import BulletIA from '@/components/BulletIA'
@@ -33,9 +34,10 @@ const soma = (linhas, filtro = () => true) =>
 
 export default async function Resumo() {
   const sessao = await requireSession()
-  const [conc, aging, semanas, clientes, fornecedores] = await Promise.all([
+  const [conc, aging, semanas, clientes, fornecedores, duplicados] = await Promise.all([
     conciliacao(sessao), agingDuplo(sessao), duasSemanas(sessao),
     dezMaiores(sessao, 'receivable'), dezMaiores(sessao, 'payable'),
+    possiveisDuplicados(sessao, 12),
   ])
 
   const empresa = sessao.connectionId
@@ -178,6 +180,46 @@ export default async function Resumo() {
           </div>
         ))}
       </div>
+
+      {duplicados.length > 0 && (
+        <div className="card" style={{ marginBottom: 14 }}>
+          <h2>Lançamentos para conferir</h2>
+          <p className="sub">
+            Mesmo valor, mesma data e mesma pessoa. Às vezes é legítimo, dois
+            contratos no mesmo dia. Às vezes o salvar foi clicado duas vezes, e
+            aí é dinheiro pago em dobro ou receita que não existe.
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Pessoa</th><th>Vencimento</th><th className="num">Valor</th>
+                <th className="num">Vezes</th><th>Por que aparece aqui</th>
+              </tr>
+            </thead>
+            <tbody>
+              {duplicados.map((d, i) => (
+                <tr key={i}>
+                  <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {d.pessoa ?? 'Sem cadastro'}
+                  </td>
+                  <td>{dataCurta(d.data_vencimento)}</td>
+                  <td className="num">{brl(d.total)}</td>
+                  <td className="num" style={d.forte ? { color: 'var(--critical)', fontWeight: 600 } : undefined}>
+                    {d.quantidade}
+                  </td>
+                  <td style={{ fontSize: 12, color: d.forte ? 'var(--critical)' : 'var(--text-muted)' }}>
+                    {d.motivo}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 0, marginTop: 10 }}>
+            A correção é dentro do Conta Azul. A API não apaga lançamento
+            financeiro, então o DriveAzul aponta e não mexe.
+          </p>
+        </div>
+      )}
 
       <div className="card" style={{ marginBottom: 14 }}>
         <h2>Esta semana e a próxima</h2>
