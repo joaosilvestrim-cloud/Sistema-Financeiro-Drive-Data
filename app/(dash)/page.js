@@ -1,8 +1,11 @@
 import { requireSession } from '@/lib/session'
 import { kpis, fluxoMensal, aging, topClientes } from '@/lib/queries'
 import { alertas } from '@/lib/alerts'
+import { analiseSalva, gerarAnalise } from '@/lib/analise'
 import Alerts from '@/components/Alerts'
+import AnaliseIA from '@/components/AnaliseIA'
 import { brl, dataCurta } from '@/lib/format'
+import { revalidatePath } from 'next/cache'
 import Tile from '@/components/Tile'
 import CashflowChart from '@/components/charts/CashflowChart'
 import HBars from '@/components/charts/HBars'
@@ -28,10 +31,17 @@ export default async function VisaoGeral() {
   const sessao = await requireSession()
   // Os KPIs vao primeiro porque os alertas se apoiam neles. O resto corre junto.
   const k = await kpis(sessao)
-  const [fluxo, agingRec, clientes, avisos] = await Promise.all([
+  const [fluxo, agingRec, clientes, avisos, analise] = await Promise.all([
     fluxoMensal(sessao), aging(sessao, 'receivable'), topClientes(sessao, 8),
-    alertas(sessao, k),
+    alertas(sessao, k), analiseSalva(sessao),
   ])
+
+  async function gerar() {
+    'use server'
+    const s = await requireSession()
+    await gerarAnalise(s)
+    revalidatePath('/')
+  }
 
   if (!k || (!Number(k.a_receber) && !Number(k.a_pagar) && !fluxo.length)) {
     return (
@@ -71,6 +81,8 @@ export default async function VisaoGeral() {
       </div>
 
       <Alerts itens={avisos} />
+
+      <AnaliseIA analise={analise} acao={gerar} />
 
       <div className="card" style={{ marginBottom: 14 }}>
         <h2>Fluxo de caixa</h2>

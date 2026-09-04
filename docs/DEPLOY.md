@@ -19,6 +19,8 @@ marcando Production, Preview e Development.
 | `CONTAAZUL_REDIRECT_URI` | `https://<dominio>/api/oauth/contaazul/callback`, igual à cadastrada no portal |
 | `OAUTH_STATE_SECRET` | assina o `state` do OAuth |
 | `TOKEN_ENCRYPTION_KEY` | **a mesma da sua máquina e do worker** |
+| `GROQ_API_KEY` | chave da Groq, para a análise por IA |
+| `GROQ_MODEL` | opcional, padrão `openai/gpt-oss-120b` |
 
 A string do pooler tem esta forma, e repare que o usuário leva o ref do projeto:
 
@@ -39,6 +41,9 @@ A `TOKEN_ENCRYPTION_KEY` precisa ser exatamente a mesma nos três lugares: sua
 máquina, o worker e a Vercel. Quem cifra o token é quem recebe a autorização, e
 quem decifra é quem sincroniza. Chaves diferentes e a conexão nasce ilegível
 para o worker, com um erro de autenticação que não explica a causa.
+
+Sem a `GROQ_API_KEY` o sistema funciona igual: o cartão de análise fica com o
+botão de gerar e explica que falta a chave. Nenhuma outra tela depende dela.
 
 Não cadastre a `SUPABASE_SERVICE_ROLE_KEY` na Vercel. O app web não usa: ela só
 serve para o script que cria usuário, que roda na sua máquina.
