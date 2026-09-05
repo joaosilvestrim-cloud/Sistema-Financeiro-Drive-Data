@@ -97,18 +97,45 @@ for (const e of lista) {
     continue
   }
 
-  // Casa com a empresa do Conta Azul pelo CNPJ, quando houver. E' esse elo que
-  // faz a nota nascer do titulo a receber sem ninguem redigitar nada.
-  const { rows: [conexao] } = await query(
-    `select c.id, c.nome from core.connection c
+  // Casa com a empresa do Conta Azul. Esse elo e' o que faz a nota nascer do
+  // titulo a receber sem ninguem redigitar nada, e sem ele o botao de emitir
+  // nunca aparece.
+  //
+  // Duas tentativas, nessa ordem.
+  //
+  // Primeiro pelo CNPJ, procurando entre as pessoas cadastradas. E' exato
+  // quando funciona, e funciona em grupo com intercompany, onde uma empresa do
+  // grupo aparece como cliente da outra.
+  //
+  // Depois pela falta de ambiguidade: uma conexao so' e uma empresa so' nao tem
+  // como estar erradas. E' o caso de todo cliente que comeca, inclusive o
+  // nosso, onde a empresa nao e' cliente de si mesma e o CNPJ nao aparece em
+  // lugar nenhum do proprio ERP.
+  //
+  // Com varias de cada lado e nenhum CNPJ batendo, nao ha desempate: emitir
+  // pela empresa errada nao se desfaz, e adivinhar trocaria um botao que falta
+  // por uma nota no CNPJ errado.
+  let conexao = (await query(
+    `select c.id, c.nome, 'CNPJ' as como from core.connection c
       where c.tenant_id = $1
         and exists (
           select 1 from core.person p
-           where p.connection_id = c.id and regexp_replace(coalesce(p.documento,''), '\\D', '', 'g') = $2
+           where p.connection_id = c.id
+             and regexp_replace(coalesce(p.documento,''), '[^0-9]', '', 'g') = $2
         )
       limit 1`,
     [t.id, cnpj],
-  )
+  )).rows[0]
+
+  if (!conexao && lista.length === 1) {
+    const { rows: unica } = await query(
+      `select id, nome, 'unica empresa dos dois lados' as como
+         from core.connection
+        where tenant_id = $1 and status = 'connected'`,
+      [t.id],
+    )
+    if (unica.length === 1) conexao = unica[0]
+  }
 
   const { rows: [salvo] } = await query(
     `insert into core.fiscal_emitente
@@ -195,6 +222,7 @@ if (!appUrl || !segredo) {
   for (const em of emits) {
     const r = await registrarGatilhos(em)
     if (r.pulado) console.log(`  ${em.razao_social}: ${r.pulado}`)
+    else if (r.nenhum) console.log(`  ${em.razao_social}: ${r.nenhum}, nada a registrar`)
     else console.log(`  ${em.razao_social}: ${r.criados.length ? r.criados.join(', ') : 'ja estavam todos'}`)
   }
 }
