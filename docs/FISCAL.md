@@ -43,8 +43,8 @@ DriveAzul   ->  PDF e XML no link, prontos para mandar ao cliente
 ## O fornecedor
 
 [Focus NFe](https://doc.focusnfe.com.br/reference/). REST, ambiente de
-homologação separado, webhook de verdade, e o mesmo token cobre NFe, NFCe,
-NFS-e, NFS-e Nacional, CT-e, MDF-e, NFCom e DCe.
+homologação separado, webhook de verdade, e o mesmo token de empresa cobre NFe,
+NFCe, NFS-e, NFS-e Nacional, CT-e, MDF-e, NFCom e DCe.
 
 É o oposto da Conta Azul, que não tem webhook nenhum e obrigou o sistema a
 varrer por CDC. Aqui eles avisam.
@@ -96,29 +96,64 @@ A data de vencimento existe por um motivo específico. Certificado A1 vale um an
 e, quando vence, a emissão da empresa inteira para num dia qualquer, com um erro
 que não parece erro de certificado. A tela avisa a partir de 30 dias.
 
+## O token é da empresa, não da conta
+
+Isto contraria a intuição de quem vem da Conta Azul, e a primeira versão deste
+código errou por isso. A documentação de autenticação deles é explícita:
+
+> o **token da empresa** é enviado como usuário do Basic Auth
+>
+> token alfanumérico gerado no **cadastro da empresa**
+
+Cada empresa emitente tem o seu par, um token de homologação e um de produção,
+devolvidos quando ela é criada e presentes na listagem. Emitir com o token de
+outra empresa não é falta de permissão, é falar pela empresa errada.
+
+Daí a divisão do código em dois clientes:
+
+| | Token | Servidor | Para quê |
+| --- | --- | --- | --- |
+| `clienteFiscal` | administrativo, da empresa principal | sempre produção | criar e listar empresas |
+| `clienteDoEmitente` | da própria empresa | conforme o ambiente | emitir, consultar, cancelar, encerrar |
+
+E a segunda pegadinha, que a página de Empresas diz numa linha só: **a API de
+empresas só existe em produção**. Não há homologação para ela. Mesmo com a
+emissão apontada para homologação, o cadastro fala com
+`api.focusnfe.com.br`. O jeito de ensaiar é `dry_run=1`, que valida tudo e não
+grava nada.
+
+Gatilhos também são por token, logo por empresa. Por isso `registrarGatilhos`
+roda por emitente e marca `gatilhos_em`: sem essa marca, recadastrar a empresa
+criaria gatilhos duplicados e a mesma nota chegaria duas vezes na nossa rota.
+
 ## Como ligar
 
-Passo 1 é seu, não meu: **criar a conta na Focus**. São 30 dias grátis e não
-posso criar conta em nome de ninguém.
+Passo 1 é seu, não meu: **criar a conta e a primeira empresa na Focus**. São 30
+dias grátis, e não posso criar conta nem enviar certificado em nome de ninguém.
 
-1. Criar a conta em <https://focusnfe.com.br> e pegar o token de **homologação**
-   no painel.
-2. Gerar um segredo longo para o gatilho e pôr no ambiente:
+1. Criar a conta em <https://focusnfe.com.br>.
+2. No painel deles, **CADASTRAR EMPRESA**. A primeira vai pela tela mesmo,
+   porque é ela que gera o token com o qual todas as outras podem ser criadas
+   pela API. É aqui que entra o certificado A1 e a inscrição municipal.
+3. Copiar o token de **produção** dessa empresa em Painel API > Tokens de
+   Acesso. É o token administrativo.
+4. Gerar um segredo longo para o gatilho:
 
    ```bash
    node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
    ```
 
-3. Rodar o instalador:
+5. Rodar o instalador. Ele valida o token, guarda cifrado com a mesma chave dos
+   tokens da Conta Azul (`TOKEN_ENCRYPTION_KEY`), **importa todas as empresas
+   da conta com os tokens de cada uma**, casa cada uma com a empresa
+   correspondente do Conta Azul pelo CNPJ e cadastra os gatilhos:
 
    ```bash
    FOCUS_TOKEN=... FOCUS_AMBIENTE=homologacao APP_URL=https://driveazul.drivedata.com.br FOCUS_WEBHOOK_SECRET=... npm run fiscalinstalar
    ```
 
-   Ele valida o token antes de gravar, guarda cifrado com a mesma chave dos
-   tokens da Conta Azul (`TOKEN_ENCRYPTION_KEY`) e cadastra os gatilhos.
-
-4. Conferir:
+6. Conferir. O teste diz, por emitente, se falta token, inscrição municipal,
+   código IBGE ou item da lista de serviço:
 
    ```bash
    npm run fiscalteste
@@ -127,14 +162,16 @@ posso criar conta em nome de ninguém.
 Variáveis novas na Vercel: `FOCUS_WEBHOOK_SECRET` e `FOCUS_AMBIENTE`. O token da
 Focus **não** vai para a Vercel, ele mora cifrado no banco.
 
-Para virar produção, repetir o passo 3 com o token de produção e
-`FOCUS_AMBIENTE=producao`.
+Para virar produção é só trocar `FOCUS_AMBIENTE=producao` e reiniciar. O token
+de produção de cada empresa já foi importado no passo 5, junto com o de
+homologação. Não há segundo cadastro.
 
 ## O que cada arquivo faz
 
 | Arquivo | Papel |
 | --- | --- |
 | `migrations/0020_fiscal.sql` | conta, emitente, documento, evento e a view `mart.recebivel_sem_nota` |
+| `migrations/0021_fiscal_token_por_empresa.sql` | o par de tokens por emitente, e o token da conta virando administrativo |
 | `src/providers/focusnfe.mjs` | o único lugar que conhece a forma da API da Focus |
 | `lib/fiscal.js` | montagem do payload, emissão, consulta, cancelamento, encerramento |
 | `app/api/fiscal/webhook/route.js` | recebe o gatilho, autentica por cabeçalho |

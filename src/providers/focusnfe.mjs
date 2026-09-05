@@ -19,6 +19,12 @@
 //
 // O cancelamento é DELETE com corpo. Não é comum, mas é o que a API espera, e
 // omitir a justificativa devolve erro que não parece erro de justificativa.
+//
+// E o token é da empresa, não da conta. Cada empresa emitente tem o seu par,
+// homologação e produção, devolvido quando ela é criada. Duas consequências: o
+// cliente é construído por empresa, e o cadastro de empresas fala com um token
+// diferente do de emissão. Pior: a API de empresas só existe em produção, então
+// mesmo com a emissão em homologação o cadastro sai pelo servidor de produção.
 
 const BASES = {
   producao: 'https://api.focusnfe.com.br/v2',
@@ -78,8 +84,8 @@ export function focusCliente({ token, ambiente = 'homologacao', timeoutMs = 2500
 
   let requisicoes = 0
 
-  async function chamar(metodo, caminho, { corpo, query } = {}) {
-    const url = new URL(base + caminho)
+  async function chamar(metodo, caminho, { corpo, query, emProducao = false } = {}) {
+    const url = new URL((emProducao ? BASES.producao : base) + caminho)
     for (const [k, v] of Object.entries(query ?? {})) {
       if (v !== undefined && v !== null) url.searchParams.set(k, String(v))
     }
@@ -117,21 +123,29 @@ export function focusCliente({ token, ambiente = 'homologacao', timeoutMs = 2500
     get requisicoes() { return requisicoes },
 
     // ----------------------------------------------------------- empresas
+    //
+    // Sempre contra produção, mesmo quando o cliente está em homologação. Não
+    // é escolha nossa: a API de empresas não tem ambiente de teste. Quem quer
+    // ensaiar usa `simular`, que valida tudo e não grava.
 
     // O certificado chega aqui em base64 e sai daqui para a Focus. Não é
     // gravado, não é registrado em log, e o objeto é descartado quando a
     // função retorna. A senha idem.
     criarEmpresa(dados, { simular = false } = {}) {
-      return chamar('POST', '/empresas', { corpo: dados, query: simular ? { dry_run: 1 } : {} })
+      return chamar('POST', '/empresas', {
+        corpo: dados, query: simular ? { dry_run: 1 } : {}, emProducao: true,
+      })
     },
     atualizarEmpresa(id, dados, { simular = false } = {}) {
-      return chamar('PUT', `/empresas/${id}`, { corpo: dados, query: simular ? { dry_run: 1 } : {} })
+      return chamar('PUT', `/empresas/${id}`, {
+        corpo: dados, query: simular ? { dry_run: 1 } : {}, emProducao: true,
+      })
     },
     listarEmpresas(filtros = {}) {
-      return chamar('GET', '/empresas', { query: filtros })
+      return chamar('GET', '/empresas', { query: filtros, emProducao: true })
     },
     consultarEmpresa(id) {
-      return chamar('GET', `/empresas/${id}`)
+      return chamar('GET', `/empresas/${id}`, { emProducao: true })
     },
 
     // ---------------------------------------------------------- documento

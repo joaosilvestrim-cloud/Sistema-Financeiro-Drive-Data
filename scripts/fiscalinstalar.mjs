@@ -1,15 +1,22 @@
 // Liga a conta da Focus NFe ao DriveAzul.
 //
-// Roda uma vez por ambiente. Guarda o token cifrado e cadastra os gatilhos que
-// avisam quando um documento sai de "processando".
-//
-//   FOCUS_TOKEN=xxxx FOCUS_AMBIENTE=homologacao APP_URL=https://... npm run fiscalinstalar
+//   FOCUS_TOKEN=xxxx APP_URL=https://... FOCUS_WEBHOOK_SECRET=yyy npm run fiscalinstalar
 //
 // O token entra por variável de ambiente e não por argumento de linha de
-// comando de propósito: argumento aparece no histórico do shell e na lista de
-// processos da máquina.
+// comando: argumento aparece no histórico do shell e na lista de processos.
+//
+// Duas coisas da Focus que este script existe para resolver.
+//
+// O token pertence à empresa, não à conta. Não existe "token da conta" para
+// pedir; existe o token da empresa principal, que é com quem se conversa para
+// criar e listar as outras. É esse que entra em FOCUS_TOKEN.
+//
+// E a API de empresas só funciona em produção. Mesmo com a emissão apontada
+// para homologação, este script fala com o servidor de produção para listar. Os
+// dois tokens de cada empresa, homologação e produção, vêm na listagem, e é por
+// isso que importar é possível sem ninguém copiar nada na mão.
 import { pool, query } from '../src/db.mjs'
-import { focusCliente, EVENTO } from '../src/providers/focusnfe.mjs'
+import { focusCliente } from '../src/providers/focusnfe.mjs'
 import { encrypt } from '../src/crypto.mjs'
 
 const token = process.env.FOCUS_TOKEN
@@ -18,7 +25,12 @@ const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL
 const segredo = process.env.FOCUS_WEBHOOK_SECRET
 
 if (!token) {
-  console.error('Faltou FOCUS_TOKEN. Pegue em https://app.focusnfe.com.br, aba de tokens.')
+  console.error('Faltou FOCUS_TOKEN.')
+  console.error('')
+  console.error('Ele fica no painel da Focus, em Painel API > Tokens de Acesso,')
+  console.error('e pertence a uma empresa. Se ainda nao houver empresa nenhuma,')
+  console.error('cadastre a primeira pela tela deles (o botao CADASTRAR EMPRESA)')
+  console.error('e volte aqui com o token de producao dela.')
   process.exit(1)
 }
 if (!['homologacao', 'producao'].includes(ambiente)) {
@@ -26,7 +38,7 @@ if (!['homologacao', 'producao'].includes(ambiente)) {
   process.exit(1)
 }
 
-console.log(`Ambiente: ${ambiente}`)
+console.log(`Emissao apontada para: ${ambiente}`)
 console.log(`Token: ${token.length} caracteres, terminando em ...${token.slice(-4)}`)
 
 const api = focusCliente({ token, ambiente })
@@ -38,69 +50,138 @@ try {
   empresas = await api.listarEmpresas()
 } catch (e) {
   console.error(`\nO token nao foi aceito: ${e.message}`)
+  console.error('Confira se e o token de PRODUCAO: a API de empresas so existe la.')
   process.exit(1)
 }
-console.log(`\nToken valido. ${empresas?.length ?? 0} empresa(s) cadastrada(s) na Focus:`)
-for (const e of empresas ?? []) {
-  console.log(`  ${e.cnpj ?? e.cpf}  ${e.nome ?? e.nome_fantasia ?? ''}`)
+
+const lista = Array.isArray(empresas) ? empresas : (empresas?.empresas ?? [])
+console.log(`\nToken valido. ${lista.length} empresa(s) na conta.`)
+
+// --------------------------------------------------------- token admin
+
+const { rows: [conta] } = await query(
+  `insert into core.fiscal_conta (tenant_id, ambiente, token_enc, rotulo)
+   values (null, 'producao', $1, 'administrativo, empresa principal')
+   on conflict do nothing
+   returning id`,
+  [encrypt(token)],
+)
+let contaId = conta?.id
+if (!contaId) {
+  const { rows: [j] } = await query(
+    `update core.fiscal_conta set token_enc = $1, atualizado_em = now()
+      where provider = 'focusnfe' and tenant_id is null
+      returning id`,
+    [encrypt(token)],
+  )
+  contaId = j.id
+  console.log(`Token administrativo atualizado (${contaId}).`)
+} else {
+  console.log(`Token administrativo guardado (${contaId}).`)
 }
 
-// --------------------------------------------------------------- conta
+// ---------------------------------------------------------- emitentes
 //
-// tenant_id nulo: e' a conta da plataforma, sob a qual todo cliente vira uma
-// empresa. E' o modelo do plano com CNPJ ilimitado.
-const existente = await query(
-  `select id from core.fiscal_conta
-    where provider = 'focusnfe' and ambiente = $1 and tenant_id is null`,
-  [ambiente],
-)
-if (existente.rows.length) {
-  await query(
-    `update core.fiscal_conta set token_enc = $2, atualizado_em = now() where id = $1`,
-    [existente.rows[0].id, encrypt(token)],
+// Importa o que ja existe na Focus. Cada empresa traz o proprio par de tokens,
+// e sem eles nao ha emissao: e' por isso que este passo nao e' opcional.
+
+const { rows: [t] } = await query('select id, nome from core.tenant order by slug limit 1')
+console.log(`\nImportando para o tenant ${t.nome}:`)
+
+const digitos = (v) => String(v ?? '').replace(/\D/g, '')
+
+for (const e of lista) {
+  const cnpj = digitos(e.cnpj)
+  if (cnpj.length !== 14) {
+    console.log(`  pulado    ${e.cnpj ?? e.cpf} (nao e CNPJ)`)
+    continue
+  }
+
+  // Casa com a empresa do Conta Azul pelo CNPJ, quando houver. E' esse elo que
+  // faz a nota nascer do titulo a receber sem ninguem redigitar nada.
+  const { rows: [conexao] } = await query(
+    `select c.id, c.nome from core.connection c
+      where c.tenant_id = $1
+        and exists (
+          select 1 from core.person p
+           where p.connection_id = c.id and regexp_replace(coalesce(p.documento,''), '\\D', '', 'g') = $2
+        )
+      limit 1`,
+    [t.id, cnpj],
   )
-  console.log(`\nConta da plataforma atualizada (${existente.rows[0].id}).`)
-} else {
-  const { rows: [nova] } = await query(
-    `insert into core.fiscal_conta (tenant_id, ambiente, token_enc, rotulo)
-     values (null, $1, $2, 'plataforma DriveAzul') returning id`,
-    [ambiente, encrypt(token)],
+
+  const { rows: [salvo] } = await query(
+    `insert into core.fiscal_emitente
+       (tenant_id, conta_id, connection_id, cnpj, razao_social, nome_fantasia,
+        inscricao_municipal, inscricao_estadual, municipio, uf, codigo_municipio,
+        habilita_nfse, habilita_nfe, habilita_nfce, habilita_cte, habilita_mdfe,
+        token_homologacao_enc, token_producao_enc, externo_id, status)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,'ativo')
+     on conflict (tenant_id, cnpj) do update set
+       conta_id = excluded.conta_id,
+       connection_id = coalesce(excluded.connection_id, core.fiscal_emitente.connection_id),
+       razao_social = excluded.razao_social,
+       inscricao_municipal = coalesce(excluded.inscricao_municipal, core.fiscal_emitente.inscricao_municipal),
+       codigo_municipio = coalesce(excluded.codigo_municipio, core.fiscal_emitente.codigo_municipio),
+       habilita_nfse = excluded.habilita_nfse,
+       habilita_nfe = excluded.habilita_nfe,
+       habilita_nfce = excluded.habilita_nfce,
+       habilita_cte = excluded.habilita_cte,
+       habilita_mdfe = excluded.habilita_mdfe,
+       token_homologacao_enc = coalesce(excluded.token_homologacao_enc, core.fiscal_emitente.token_homologacao_enc),
+       token_producao_enc = coalesce(excluded.token_producao_enc, core.fiscal_emitente.token_producao_enc),
+       externo_id = coalesce(excluded.externo_id, core.fiscal_emitente.externo_id),
+       status = 'ativo', atualizado_em = now()
+     returning id, razao_social, gatilhos_em`,
+    [
+      t.id, contaId, conexao?.id ?? null, cnpj,
+      e.nome ?? e.nome_fantasia ?? cnpj, e.nome_fantasia ?? null,
+      e.inscricao_municipal ?? null, e.inscricao_estadual ?? null,
+      e.municipio ?? null, e.uf ?? null,
+      e.codigo_municipio ? String(e.codigo_municipio) : null,
+      !!e.habilita_nfse, !!e.habilita_nfe, !!e.habilita_nfce,
+      !!e.habilita_cte, !!e.habilita_mdfe,
+      e.token_homologacao ? encrypt(e.token_homologacao) : null,
+      e.token_producao ? encrypt(e.token_producao) : null,
+      e.id ? String(e.id) : null,
+    ],
   )
-  console.log(`\nConta da plataforma criada (${nova.id}).`)
+
+  const tem = [
+    e.habilita_nfse && 'NFS-e', e.habilita_nfe && 'NFe',
+    e.habilita_cte && 'CT-e', e.habilita_mdfe && 'MDF-e',
+  ].filter(Boolean)
+  console.log(`  ok        ${cnpj}  ${salvo.razao_social}`)
+  console.log(`            ${tem.length ? tem.join(', ') : 'nenhum documento habilitado ainda'}`
+    + `${conexao ? `  |  ERP: ${conexao.nome}` : '  |  sem empresa do Conta Azul casada'}`)
+  if (!e.token_homologacao && !e.token_producao) {
+    console.log('            ATENCAO: sem token, esta empresa nao emite.')
+  }
+  if (!e.inscricao_municipal) {
+    console.log('            falta inscricao municipal para emitir NFS-e.')
+  }
+  if (!e.codigo_municipio) {
+    console.log('            falta codigo IBGE do municipio.')
+  }
 }
 
 // -------------------------------------------------------------- gatilhos
 
 if (!appUrl || !segredo) {
   console.log('\nGatilhos nao cadastrados. Para cadastrar, defina:')
-  if (!appUrl) console.log('  APP_URL              (ex.: https://driveazul.com.br)')
-  if (!segredo) console.log('  FOCUS_WEBHOOK_SECRET (gere um valor longo e aleatorio)')
+  if (!appUrl) console.log('  APP_URL              (ex.: https://driveazul.drivedata.com.br)')
+  if (!segredo) console.log('  FOCUS_WEBHOOK_SECRET (gere com: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'base64url\'))")')
   console.log('\nSem gatilho o sistema ainda funciona: a tela tem o botao Conferir,')
   console.log('que pergunta o estado a Focus. O gatilho so evita a pergunta.')
 } else {
-  const url = `${appUrl.replace(/\/$/, '')}/api/fiscal/webhook`
-  console.log(`\nCadastrando gatilhos para ${url}`)
-
-  const jaTem = await api.listarGatilhos().catch(() => [])
-  const tem = (evento) => (jaTem ?? []).some((h) => h.event === evento && h.url === url)
-
-  // Um gatilho por tipo de documento que a plataforma emite, mais os
-  // recebidos, que sao a porta para trazer despesa direto da Receita.
-  const eventos = [
-    EVENTO.nfse, EVENTO.nfse_nacional, EVENTO.nfe, EVENTO.cte, EVENTO.mdfe,
-    EVENTO.nfe_recebida, EVENTO.cte_recebida,
-  ]
-  for (const evento of eventos) {
-    if (tem(evento)) {
-      console.log(`  ja existe  ${evento}`)
-      continue
-    }
-    try {
-      const h = await api.criarGatilho({ url, evento, autorizacao: segredo })
-      console.log(`  criado     ${evento}  (${h.id})`)
-    } catch (e) {
-      console.log(`  FALHOU     ${evento}: ${e.message}`)
-    }
+  const { registrarGatilhos } = await import('../lib/fiscal.js')
+  const { rows: emits } = await query(
+    `select * from core.fiscal_emitente where tenant_id = $1 and status = 'ativo'`, [t.id])
+  console.log(`\nCadastrando gatilhos para ${appUrl.replace(/\/$/, '')}/api/fiscal/webhook`)
+  for (const em of emits) {
+    const r = await registrarGatilhos(em)
+    if (r.pulado) console.log(`  ${em.razao_social}: ${r.pulado}`)
+    else console.log(`  ${em.razao_social}: ${r.criados.length ? r.criados.join(', ') : 'ja estavam todos'}`)
   }
 }
 

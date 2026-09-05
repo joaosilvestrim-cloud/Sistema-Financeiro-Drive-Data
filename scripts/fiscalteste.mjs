@@ -31,6 +31,14 @@ console.log('== ESQUEMA ==')
   for (const esperado of ['fiscal_conta', 'fiscal_documento', 'fiscal_emitente', 'fiscal_evento']) {
     ok(nomes.includes(esperado), `tabela core.${esperado}`)
   }
+  // O token e' da empresa, nao da conta. Sem estas colunas o sistema emitiria
+  // tudo com o token administrativo, que e' de outra empresa.
+  const { rows: cols } = await query(
+    `select column_name from information_schema.columns
+      where table_schema = 'core' and table_name = 'fiscal_emitente'`)
+  const temCol = (c) => cols.some((x) => x.column_name === c)
+  ok(temCol('token_homologacao_enc') && temCol('token_producao_enc'),
+     'emitente tem o proprio par de tokens')
   const { rows: [v] } = await query(
     `select count(*) as n from information_schema.views
       where table_schema = 'mart' and table_name = 'recebivel_sem_nota'`)
@@ -188,11 +196,36 @@ console.log('\n== CLIENTE ==')
   ok(tipo && /Tipo fiscal desconhecido/.test(tipo.message), 'tipo desconhecido e barrado')
 }
 
+console.log('\n== EMITENTES CADASTRADOS ==')
+{
+  const { rows: emits } = await query(
+    `select razao_social, cnpj, status, inscricao_municipal, codigo_municipio,
+            item_lista_servico, habilita_nfse, habilita_mdfe,
+            token_homologacao_enc is not null as tem_homologacao,
+            token_producao_enc is not null as tem_producao,
+            gatilhos_em
+       from core.fiscal_emitente where tenant_id = $1 order by razao_social`, [t.id])
+  if (!emits.length) {
+    console.log('  nenhum ainda. Rode: npm run fiscalinstalar')
+  }
+  for (const e of emits) {
+    console.log(`  ${e.cnpj}  ${e.razao_social}  (${e.status})`)
+    // Emitente ativo sem token nao emite, e o erro so' apareceria no clique.
+    ok(e.tem_homologacao || e.tem_producao, `  ${e.razao_social}: tem token proprio`)
+    if (e.habilita_nfse) {
+      ok(!!e.inscricao_municipal, `  ${e.razao_social}: inscricao municipal`)
+      ok(!!e.codigo_municipio, `  ${e.razao_social}: codigo IBGE do municipio`)
+      ok(!!e.item_lista_servico, `  ${e.razao_social}: item da lista de servico`)
+    }
+    console.log(`    gatilhos: ${e.gatilhos_em ? String(e.gatilhos_em).slice(0, 19) : 'nao cadastrados'}`)
+  }
+}
+
 console.log('\n== CONEXAO COM A FOCUS ==')
 if (!process.env.FOCUS_TOKEN) {
   console.log('  pulado: FOCUS_TOKEN nao esta no ambiente.')
-  console.log('  Crie a conta de teste em https://focusnfe.com.br (30 dias gratis),')
-  console.log('  pegue o token de homologacao e rode: npm run fiscalinstalar')
+  console.log('  O token fica no painel da Focus, em Painel API > Tokens de Acesso,')
+  console.log('  e pertence a uma empresa, nao a conta. Depois rode: npm run fiscalinstalar')
 } else {
   const api = focusCliente({
     token: process.env.FOCUS_TOKEN,
