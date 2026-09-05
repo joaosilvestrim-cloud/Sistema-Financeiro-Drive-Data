@@ -3,11 +3,24 @@ import { createServerClient } from '@supabase/ssr'
 
 // Renova a sessão a cada request e barra quem não está logado. Vale para tudo
 // que não seja a tela de login e os arquivos estáticos.
+//
+// O arquivo se chama proxy.js, e não middleware.js, porque no Next 16 o
+// middleware roda no runtime Edge e o proxy roda no Node. A diferença derrubou o
+// painel inteiro em produção: o cliente do Supabase, ao renovar a sessão, chega
+// em node:util/types, que o Edge não tem. O deploy avisava
+//
+//   The Edge Function "_middleware" is referencing unsupported modules:
+//     node:util/types
+//
+// e seguia em frente. O efeito foi o pior possível, porque foi seletivo: quem
+// não estava logado navegava normalmente, já que esse caminho do código nem era
+// alcançado, e quem estava logado via toda tela do painel quebrar com um digest
+// sem mensagem. Aviso de build que não quebra o build é aviso que ninguém lê.
 
 const URL_SUPABASE = process.env.NEXT_PUBLIC_SUPABASE_URL
 const CHAVE_SUPABASE = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-export async function middleware(request) {
+export async function proxy(request) {
   // Sem as variáveis o cliente do Supabase lança na construção e o middleware
   // inteiro cai, o que na Vercel aparece como MIDDLEWARE_INVOCATION_FAILED, sem
   // dizer o motivo. Melhor responder com o diagnóstico do que crashar.
