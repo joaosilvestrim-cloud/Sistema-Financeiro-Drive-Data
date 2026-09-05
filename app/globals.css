@@ -128,6 +128,11 @@ a { color: inherit; text-decoration: none; }
 }
 .nav .grupo:first-child { padding-top: 0; }
 .nav a {
+  /* Bloco de propósito. Ao agrupar o menu, os links deixaram de ser filhos
+     diretos do flex e viraram filhos da div do grupo. Sem serem itens flex,
+     voltaram a ser inline e passaram a embrulhar um ao lado do outro: o menu
+     virou um parágrafo de nomes. */
+  display: block;
   padding: 7px 10px;
   border-radius: 7px;
   color: var(--text-secondary);
