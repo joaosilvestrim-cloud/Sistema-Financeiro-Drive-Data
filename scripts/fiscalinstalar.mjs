@@ -163,7 +163,11 @@ for (const e of lista) {
   ].filter(Boolean)
   console.log(`  ok        ${cnpj}  ${salvo.razao_social}`)
   console.log(`            ${tem.length ? tem.join(', ') : 'nenhum documento habilitado ainda'}`
-    + `${conexao ? `  |  ERP: ${conexao.nome}` : '  |  sem empresa do Conta Azul casada'}`)
+    + `${conexao ? `  |  ERP: ${conexao.nome} (por ${conexao.como})` : ''}`)
+  if (!conexao) {
+    console.log('            SEM VINCULO com empresa do Conta Azul. O botao de emitir')
+    console.log('            so aparece quando o emitente esta ligado a uma conexao.')
+  }
   if (!e.token_homologacao && !e.token_producao) {
     console.log('            ATENCAO: sem token, esta empresa nao emite.')
   }

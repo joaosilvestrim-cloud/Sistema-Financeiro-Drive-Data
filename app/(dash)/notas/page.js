@@ -103,6 +103,11 @@ export default async function Notas() {
     manifestosEmViagem(sessao), resumoFiscal(sessao),
   ])
 
+  // Emitente cadastrado e sem token não emite, e o erro só apareceria no
+  // clique, falando de outra coisa.
+  const semToken = lista.filter((e) => e.status === 'ativo'
+    && !e.token_homologacao_enc && !e.token_producao_enc)
+
   const venceEm = resumo.certificado?.vence
     ? Math.round((new Date(resumo.certificado.vence) - Date.now()) / 86400000)
     : null
@@ -208,10 +213,18 @@ export default async function Notas() {
           primeiro do mês.
         </p>
         {!emitente ? (
+          // Duas razões diferentes para não haver emitente, e dizer a errada
+          // manda a pessoa procurar no lugar errado.
           <p className="empty">
-            Selecione uma empresa no topo da barra lateral para emitir. Com mais
-            de um emitente e nenhuma empresa escolhida, emitir pela errada seria
-            fácil demais.
+            {!sessao.connectionId && lista.length > 1
+              ? 'Selecione uma empresa no topo da barra lateral. Com mais de um '
+                + 'emitente e nenhuma empresa escolhida, emitir pela errada seria fácil demais.'
+              : semToken.length
+              ? `${semToken.map((e) => e.razao_social).join(', ')} está cadastrada mas sem `
+                + 'token da Focus, então não emite. Rode npm run fiscalinstalar.'
+              : 'Nenhum emitente está ligado à empresa selecionada. O vínculo entre '
+                + 'a empresa do Conta Azul e a empresa na Focus é o que faz a nota '
+                + 'nascer do título. Rode npm run fiscalinstalar para criá-lo.'}
           </p>
         ) : semNota.length === 0 ? (
           <p className="empty">Tudo que venceu já tem nota. Nada a fazer aqui.</p>
