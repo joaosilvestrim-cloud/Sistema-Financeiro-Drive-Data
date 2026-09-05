@@ -45,7 +45,9 @@
     "funil": "node --conditions=react-server --env-file=.env scripts/funil.mjs",
     "csvsaida": "node scripts/csvsaida.mjs",
     "memoriateste": "node --conditions=react-server --env-file=.env scripts/memoriateste.mjs",
-    "detalheteste": "node --conditions=react-server --env-file=.env scripts/detalheteste.mjs"
+    "detalheteste": "node --conditions=react-server --env-file=.env scripts/detalheteste.mjs",
+    "fiscalteste": "node --conditions=react-server --env-file=.env scripts/fiscalteste.mjs",
+    "fiscalinstalar": "node --conditions=react-server --env-file=.env scripts/fiscalinstalar.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

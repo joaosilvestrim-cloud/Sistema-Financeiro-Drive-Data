@@ -27,6 +27,7 @@ const MENU = [
     ['/fluxo', 'Fluxo de caixa', 'fluxo'],
     ['/previsao', 'Projeção de saldo', 'previsao'],
     ['/recebiveis', 'Recebíveis', 'recebiveis'],
+    ['/notas', 'Notas fiscais', 'notas'],
   ]],
   ['Resultado', [
     ['/dre', 'DRE gerencial', 'dre'],

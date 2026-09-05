@@ -31,6 +31,7 @@ const ROTAS = [
   ['/fluxo', 'Fluxo de caixa'],
   ['/previsao', 'Projeção'],
   ['/recebiveis', 'Títulos em aberto'],
+  ['/notas', 'Notas fiscais'],
   ['/dre', 'Total de receitas'],
   ['/precificacao', 'Como o multiplicador sai'],
   ['/impostos', 'Como o número sai'],

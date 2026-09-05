@@ -36,6 +36,8 @@ const D = {
   qualidade: 'M2.4 8a5.6 5.6 0 1 0 1.7-4M2.4 3.1v3.2h3.2M8 5.2V8.4l2.4 1.5',
   // Alvo.
   metas: 'M8 1.9a6.1 6.1 0 1 0 0 12.2A6.1 6.1 0 0 0 8 1.9M8 5.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6M8 7.7h.01',
+  // Folha com selo, para nota fiscal emitida.
+  notas: 'M3.6 1.7h5.5l3.3 3.3v9.3H3.6zM9.1 1.7v3.3h3.3M5.9 8.4h4.2M5.9 10.8h2.6M11.2 11.4a1.7 1.7 0 1 0 0 3.4 1.7 1.7 0 0 0 0-3.4',
   // Cartão com tarja.
   fatura: 'M1.7 3.9h12.6v8.2H1.7zM1.7 6.6h12.6M4.1 9.7h2.6',
   // Camadas de banco de dados.

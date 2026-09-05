@@ -121,6 +121,22 @@ produziu o total, não de uma segunda consulta que poderia divergir.
 A de Recebíveis é a que nenhum concorrente tem: só abre quando a parcela mudou
 desde que começamos a olhar, e mostra o rastro que o Conta Azul sobrescreve.
 
+**Emissão de nota fiscal, por dentro.** Ele pediu duas vezes na mesma reunião,
+de formas diferentes: primeiro como produto separado para revender, depois, mais
+cedo na conversa e mais ao ponto, como parte daqui. "Eu queria colocar dentro
+desse sistema todo aqui o meu cara de notas, porque o meu cliente se quiser
+emitir nota aqui já manda para o Conta Azul, já manda para a contabilidade."
+
+Ficou por dentro. A tela de Notas fiscais lista o que a receber ainda não virou
+nota, emite NFS-e a partir do título com um clique, e acompanha até a prefeitura
+responder. O certificado digital do cliente atravessa o sistema e não fica nele.
+O desenho inteiro, o passo a passo de instalação e a conta comercial estão em
+`docs/FISCAL.md`.
+
+Junto veio o MDF-e, que é a dor da própria BDGAL: o manifesto precisa ser
+encerrado quando a carga chega, e manifesto esquecido em aberto é pendência de
+fiscalização que nenhum sistema mostra. A tela mostra.
+
 `npm run detalheteste` confere, para cada linha de cada uma dessas tabelas, se a
 soma do detalhe bate com o número da linha fechada, até o centavo. Se um dia as
 duas contas divergirem, o script falha antes do cliente perceber.

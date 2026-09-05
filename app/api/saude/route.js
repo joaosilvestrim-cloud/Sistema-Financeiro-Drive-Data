@@ -24,6 +24,10 @@ const ESPERADAS = [
   'CONTAAZUL_LOGIN_URL', 'CONTAAZUL_TOKEN_URL', 'CONTAAZUL_API_URL',
   'OAUTH_STATE_SECRET', 'TOKEN_ENCRYPTION_KEY',
   'CRON_SECRET', 'GROQ_API_KEY', 'GROQ_MODEL',
+  // Emissão fiscal. O token da Focus não mora aqui, mora cifrado no banco; o
+  // que o ambiente precisa é do segredo que autentica o gatilho de volta e do
+  // ambiente que decide se a nota é de verdade.
+  'FOCUS_WEBHOOK_SECRET', 'FOCUS_AMBIENTE',
 ]
 
 async function tenta(nome, fn) {
