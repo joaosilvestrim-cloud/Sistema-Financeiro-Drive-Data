@@ -136,9 +136,20 @@ console.log('\nINTEGRIDADE DO VINCULO')
     count(*) filter (where category_id is null)::int sem_categoria,
     count(*) filter (where cost_center_id is null)::int sem_centro,
     count(*) filter (where event_external_id is null)::int sem_evento,
-    count(*) filter (where data_competencia is null)::int sem_competencia
+    count(*) filter (where data_competencia is null)::int sem_competencia,
+    count(*) filter (where category_id is null and coalesce(total,0) <> 0)::int sem_categoria_com_valor
     from core.installment where tenant_id=$1`, [t.id])
-  afirma('toda parcela tem categoria', Number(x.sem_categoria) === 0, `${x.sem_categoria} sem`)
+  // Parcela sem categoria e com valor zero nao distorce numero nenhum. O caso
+  // real e o "Saldo Inicial" da conta bancaria: o ERP classifica num codigo de
+  // sistema que /v1/categorias nao devolve, entao essa categoria nunca vai
+  // existir na nossa dimensao. Falhar por causa dela seria alarme falso
+  // permanente, e alarme que sempre toca deixa de ser lido.
+  afirma('toda parcela com valor tem categoria',
+    Number(x.sem_categoria_com_valor) === 0, `${x.sem_categoria_com_valor} sem`)
+  if (Number(x.sem_categoria) > Number(x.sem_categoria_com_valor)) {
+    nota(`${Number(x.sem_categoria) - Number(x.sem_categoria_com_valor)} parcela(s) de valor zero sem categoria`,
+      'saldo inicial e afins, categoria de sistema que a API nao lista')
+  }
   afirma('toda parcela tem competencia', Number(x.sem_competencia) === 0, `${x.sem_competencia} sem`)
   nota(`${x.sem_cliente} de ${x.total} parcelas sem cliente`,
     'a API devolve cliente nulo em lancamento avulso, fora de venda')

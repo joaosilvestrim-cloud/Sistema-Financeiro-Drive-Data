@@ -17,6 +17,7 @@ const PAGINAS = [
   ['/produtividade', 'Produtividade'],
   ['/dre', 'DRE gerencial'],
   ['/precificacao', 'Preço e custo'],
+  ['/impostos', 'Impostos'],
   ['/clientes', 'Clientes'],
   ['/dados', 'Dados auxiliares'],
   ['/fatura', 'Fatura de cartão'],
