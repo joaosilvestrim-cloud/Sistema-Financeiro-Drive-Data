@@ -1,7 +1,7 @@
 node_modules/
-.env
-.env.local
-.env.*.local
+# Qualquer .env, com qualquer sufixo. A regra antiga cobria .env e
+# .env.local, mas nao .env.vercel, que carrega os segredos de producao.
+.env*
 tokens.json
 data/
 dist/
