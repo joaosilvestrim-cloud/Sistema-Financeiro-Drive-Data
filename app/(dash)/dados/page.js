@@ -1,5 +1,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireSession } from '@/lib/session'
+import { comAviso } from '@/lib/acao'
+import Aviso from '@/components/Aviso'
 import {
   listarSeries, valoresDaSerie, serie, criarSerie, apagarSerie,
   gravarValores, lerCsv, TIPOS, UNIDADES,
@@ -24,6 +26,7 @@ function mesesDaGrade() {
 export default async function Dados({ searchParams }) {
   const sessao = await requireSession()
   const busca = await searchParams
+  const erro = busca?.erro ?? null
   const series = await listarSeries(sessao)
   const selecionada = busca?.serie
     ? await serie(sessao, busca.serie)
@@ -47,6 +50,7 @@ export default async function Dados({ searchParams }) {
 
   async function salvar(formData) {
     'use server'
+    await comAviso('/dados', async () => {
     const s = await requireSession()
     const id = formData.get('dataset')
     const pontos = []
@@ -60,28 +64,35 @@ export default async function Dados({ searchParams }) {
       })
     }
     await gravarValores(s, id, pontos.filter((p) => p.valor === null || Number.isFinite(p.valor)))
-    revalidatePath('/dados')
+    })
   }
 
   async function importar(formData) {
     'use server'
-    const s = await requireSession()
-    const id = formData.get('dataset')
-    const arquivo = formData.get('arquivo')
-    let texto = String(formData.get('colado') || '')
-    if (arquivo && typeof arquivo.text === 'function' && arquivo.size > 0) {
-      texto = await arquivo.text()
-    }
-    const { pontos } = lerCsv(texto)
-    if (pontos.length) await gravarValores(s, id, pontos, 'csv')
-    revalidatePath('/dados')
+    // lerCsv lanca em planilha fora do formato, que e' o caso mais comum aqui:
+    // quem importa esta justamente tentando descobrir qual e' o formato.
+    await comAviso('/dados', async () => {
+      const s = await requireSession()
+      const id = formData.get('dataset')
+      const arquivo = formData.get('arquivo')
+      let texto = String(formData.get('colado') || '')
+      if (arquivo && typeof arquivo.text === 'function' && arquivo.size > 0) {
+        texto = await arquivo.text()
+      }
+      const { pontos } = lerCsv(texto)
+      if (!pontos.length) {
+        throw new Error('Não encontrei nenhum mês com valor nesse arquivo. A primeira coluna precisa ter a competência no formato AAAA-MM.')
+      }
+      await gravarValores(s, id, pontos, 'csv')
+    })
   }
 
   async function remover(formData) {
     'use server'
-    const s = await requireSession()
-    await apagarSerie(s, formData.get('dataset'))
-    revalidatePath('/dados')
+    await comAviso('/dados', async () => {
+      const s = await requireSession()
+      await apagarSerie(s, formData.get('dataset'))
+    })
   }
 
   const meses = mesesDaGrade()
@@ -98,6 +109,8 @@ export default async function Dados({ searchParams }) {
           </p>
         </div>
       </div>
+
+      <Aviso erro={erro} />
 
       <div className="grid cols-3" style={{ marginBottom: 14 }}>
         {series.map((s) => (

@@ -1,6 +1,6 @@
-import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import { requireSession } from '@/lib/session'
+import { comAviso } from '@/lib/acao'
+import Aviso from '@/components/Aviso'
 import {
   emitentes, emitenteDoEscopo, documentos, recebiveisSemNota,
   manifestosEmViagem, resumoFiscal, emitirNfseDeTitulo,
@@ -39,29 +39,6 @@ const EVENTOS = [
   { chave: 'mensagem', titulo: 'O que a prefeitura ou a SEFAZ respondeu', tipo: 'texto', largura: 420 },
 ]
 
-// Falha de emissão é recado, não tela quebrada.
-//
-// Toda ação aqui pode falhar por motivo de cadastro: emitente sem habilitação,
-// inscrição municipal em branco, cliente sem CNPJ, prefeitura recusando por uma
-// regra que só ela tem. Deixar o erro subir de uma Server Action derruba a
-// página inteira e o Next esconde a mensagem em produção, então quem clicou vê
-// "a server error occurred" e não faz ideia do que fazer.
-//
-// O erro volta pela URL e vira um aviso no topo. Feio? É explícito, sobrevive
-// ao redesenho do servidor e não precisa de estado no cliente.
-async function comAviso(fn) {
-  let recado = null
-  try {
-    await fn()
-  } catch (e) {
-    recado = e?.message ?? 'Não foi possível concluir.'
-  }
-  revalidatePath('/notas')
-  // O redirect precisa ficar fora do try: ele funciona lançando, e dentro do
-  // catch viraria "erro" em vez de navegação.
-  redirect(recado ? `/notas?erro=${encodeURIComponent(recado)}` : '/notas')
-}
-
 export default async function Notas({ searchParams }) {
   const sessao = await requireSession()
   const busca = await searchParams
@@ -71,7 +48,7 @@ export default async function Notas({ searchParams }) {
   async function emitir(formData) {
     'use server'
     const titulo = String(formData.get('titulo'))
-    await comAviso(async () => {
+    await comAviso('/notas', async () => {
       const s = await requireSession()
       await emitirNfseDeTitulo(s, titulo)
     })
@@ -80,7 +57,7 @@ export default async function Notas({ searchParams }) {
   async function atualizar(formData) {
     'use server'
     const documento = String(formData.get('documento'))
-    await comAviso(async () => {
+    await comAviso('/notas', async () => {
       const s = await requireSession()
       await sincronizarDocumento(s, documento)
     })
@@ -91,7 +68,7 @@ export default async function Notas({ searchParams }) {
     const documento = String(formData.get('documento'))
     const uf = String(formData.get('uf') || '').toUpperCase()
     const municipio = String(formData.get('municipio') || '')
-    await comAviso(async () => {
+    await comAviso('/notas', async () => {
       const s = await requireSession()
       await encerrarManifesto(s, documento, { uf, municipio })
     })
@@ -170,12 +147,7 @@ export default async function Notas({ searchParams }) {
         />
       </div>
 
-      {erro && (
-        <div className="card" style={{ marginBottom: 14, borderColor: 'var(--critical)' }}>
-          <h2 style={{ color: 'var(--critical)' }}>A emissão não foi concluída</h2>
-          <p style={{ margin: 0 }}>{erro}</p>
-        </div>
-      )}
+      <Aviso erro={erro} titulo="A emissão não foi concluída" />
 
       <div className="grid cols-4" style={{ marginBottom: 14 }}>
         <Tile

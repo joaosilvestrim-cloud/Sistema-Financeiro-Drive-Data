@@ -1,5 +1,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireSession } from '@/lib/session'
+import { comAviso } from '@/lib/acao'
+import Aviso from '@/components/Aviso'
 import {
   estruturaCusto, categoriasParaClassificar, classificar, receitaPorCliente,
   resultadoPorCentro,
@@ -57,8 +59,9 @@ function LinhaCusto({ rotulo, valor, percentual, nota, tom, categorias = [] }) {
   )
 }
 
-export default async function Precificacao() {
+export default async function Precificacao({ searchParams }) {
   const sessao = await requireSession()
+  const erro = (await searchParams)?.erro ?? null
   const [e, categorias, clientes, centros] = await Promise.all([
     estruturaCusto(sessao), categoriasParaClassificar(sessao), receitaPorCliente(sessao, 12, 15),
     resultadoPorCentro(sessao),
@@ -66,9 +69,10 @@ export default async function Precificacao() {
 
   async function salvarClasse(formData) {
     'use server'
-    const s = await requireSession()
-    await classificar(s, String(formData.get('categoria')), String(formData.get('classe')))
-    revalidatePath('/precificacao')
+    await comAviso('/precificacao', async () => {
+      const s = await requireSession()
+      await classificar(s, String(formData.get('categoria')), String(formData.get('classe')))
+    })
   }
 
   const confiavel = e.cobertura >= 0.9
@@ -82,6 +86,8 @@ export default async function Precificacao() {
           <p>Por quanto você precisa vender, a partir do que a empresa custa de verdade.</p>
         </div>
       </div>
+
+      <Aviso erro={erro} />
 
       <div className="grid cols-4" style={{ marginBottom: 14 }}>
         <Tile

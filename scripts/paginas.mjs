@@ -35,6 +35,14 @@ const ROTAS = [
   // O caminho que derrubou a tela em producao: a acao falhou, o erro voltou
   // pela URL, e a pagina tem que mostrar o recado em vez de morrer.
   ['/notas?erro=emitente+sem+habilitacao', 'A emissão não foi concluída'],
+  // Toda tela com acao agora devolve a falha pela URL. Se o aviso sumir de
+  // alguma delas, a acao volta a derrubar a pagina em silencio.
+  ['/?erro=falha+de+teste', 'A ação não foi concluída'],
+  ['/dados?erro=falha+de+teste', 'A ação não foi concluída'],
+  ['/fatura?erro=falha+de+teste', 'A ação não foi concluída'],
+  ['/impostos?erro=falha+de+teste', 'A ação não foi concluída'],
+  ['/precificacao?erro=falha+de+teste', 'A ação não foi concluída'],
+  ['/conexoes?erro=falha+de+teste', 'Não deu certo'],
   ['/dre', 'Total de receitas'],
   ['/precificacao', 'Como o multiplicador sai'],
   ['/impostos', 'Como o número sai'],

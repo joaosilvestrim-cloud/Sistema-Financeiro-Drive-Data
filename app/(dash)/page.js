@@ -1,4 +1,6 @@
 import { requireSession } from '@/lib/session'
+import { comAviso } from '@/lib/acao'
+import Aviso from '@/components/Aviso'
 import { kpis, fluxoMensal, aging, topClientes, saldosPorConta } from '@/lib/queries'
 import { alertas } from '@/lib/alerts'
 import { analiseSalva, gerarAnalise } from '@/lib/analise'
@@ -48,8 +50,9 @@ function runwayTexto(saldo, burn) {
   return [`${dias} dias`, `queima de ${brl(burn)} por dia`, dias < 90 ? 'bad' : null]
 }
 
-export default async function VisaoGeral() {
+export default async function VisaoGeral({ searchParams }) {
   const sessao = await requireSession()
+  const erro = (await searchParams)?.erro ?? null
   // Os KPIs vao primeiro porque os alertas se apoiam neles. O resto corre junto.
   const k = await kpis(sessao)
   const [fluxo, agingRec, clientes, avisos, analise, contas] = await Promise.all([
@@ -59,9 +62,13 @@ export default async function VisaoGeral() {
 
   async function gerar() {
     'use server'
-    const s = await requireSession()
-    await gerarAnalise(s)
-    revalidatePath('/')
+    // A analise sai de um modelo de linguagem por rede. Fora do ar, com a cota
+    // estourada ou lento demais, isso lanca; e derrubar a tela de entrada do
+    // sistema por causa de um texto opcional seria o pior negocio possivel.
+    await comAviso('/', async () => {
+      const s = await requireSession()
+      await gerarAnalise(s)
+    })
   }
 
   if (!k || (!Number(k.a_receber) && !Number(k.a_pagar) && !fluxo.length)) {
@@ -88,6 +95,8 @@ export default async function VisaoGeral() {
           <p>{empresa} · saldo apurado em {dataCurta(k.saldo_em)}</p>
         </div>
       </div>
+
+      <Aviso erro={erro} />
 
       <div className="grid cols-4" style={{ marginBottom: 14 }}>
         <Tile label="Saldo em conta" valor={brl(k.saldo_atual)}

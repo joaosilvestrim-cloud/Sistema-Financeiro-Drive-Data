@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { q } from '@/lib/db'
 import { requireSession } from '@/lib/session'
+import { comAviso } from '@/lib/acao'
 import { conexoes, ultimasRodadas } from '@/lib/queries'
 import { desde, dataCurta } from '@/lib/format'
 import { criarState } from '@/lib/oauthState'
@@ -28,20 +29,24 @@ export default async function Conexoes({ searchParams }) {
 
   async function conectar() {
     'use server'
-    const s = await requireSession()
-    // O limite do plano vale aqui, e nao so na tela. Sem isso alguem no plano de
-    // uma empresa conectaria cinco e o preco por empresa nao existiria.
-    if (!s.conta.podeConectarMais) redirect('/assinar?motivo=limite')
-    // O state vai assinado com prazo curto: ele volta pelo navegador e sem
-    // assinatura daria para ligar a conta de uma empresa ao tenant de outra.
-    redirect(buildAuthorizeUrl(criarState(s.tenantId)))
+    await comAviso('/conexoes', async () => {
+      const s = await requireSession()
+      // O limite do plano vale aqui, e nao so na tela. Sem isso alguem no plano de
+      // uma empresa conectaria cinco e o preco por empresa nao existiria.
+      if (!s.conta.podeConectarMais) redirect('/assinar?motivo=limite')
+      // O state vai assinado com prazo curto: ele volta pelo navegador e sem
+      // assinatura daria para ligar a conta de uma empresa ao tenant de outra.
+      redirect(buildAuthorizeUrl(criarState(s.tenantId)))
+    })
   }
 
   async function alternarIa() {
     'use server'
-    const s = await requireSession()
-    await q('update core.tenant set ia_habilitada = not ia_habilitada where id = $1', [s.tenantId])
-    revalidatePath('/', 'layout')
+    await comAviso('/conexoes', async () => {
+      const s = await requireSession()
+      await q('update core.tenant set ia_habilitada = not ia_habilitada where id = $1', [s.tenantId])
+      revalidatePath('/', 'layout')
+    })
   }
 
   const precisaReconectar = lista.some((c) => c.status !== 'connected')
@@ -73,7 +78,7 @@ export default async function Conexoes({ searchParams }) {
           border: '1px solid var(--critical)', borderRadius: 8, padding: '10px 14px',
           fontSize: 13, marginTop: 0,
         }}>
-          <strong>Não deu para conectar.</strong> {busca.erro}
+          <strong>Não deu certo.</strong> {busca.erro}
         </p>
       )}
 

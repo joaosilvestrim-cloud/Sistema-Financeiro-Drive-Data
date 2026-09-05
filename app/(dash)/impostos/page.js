@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { revalidatePath } from 'next/cache'
 import { requireSession } from '@/lib/session'
+import { comAviso } from '@/lib/acao'
+import Aviso from '@/components/Aviso'
 import {
   provisao, impostoLancado, classificarCliente, salvarAliquotas,
   competenciasDisponiveis, competenciaPadrao,
@@ -32,6 +34,7 @@ export const dynamic = 'force-dynamic'
 export default async function Impostos({ searchParams }) {
   const sessao = await requireSession()
   const busca = await searchParams
+  const erro = busca?.erro ?? null
   const mes = /^\d{4}-\d{2}$/.test(busca?.competencia ?? '')
     ? busca.competencia
     : competenciaPadrao()
@@ -42,18 +45,20 @@ export default async function Impostos({ searchParams }) {
 
   async function salvarAnexo(formData) {
     'use server'
-    const s = await requireSession()
-    await classificarCliente(s, String(formData.get('pessoa')), String(formData.get('anexo')))
-    revalidatePath('/impostos')
+    await comAviso('/impostos', async () => {
+      const s = await requireSession()
+      await classificarCliente(s, String(formData.get('pessoa')), String(formData.get('anexo')))
+    })
   }
 
   async function salvarConfig(formData) {
     'use server'
-    const s = await requireSession()
-    await salvarAliquotas(s, {
-      iii: formData.get('iii'), v: formData.get('v'), padrao: formData.get('padrao'),
+    await comAviso('/impostos', async () => {
+      const s = await requireSession()
+      await salvarAliquotas(s, {
+        iii: formData.get('iii'), v: formData.get('v'), padrao: formData.get('padrao'),
+      })
     })
-    revalidatePath('/impostos')
   }
 
   const totalLancado = lancado.reduce((a, l) => a + Number(l.valor), 0)
@@ -77,6 +82,8 @@ export default async function Impostos({ searchParams }) {
           <button className="toggle" type="submit">Ver</button>
         </form>
       </div>
+
+      <Aviso erro={erro} />
 
       <div className="grid cols-4" style={{ marginBottom: 14 }}>
         <Tile label="Provisão do período" valor={brl(p.imposto)}
