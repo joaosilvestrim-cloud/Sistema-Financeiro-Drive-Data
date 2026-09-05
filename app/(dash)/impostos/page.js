@@ -9,6 +9,17 @@ import { brl, rotuloMes } from '@/lib/format'
 import Tile from '@/components/Tile'
 import RegimeCliente from '@/components/RegimeCliente'
 import Exportar from '@/components/Exportar'
+import LinhaExpansivel from '@/components/LinhaExpansivel'
+
+// O que aparece quando a linha do anexo abre: quem entrou naquela alíquota e
+// quanto cada um pesa. A pergunta que segue "o anexo V deu R$ 4.200" é sempre
+// "de quem", e a resposta estava a um clique de distância no mesmo dado.
+const CLIENTES = [
+  { chave: 'cliente', titulo: 'Cliente', tipo: 'texto', largura: 220 },
+  { chave: 'titulos', titulo: 'Títulos', tipo: 'inteiro' },
+  { chave: 'receita', titulo: 'Faturamento', tipo: 'dinheiro' },
+  { chave: 'imposto', titulo: 'Imposto', tipo: 'dinheiro' },
+]
 
 export const dynamic = 'force-dynamic'
 
@@ -98,26 +109,41 @@ export default async function Impostos({ searchParams }) {
       <div className="grid cols-2" style={{ marginBottom: 14 }}>
         <div className="card">
           <h2>Como o número sai</h2>
-          <p className="sub">Por anexo, com a alíquota de cada um.</p>
+          <p className="sub">Por anexo, com a alíquota de cada um. Clique para ver os clientes.</p>
           <table>
             <thead>
               <tr>
+                <th />
                 <th>Anexo</th><th className="num">Clientes</th>
                 <th className="num">Faturamento</th><th className="num">Alíquota</th>
                 <th className="num">Imposto</th>
               </tr>
             </thead>
             <tbody>
-              {p.porAnexo.map((a) => (
-                <tr key={a.anexo}>
-                  <td>Anexo {a.anexo}</td>
-                  <td className="num">{a.clientes}</td>
-                  <td className="num">{brl(a.receita)}</td>
-                  <td className="num">{a.aliquota}%</td>
-                  <td className="num">{brl(a.imposto)}</td>
-                </tr>
-              ))}
+              {p.porAnexo.map((a) => {
+                const dele = p.clientes
+                  .filter((c) => c.anexo === a.anexo)
+                  .sort((x, y) => y.receita - x.receita)
+                return (
+                  <LinhaExpansivel
+                    key={a.anexo} colunas={6} campos={CLIENTES}
+                    itens={dele.slice(0, 10)} total={dele.length}
+                    rotulo={`${dele.length} cliente(s) no anexo ${a.anexo}`}
+                    rodape="Clientes sem classificação caem no anexo padrão do cadastro."
+                    celulas={
+                      <>
+                        <td>Anexo {a.anexo}</td>
+                        <td className="num">{a.clientes}</td>
+                        <td className="num">{brl(a.receita)}</td>
+                        <td className="num">{a.aliquota}%</td>
+                        <td className="num">{brl(a.imposto)}</td>
+                      </>
+                    }
+                  />
+                )
+              })}
               <tr style={{ fontWeight: 600 }}>
+                <td className="seta" />
                 <td>Total</td>
                 <td className="num">{p.clientes.length}</td>
                 <td className="num">{brl(p.receita)}</td>

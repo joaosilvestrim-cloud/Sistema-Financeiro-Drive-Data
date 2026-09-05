@@ -102,6 +102,29 @@ responde. O que não tem centro aparece separado e não rateado.
 
 **Receita por cliente.** Com o aviso na tela de que não é lucro por cliente.
 
+**Linha que abre.** Pedido do João depois de olhar o aging: ver R$ 35.853
+vencidos e não conseguir clicar para saber quais títulos são. Toda tabela em que
+a linha é um agregado agora abre, e o que abre vem da mesma varredura que
+produziu o total, não de uma segunda consulta que poderia divergir.
+
+| Tela | A linha é | Abre mostrando |
+| --- | --- | --- |
+| Resumo executivo | faixa de aging | os títulos daquela faixa |
+| Resumo executivo | cliente ou fornecedor | os títulos em aberto dele |
+| Clientes | cliente | os títulos em aberto dele |
+| DRE gerencial | grupo do DRE | as categorias, na mesma régua de períodos |
+| Preço e custo | classe de custo | as categorias que formaram o número |
+| Impostos | anexo do Simples | os clientes daquele anexo |
+| Indicadores | desvio do padrão | os lançamentos daquele mês e categoria |
+| Recebíveis | título | o histórico de leituras dele |
+
+A de Recebíveis é a que nenhum concorrente tem: só abre quando a parcela mudou
+desde que começamos a olhar, e mostra o rastro que o Conta Azul sobrescreve.
+
+`npm run detalheteste` confere, para cada linha de cada uma dessas tabelas, se a
+soma do detalhe bate com o número da linha fechada, até o centavo. Se um dia as
+duas contas divergirem, o script falha antes do cliente perceber.
+
 ---
 
 ## 5. O que ele quer e ainda não existe

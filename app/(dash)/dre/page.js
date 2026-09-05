@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { requireSession } from '@/lib/session'
 import { dre, rotuloPeriodo, granularidades } from '@/lib/dre'
 import { brl } from '@/lib/format'
+import LinhaExpansivel from '@/components/LinhaExpansivel'
 
 export const dynamic = 'force-dynamic'
 
@@ -78,8 +79,27 @@ export default async function Dre({ searchParams }) {
     )
   }
 
-  const Linha = ({ rotulo, porPeriodo, total, variacao, forte, tom }) => (
-    <tr>
+  // As colunas do que abre dentro da linha são as mesmas do relatório: quem
+  // clica em "Despesas administrativas" quer ver as categorias na mesma régua
+  // de períodos, não numa tabela com outro formato.
+  const CAMPOS = [
+    { chave: 'categoria', titulo: 'Categoria', tipo: 'texto', largura: 240 },
+    ...d.periodos.map((p) => ({ chave: p, titulo: rotuloPeriodo(p, grao), tipo: 'dinheiro' })),
+    { chave: 'total', titulo: 'Total', tipo: 'dinheiro' },
+  ]
+
+  // Oito categorias por grupo. Um grupo com trinta categorias vira uma tabela
+  // dentro da tabela, e aí a linha aberta atrapalha em vez de responder.
+  const MAIORES = 8
+  const achatar = (categorias) =>
+    categorias.slice(0, MAIORES).map((c) => ({
+      categoria: c.categoria,
+      total: c.total,
+      ...Object.fromEntries(d.periodos.map((p) => [p, c.porPeriodo[p] ?? null])),
+    }))
+
+  const celulasDa = (rotulo, porPeriodo, total, variacao, forte, tom) => (
+    <>
       <td style={{ fontWeight: forte ? 600 : 400, color: tom }}>{rotulo}</td>
       {d.periodos.map((p) => (
         <td className="num" key={p} style={{ fontWeight: forte ? 600 : 400, color: tom }}>
@@ -88,8 +108,25 @@ export default async function Dre({ searchParams }) {
       ))}
       <td className="num"><Variacao v={variacao} /></td>
       <td className="num" style={{ fontWeight: 600, color: tom }}>{brl(total)}</td>
-    </tr>
+    </>
   )
+
+  const Linha = ({ rotulo, porPeriodo, total, variacao, forte, tom, categorias }) => {
+    const celulas = celulasDa(rotulo, porPeriodo, total, variacao, forte, tom)
+    // As linhas de total não abrem: o detalhe delas é a própria tabela acima.
+    if (!categorias?.length) {
+      return <tr><td className="seta" />{celulas}</tr>
+    }
+    return (
+      <LinhaExpansivel
+        colunas={d.periodos.length + 4} campos={CAMPOS}
+        itens={achatar(categorias)} total={categorias.length}
+        rotulo={`${categorias.length} categoria(s) em ${rotulo.toLowerCase()}`}
+        rodape="As categorias vêm do plano de contas do próprio ERP."
+        celulas={celulas}
+      />
+    )
+  }
 
   const somaTotal = (lista) => lista.reduce((a, g) => a + g.total, 0)
   const totalReceita = somaTotal(d.receitas)
@@ -103,7 +140,7 @@ export default async function Dre({ searchParams }) {
     return { tipo: 'pct', valor: (b - a) / Math.abs(a), delta: b - a }
   }
 
-  const vazio = { colSpan: d.periodos.length + 3, style: { height: 10 } }
+  const vazio = { colSpan: d.periodos.length + 4, style: { height: 10 } }
 
   return (
     <>
@@ -111,7 +148,8 @@ export default async function Dre({ searchParams }) {
         <div>
           <h1>DRE gerencial</h1>
           <p>
-            Regime de competência, por {d.rotuloGrao}. A variação compara{' '}
+            Regime de competência, por {d.rotuloGrao}. Clique num grupo para ver as
+            categorias por trás dele. A variação compara{' '}
             {d.atual ? rotuloPeriodo(d.atual, grao) : '—'} com{' '}
             {d.anterior ? rotuloPeriodo(d.anterior, grao) : '—'}.
           </p>
@@ -132,6 +170,7 @@ export default async function Dre({ searchParams }) {
         <table>
           <thead>
             <tr>
+              <th />
               <th>Grupo</th>
               {d.periodos.map((p) => (
                 <th className="num" key={p}>
@@ -149,7 +188,7 @@ export default async function Dre({ searchParams }) {
           </thead>
           <tbody>
             {d.receitas.map((g) => (
-              <Linha key={g.grupo} rotulo={nomeDoGrupo(g.grupo)}
+              <Linha key={g.grupo} rotulo={nomeDoGrupo(g.grupo)} categorias={g.categorias}
                      porPeriodo={g.porPeriodo} total={g.total} variacao={g.variacao} />
             ))}
             <Linha rotulo="Total de receitas" forte
@@ -159,7 +198,7 @@ export default async function Dre({ searchParams }) {
             <tr><td {...vazio} /></tr>
 
             {d.despesas.map((g) => (
-              <Linha key={g.grupo} rotulo={nomeDoGrupo(g.grupo)}
+              <Linha key={g.grupo} rotulo={nomeDoGrupo(g.grupo)} categorias={g.categorias}
                      porPeriodo={g.porPeriodo} total={g.total} variacao={g.variacao} />
             ))}
             <Linha rotulo="Total de despesas" forte
@@ -175,6 +214,7 @@ export default async function Dre({ searchParams }) {
                    tom={totalReceita - totalDespesa >= 0 ? 'var(--good-text)' : 'var(--critical)'} />
 
             <tr>
+              <td className="seta" />
               <td style={{ fontWeight: 600 }}>Margem</td>
               {d.periodos.map((p) => (
                 <td className="num" key={p} style={{ fontWeight: 600 }}>

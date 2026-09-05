@@ -1,6 +1,9 @@
 import { Suspense } from 'react'
 import { requireSession } from '@/lib/session'
-import { conciliacao, agingDuplo, duasSemanas, dezMaiores } from '@/lib/executivo'
+import {
+  conciliacao, agingDuplo, duasSemanas, dezMaiores, titulosPorFaixa,
+} from '@/lib/executivo'
+import LinhaExpansivel from '@/components/LinhaExpansivel'
 import { possiveisDuplicados } from '@/lib/duplicidade'
 import { brl, dataCurta } from '@/lib/format'
 import Tile from '@/components/Tile'
@@ -34,11 +37,22 @@ const soma = (linhas, filtro = () => true) =>
 
 export default async function Resumo() {
   const sessao = await requireSession()
-  const [conc, aging, semanas, clientes, fornecedores, duplicados] = await Promise.all([
+  const [conc, aging, semanas, clientes, fornecedores, duplicados,
+         tituloReceber, tituloPagar] = await Promise.all([
     conciliacao(sessao), agingDuplo(sessao), duasSemanas(sessao),
     dezMaiores(sessao, 'receivable'), dezMaiores(sessao, 'payable'),
     possiveisDuplicados(sessao, 12),
+    // Uma consulta por lado serve as duas tabelas: o aging agrupa por faixa e
+    // os dez maiores agrupam por pessoa, a partir da mesma lista. Vinte
+    // consultas separadas dariam o mesmo resultado com vinte idas ao banco.
+    titulosPorFaixa(sessao, 'receivable'), titulosPorFaixa(sessao, 'payable'),
   ])
+
+  // Dentro da linha aberta o que decide é o que pesa. Só os maiores viajam, e o
+  // total vai junto para a tela saber dizer quantos ficaram de fora.
+  const MAIORES = 8
+  const maiores = (lista) =>
+    [...lista].sort((x, y) => Number(y.nao_pago) - Number(x.nao_pago)).slice(0, MAIORES)
 
   const empresa = sessao.connectionId
     ? sessao.conexoes.find((c) => c.id === sessao.connectionId)?.nome
@@ -150,27 +164,42 @@ export default async function Resumo() {
       </div>
 
       <div className="grid cols-2" style={{ marginBottom: 14 }}>
-        {[['A receber', aging.receber], ['A pagar', aging.pagar]].map(([titulo, linhas]) => (
+        {[['A receber', aging.receber, tituloReceber], ['A pagar', aging.pagar, tituloPagar]]
+          .map(([titulo, linhas, detalhes]) => (
           <div className="card" key={titulo}>
             <h2>{titulo}</h2>
-            <p className="sub">Por tempo de atraso, em aberto hoje.</p>
+            <p className="sub">Por tempo de atraso, em aberto hoje. Clique numa faixa para ver os títulos.</p>
             <table>
               <thead>
-                <tr><th>Faixa</th><th className="num">Títulos</th><th className="num">Valor</th></tr>
+                <tr>
+                  <th />
+                  <th>Faixa</th><th className="num">Títulos</th><th className="num">Valor</th>
+                </tr>
               </thead>
               <tbody>
                 {ORDEM.map((f) => {
                   const l = linhas.find((x) => x.faixa === f)
                   if (!l) return null
+                  const dentro = detalhes.filter((d) => d.faixa === f)
+                  const cor = f !== 'a_vencer' ? { color: 'var(--critical)' } : undefined
                   return (
-                    <tr key={f} style={f !== 'a_vencer' ? { color: 'var(--critical)' } : undefined}>
-                      <td>{FAIXA[f]}</td>
-                      <td className="num">{l.titulos}</td>
-                      <td className="num">{brl(l.valor)}</td>
-                    </tr>
+                    <LinhaExpansivel
+                      key={f} colunas={4}
+                      itens={maiores(dentro)} total={dentro.length}
+                      rotulo={`${dentro.length} título(s) em ${FAIXA[f].toLowerCase()}`}
+                      rodape="A lista completa está em Recebíveis."
+                      celulas={
+                        <>
+                          <td style={cor}>{FAIXA[f]}</td>
+                          <td className="num" style={cor}>{l.titulos}</td>
+                          <td className="num" style={cor}>{brl(l.valor)}</td>
+                        </>
+                      }
+                    />
                   )
                 })}
                 <tr style={{ fontWeight: 600 }}>
+                  <td />
                   <td>Total</td>
                   <td className="num">{linhas.reduce((a, l) => a + Number(l.titulos), 0)}</td>
                   <td className="num">{brl(soma(linhas))}</td>
@@ -231,29 +260,44 @@ export default async function Resumo() {
       </div>
 
       <div className="grid cols-2">
-        {[['10 maiores clientes', clientes, 'a receber'],
-          ['10 maiores fornecedores', fornecedores, 'a pagar']].map(([titulo, lista, lado]) => (
+        {[['10 maiores clientes', clientes, 'a receber', tituloReceber],
+          ['10 maiores fornecedores', fornecedores, 'a pagar', tituloPagar]]
+          .map(([titulo, lista, lado, detalhes]) => (
           <div className="card" key={titulo}>
             <h2>{titulo}</h2>
-            <p className="sub">Pelo que está {lado} em aberto agora.</p>
+            <p className="sub">Pelo que está {lado} em aberto agora. Clique para ver os títulos.</p>
             <table>
               <thead>
-                <tr><th>Nome</th><th className="num">Em aberto</th><th className="num">Vencido</th></tr>
+                <tr>
+                  <th />
+                  <th>Nome</th><th className="num">Em aberto</th><th className="num">Vencido</th>
+                </tr>
               </thead>
               <tbody>
-                {lista.map((x, i) => (
-                  <tr key={i}>
-                    <td style={{ maxWidth: 210, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {x.nome}
-                    </td>
-                    <td className="num">{brl(x.em_aberto)}</td>
-                    <td className="num" style={Number(x.vencido) > 0 ? { color: 'var(--critical)' } : undefined}>
-                      {Number(x.vencido) > 0 ? brl(x.vencido) : '—'}
-                    </td>
-                  </tr>
-                ))}
+                {lista.map((x, i) => {
+                  const dele = detalhes.filter((d) => d.pessoa === x.nome)
+                  return (
+                    <LinhaExpansivel
+                      key={i} colunas={4}
+                      itens={maiores(dele)} total={dele.length}
+                      rotulo={`${dele.length} título(s) em aberto de ${x.nome}`}
+                      rodape="A lista completa está em Recebíveis."
+                      celulas={
+                        <>
+                          <td style={{ maxWidth: 210, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {x.nome}
+                          </td>
+                          <td className="num">{brl(x.em_aberto)}</td>
+                          <td className="num" style={Number(x.vencido) > 0 ? { color: 'var(--critical)' } : undefined}>
+                            {Number(x.vencido) > 0 ? brl(x.vencido) : '—'}
+                          </td>
+                        </>
+                      }
+                    />
+                  )
+                })}
                 {lista.length === 0 && (
-                  <tr><td colSpan="3" style={{ color: 'var(--text-muted)' }}>Nada em aberto.</td></tr>
+                  <tr><td colSpan="4" style={{ color: 'var(--text-muted)' }}>Nada em aberto.</td></tr>
                 )}
               </tbody>
             </table>

@@ -44,7 +44,8 @@
     "paginas": "node --env-file=.env scripts/paginas.mjs",
     "funil": "node --conditions=react-server --env-file=.env scripts/funil.mjs",
     "csvsaida": "node scripts/csvsaida.mjs",
-    "memoriateste": "node --conditions=react-server --env-file=.env scripts/memoriateste.mjs"
+    "memoriateste": "node --conditions=react-server --env-file=.env scripts/memoriateste.mjs",
+    "detalheteste": "node --conditions=react-server --env-file=.env scripts/detalheteste.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

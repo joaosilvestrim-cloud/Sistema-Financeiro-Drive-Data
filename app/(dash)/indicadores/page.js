@@ -1,5 +1,7 @@
 import { requireSession } from '@/lib/session'
-import { prazosMedios, sazonalidade, concentracao, indiceHhi, anomalias } from '@/lib/queries'
+import {
+  prazosMedios, sazonalidade, concentracao, indiceHhi, anomalias, lancamentosDosDesvios,
+} from '@/lib/queries'
 import { receitaReal, tiposPreenchidos } from '@/lib/indicadoresAux'
 import { brl, rotuloMes, indice } from '@/lib/format'
 import { Suspense } from 'react'
@@ -8,10 +10,21 @@ import BulletIA from '@/components/BulletIA'
 import HBars from '@/components/charts/HBars'
 import LinhaKpi from '@/components/charts/LinhaKpi'
 import FaltaSerie from '@/components/FaltaSerie'
+import LinhaExpansivel from '@/components/LinhaExpansivel'
 
 export const dynamic = 'force-dynamic'
 
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+
+// O que abre dentro de um desvio. Um mês fora do padrão quase sempre tem um
+// culpado só, e é ele que a pessoa quer ver antes de decidir se o número está
+// errado ou se a empresa gastou mesmo.
+const LANCAMENTOS = [
+  { chave: 'data_vencimento', titulo: 'Vencimento', tipo: 'data' },
+  { chave: 'pessoa', titulo: 'Quem', tipo: 'texto', largura: 180 },
+  { chave: 'descricao', titulo: 'Descrição', tipo: 'texto', largura: 280 },
+  { chave: 'total', titulo: 'Valor', tipo: 'dinheiro' },
+]
 
 function leituraHhi(hhi) {
   if (hhi === null || hhi === undefined) return ['—', null]

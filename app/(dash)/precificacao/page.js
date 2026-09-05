@@ -8,6 +8,7 @@ import { brl } from '@/lib/format'
 import Tile from '@/components/Tile'
 import Classificador from '@/components/Classificador'
 import Exportar from '@/components/Exportar'
+import LinhaExpansivel from '@/components/LinhaExpansivel'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +19,43 @@ export const dynamic = 'force-dynamic'
 // de um chute de margem.
 
 const pct = (v) => (v === null || v === undefined ? '—' : `${(v * 100).toFixed(1)}%`)
+
+// O que abre dentro de cada linha da estrutura: as categorias do ERP que
+// formaram aquele número, da que mais pesa para a que menos pesa.
+//
+// É esta lista que transforma "custo fixo é 4,4% da receita" em uma decisão. O
+// percentual sozinho diz que está bom ou ruim; a categoria diz onde mexer.
+const CATEGORIAS = [
+  { chave: 'categoria', titulo: 'Categoria', tipo: 'texto', largura: 260 },
+  { chave: 'titulos', titulo: 'Lançamentos', tipo: 'inteiro' },
+  { chave: 'valor', titulo: '12 meses', tipo: 'dinheiro' },
+  { chave: 'participacao', titulo: 'Do grupo', tipo: 'percentual' },
+]
+
+// Dez categorias por linha. Acima disso a linha aberta vira um relatório
+// dentro do relatório, e quem abriu queria o começo da lista, não ela toda.
+const MAIORES = 10
+
+function LinhaCusto({ rotulo, valor, percentual, nota, tom, categorias = [] }) {
+  const celulas = (
+    <>
+      <td style={{ color: tom }}>{rotulo}</td>
+      <td className="num" style={{ color: tom }}>{valor}</td>
+      <td className="num" style={{ color: tom }}>{percentual}</td>
+      <td style={{ color: tom ?? 'var(--text-muted)' }}>{nota}</td>
+    </>
+  )
+  if (!categorias.length) return <tr><td className="seta" />{celulas}</tr>
+  return (
+    <LinhaExpansivel
+      colunas={5} campos={CATEGORIAS}
+      itens={categorias.slice(0, MAIORES)} total={categorias.length}
+      rotulo={`${categorias.length} categoria(s) em ${rotulo.toLowerCase()}`}
+      rodape="A classificação de cada categoria fica na tabela de Classificação das categorias, mais abaixo."
+      celulas={celulas}
+    />
+  )
+}
 
 export default async function Precificacao() {
   const sessao = await requireSession()
@@ -93,28 +131,28 @@ export default async function Precificacao() {
         <p className="sub">
           Sobre cada real que entra, uma parte some antes de sobrar qualquer
           coisa. O que resta é o teto que o custo do que você entrega pode
-          ocupar.
+          ocupar. Clique numa linha para ver as categorias por trás dela.
         </p>
         <table>
           <thead>
-            <tr><th>Sobre a receita</th><th className="num">12 meses</th><th className="num">%</th><th>O que é</th></tr>
+            <tr>
+              <th />
+              <th>Sobre a receita</th><th className="num">12 meses</th><th className="num">%</th><th>O que é</th>
+            </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Receita</td><td className="num">{brl(e.receita)}</td><td className="num">100%</td>
-              <td style={{ color: 'var(--text-muted)' }}>o que foi faturado</td>
-            </tr>
-            <tr>
-              <td>Custo variável</td><td className="num">−{brl(e.variavel)}</td>
-              <td className="num">{pct(e.percentual.variavel)}</td>
-              <td style={{ color: 'var(--text-muted)' }}>imposto e comissão, andam com a venda</td>
-            </tr>
-            <tr>
-              <td>Custo fixo</td><td className="num">−{brl(e.fixo)}</td>
-              <td className="num">{pct(e.percentual.fixo)}</td>
-              <td style={{ color: 'var(--text-muted)' }}>existe mesmo sem vender</td>
-            </tr>
+            <LinhaCusto rotulo="Receita" valor={brl(e.receita)} percentual="100%"
+                        nota="o que foi faturado" categorias={e.categorias.receita} />
+            <LinhaCusto rotulo="Custo variável" valor={`−${brl(e.variavel)}`}
+                        percentual={pct(e.percentual.variavel)}
+                        nota="imposto e comissão, andam com a venda"
+                        categorias={e.categorias.variavel} />
+            <LinhaCusto rotulo="Custo fixo" valor={`−${brl(e.fixo)}`}
+                        percentual={pct(e.percentual.fixo)}
+                        nota="existe mesmo sem vender"
+                        categorias={e.categorias.fixo} />
             <tr style={{ fontWeight: 600, borderTop: '1px solid var(--border)' }}>
+              <td className="seta" />
               <td>Sobra para o custo direto</td>
               <td className="num">{brl(e.receita - e.variavel - e.fixo)}</td>
               <td className="num">{pct(e.sobra)}</td>
@@ -122,17 +160,16 @@ export default async function Precificacao() {
                 {e.multiplicador && `1 ÷ ${pct(e.sobra)} = ${e.multiplicador.toFixed(2)}x`}
               </td>
             </tr>
-            <tr>
-              <td>Custo direto realizado</td><td className="num">{brl(e.direto)}</td>
-              <td className="num">{pct(e.percentual.direto)}</td>
-              <td style={{ color: 'var(--text-muted)' }}>o que a entrega consumiu</td>
-            </tr>
+            <LinhaCusto rotulo="Custo direto realizado" valor={brl(e.direto)}
+                        percentual={pct(e.percentual.direto)}
+                        nota="o que a entrega consumiu"
+                        categorias={e.categorias.direto} />
             {e.naoClassificado > 0 && (
-              <tr style={{ color: 'var(--warning)' }}>
-                <td>Sem classificação</td><td className="num">{brl(e.naoClassificado)}</td>
-                <td className="num">{pct(e.percentual.naoClassificado)}</td>
-                <td>não entra na conta enquanto ninguém disser o que é</td>
-              </tr>
+              <LinhaCusto rotulo="Sem classificação" valor={brl(e.naoClassificado)}
+                          percentual={pct(e.percentual.naoClassificado)}
+                          nota="não entra na conta enquanto ninguém disser o que é"
+                          tom="var(--warning)"
+                          categorias={e.categorias.naoClassificado} />
             )}
           </tbody>
         </table>

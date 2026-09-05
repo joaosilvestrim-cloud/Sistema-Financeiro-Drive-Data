@@ -452,6 +452,49 @@ tbody tr { transition: background-color 110ms ease; }
 tbody tr:hover td { background: var(--accent-suave); }
 tfoot td { border-top: 1px solid var(--axis); font-weight: 650; }
 
+/* ------------------------------------------------ linha que abre detalhe */
+
+tr.expansivel { cursor: pointer; }
+/* A coluna da seta existe em toda linha da tabela, inclusive nas que nao abrem.
+   Sem isso, uma tabela onde so algumas linhas tem historico ficaria com as
+   colunas dancando entre uma linha e outra. */
+td.seta {
+  width: 22px;
+  padding-right: 0;
+  color: var(--text-muted);
+  vertical-align: middle;
+}
+tr.expansivel td.seta svg {
+  transition: transform 160ms cubic-bezier(0.34, 1.4, 0.64, 1);
+  display: block;
+}
+tr.expansivel[data-aberta='true'] td.seta { color: var(--accent); }
+tr.expansivel[data-aberta='true'] td.seta svg { transform: rotate(90deg); }
+tr.expansivel[data-aberta='true'] td { background: var(--accent-suave); }
+tr.expansivel:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+tr.detalhe > td {
+  background: var(--plane);
+  padding: 12px 14px 14px 36px;
+  border-top: none;
+  /* O detalhe é um bloco, não uma linha de tabela. Alinhar à direita como o
+     resto herdaria o alinhamento numérico e jogaria o texto para o canto. */
+  text-align: left;
+}
+.detalhe-titulo {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+/* A tabela de dentro não repete a moldura da de fora. Duas bordas coladas
+   viram uma faixa grossa e a hierarquia se perde. */
+tr.detalhe table { font-size: 12px; }
+tr.detalhe thead th { font-size: 10px; border-bottom-color: var(--grid); }
+tr.detalhe tbody tr:hover td { background: transparent; }
+/* O cabecalho da tabela de dentro nao gruda: ele rolaria por cima do da tabela
+   de fora, que ja e fixo, e as duas faixas se sobreporiam. */
+tr.detalhe thead th { position: static; }
+
 /* Cabeçalho que fica enquanto a tabela rola. Tabela longa sem isso obriga a
    subir para lembrar qual coluna é qual. */
 .card table thead th {
