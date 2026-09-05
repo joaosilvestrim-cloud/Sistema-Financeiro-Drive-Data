@@ -31,6 +31,14 @@
   --accent-forte:   #1c5cab;
   --accent-suave:   rgba(42, 120, 214, 0.10);
 
+  /* Sombras. No claro elas dão profundidade e separam o cartão do fundo. No
+     escuro quase somem, porque sombra preta sobre fundo preto não separa nada,
+     e lá quem faz o trabalho é a borda. */
+  --sombra-1:       0 1px 2px rgba(11, 11, 11, 0.04);
+  --sombra-2:       0 4px 16px rgba(11, 11, 11, 0.07);
+  --radius-sm:      7px;
+  --radius-lg:      14px;
+
   --good:           #0ca30c;
   --good-text:      #006300;
   --warning:        #fab219;
@@ -66,6 +74,9 @@
     --accent-forte:   #86b6ef;
     --accent-suave:   rgba(85, 152, 231, 0.16);
 
+  --sombra-1:       0 1px 2px rgba(0, 0, 0, 0.3);
+  --sombra-2:       0 4px 18px rgba(0, 0, 0, 0.42);
+
     --good-text:      #0ca30c;
   }
 }
@@ -99,6 +110,9 @@
   --accent:         #5598e7;
   --accent-forte:   #86b6ef;
   --accent-suave:   rgba(85, 152, 231, 0.16);
+
+  --sombra-1:       0 1px 2px rgba(0, 0, 0, 0.3);
+  --sombra-2:       0 4px 18px rgba(0, 0, 0, 0.42);
 
   --good-text:      #0ca30c;
 }
@@ -281,18 +295,23 @@ body:has(.shell) .tema-flutuante { display: none; }
 
 .sidebar footer { margin-top: auto; font-size: 11px; color: var(--text-muted); }
 
-.content { padding: 24px 28px 56px; max-width: 1240px; }
+.content { padding: 26px 30px 64px; max-width: 1280px; }
 
 .page-head {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   flex-wrap: wrap;
 }
-.page-head h1 { font-size: 21px; margin: 0 0 2px; letter-spacing: -0.015em; }
-.page-head p { margin: 0; color: var(--text-secondary); font-size: 13px; }
+.page-head h1 {
+  font-size: 23px;
+  margin: 0 0 3px;
+  letter-spacing: -0.02em;
+  font-weight: 650;
+}
+.page-head p { margin: 0; color: var(--text-secondary); font-size: 13px; max-width: 76ch; }
 
 /* ------------------------------------------------------------- peças */
 
@@ -300,41 +319,92 @@ body:has(.shell) .tema-flutuante { display: none; }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px 18px;
+  padding: 17px 19px;
+  box-shadow: var(--sombra-1);
 }
 
 .card > h2 {
   margin: 0 0 2px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 620;
+  letter-spacing: -0.01em;
 }
-.card > h2 + .sub { margin: 0 0 14px; color: var(--text-muted); font-size: 12px; }
+.card > h2 + .sub {
+  margin: 0 0 15px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  max-width: 82ch;
+}
 
 .grid { display: grid; gap: 14px; }
 .grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
 .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
 .grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
 
+@media (max-width: 1180px) {
+  .grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+}
 @media (max-width: 1000px) {
   .shell { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; }
+  .sidebar .nav { overflow: visible; }
+  .content { padding: 20px 18px 48px; }
   .grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
   .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; }
 }
+@media (max-width: 620px) {
+  .grid.cols-4 { grid-template-columns: 1fr; }
+}
 
-.tile .label { color: var(--text-muted); font-size: 12px; }
-.tile .value { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin-top: 3px; }
-.tile .note { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+/* ------------------------------------------------------------- tiles */
+
+.tile { position: relative; overflow: hidden; }
+.tile .label {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.tile .value {
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  margin-top: 5px;
+  line-height: 1.15;
+  /* Dígito de largura fixa. Sem isto, um valor que muda de 118.906 para 99.906
+     dança na tela, e num painel financeiro o número é a coisa que não pode
+     tremer. */
+  font-variant-numeric: tabular-nums;
+}
+.tile .note { font-size: 12px; color: var(--text-secondary); margin-top: 5px; line-height: 1.4; }
 .tile .note.good { color: var(--good-text); }
 .tile .note.bad { color: var(--critical); }
+.tile .note.warn { color: var(--warning); }
+
+/* Fita de estado no topo do cartão. Um indicador em alerta se anuncia antes da
+   leitura, e a cor não é o único sinal: o texto da nota diz o mesmo. */
+.tile:has(.note.bad)::after,
+.tile:has(.note.good)::after,
+.tile:has(.note.warn)::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+}
+.tile:has(.note.bad)::after  { background: var(--critical); }
+.tile:has(.note.good)::after { background: var(--good); }
+.tile:has(.note.warn)::after { background: var(--warning); }
 
 /* Leitura da IA dentro do indicador. Vem separada por uma linha e com marca
-   propria, para nunca se confundir com o numero apurado logo acima. */
+   própria, para nunca se confundir com o número apurado logo acima. */
 .bullet {
-  margin-top: 10px;
-  padding-top: 9px;
+  margin-top: 11px;
+  padding-top: 10px;
   border-top: 1px solid var(--grid);
   font-size: 12px;
-  line-height: 1.45;
+  line-height: 1.5;
   color: var(--text-secondary);
   display: flex;
   gap: 7px;
@@ -345,26 +415,53 @@ body:has(.shell) .tema-flutuante { display: none; }
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.06em;
-  color: var(--series-1);
-  border: 1px solid currentColor;
+  color: var(--accent);
+  background: var(--accent-suave);
+  border: 1px solid transparent;
   border-radius: 4px;
-  padding: 0 3px;
-  line-height: 1.5;
+  padding: 1px 4px;
+  line-height: 1.4;
 }
 
-table { border-collapse: collapse; width: 100%; font-size: 13px; }
-th, td { padding: 7px 10px; text-align: right; }
+/* ------------------------------------------------------------ tabelas */
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+  /* Toda a tabela em dígito de largura fixa. Numa tabela financeira quase toda
+     célula à direita é número, e alinhar coluna a coluna é o que permite
+     comparar magnitude batendo o olho. */
+  font-variant-numeric: tabular-nums;
+}
+th, td { padding: 8px 10px; text-align: right; }
 th:first-child, td:first-child { text-align: left; }
 thead th {
   color: var(--text-muted);
-  font-weight: 500;
-  font-size: 12px;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   border-bottom: 1px solid var(--border);
+  padding-bottom: 7px;
+  white-space: nowrap;
 }
+tbody td:first-child { color: var(--text-primary); }
 tbody tr + tr td { border-top: 1px solid var(--grid); }
-tbody tr:hover td { background: color-mix(in srgb, var(--text-primary) 4%, transparent); }
-td.num, th.num { font-variant-numeric: tabular-nums; }
-tfoot td { border-top: 1px solid var(--axis); font-weight: 600; }
+tbody tr { transition: background-color 110ms ease; }
+tbody tr:hover td { background: var(--accent-suave); }
+tfoot td { border-top: 1px solid var(--axis); font-weight: 650; }
+
+/* Cabeçalho que fica enquanto a tabela rola. Tabela longa sem isso obriga a
+   subir para lembrar qual coluna é qual. */
+.card table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+
+/* --------------------------------------------------------- gráficos */
 
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); }
 .legend i {
@@ -378,69 +475,114 @@ tfoot td { border-top: 1px solid var(--axis); font-weight: 600; }
   pointer-events: none;
   background: var(--surface);
   border: 1px solid var(--border);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.13);
-  border-radius: 8px;
-  padding: 8px 10px;
+  box-shadow: var(--sombra-2);
+  border-radius: 10px;
+  padding: 9px 11px;
   font-size: 12px;
   min-width: 168px;
   z-index: 5;
 }
-.tooltip .t-title { font-weight: 600; margin-bottom: 5px; }
+.tooltip .t-title { font-weight: 620; margin-bottom: 5px; }
 .tooltip .t-row { display: flex; justify-content: space-between; gap: 14px; }
 .tooltip .t-row span:last-child { font-variant-numeric: tabular-nums; }
 
+/* --------------------------------------------------------- controles */
+
 .toggle {
-  background: none;
+  background: transparent;
   border: 1px solid var(--border);
   color: var(--text-secondary);
-  border-radius: 6px;
-  padding: 3px 9px;
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
   font-size: 12px;
   cursor: pointer;
   font-family: inherit;
+  transition: background-color 130ms ease, color 130ms ease, border-color 130ms ease;
 }
-.toggle:hover { color: var(--text-primary); }
+.toggle:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+  background: var(--accent-suave);
+}
 
 .badge {
   font-size: 11px;
-  padding: 2px 8px;
+  font-weight: 550;
+  padding: 2px 9px;
   border-radius: 999px;
   border: 1px solid var(--border);
   color: var(--text-secondary);
+  white-space: nowrap;
 }
-.badge.ok { color: var(--good-text); }
-.badge.bad { color: var(--critical); }
+/* Fundo tingido além da cor do texto. Uma etiqueta que só muda de cor de letra
+   quase não se distingue no meio de um cartão. */
+.badge.ok  { color: var(--good-text); border-color: transparent; background: color-mix(in srgb, var(--good) 14%, transparent); }
+.badge.bad { color: var(--critical); border-color: transparent; background: color-mix(in srgb, var(--critical) 14%, transparent); }
 
 .empty {
   border: 1px dashed var(--axis);
   border-radius: var(--radius);
-  padding: 28px;
+  padding: 32px;
   text-align: center;
   color: var(--text-secondary);
+  font-size: 13px;
 }
 
-select, input {
+select, input, textarea {
   font-family: inherit;
   font-size: 13px;
-  padding: 6px 9px;
-  border-radius: 7px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text-primary);
+  transition: border-color 130ms ease, box-shadow 130ms ease;
+}
+select:hover, input:hover, textarea:hover { border-color: var(--axis); }
+select:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-suave);
 }
 
 .btn {
   font-family: inherit;
   font-size: 14px;
-  padding: 9px 14px;
-  border-radius: 8px;
+  padding: 9px 16px;
+  border-radius: 9px;
   border: none;
-  background: var(--series-1);
+  background: var(--accent);
   color: #fff;
   cursor: pointer;
-  font-weight: 550;
+  font-weight: 570;
+  box-shadow: var(--sombra-1);
+  transition: background-color 130ms ease, transform 90ms ease, box-shadow 130ms ease;
 }
-.btn:disabled { opacity: 0.6; cursor: default; }
+.btn:hover:not(:disabled) { background: var(--accent-forte); box-shadow: var(--sombra-2); }
+/* Afunda um pixel ao clicar. É o retorno mais barato que existe e some a
+   sensação de botão que não respondeu. */
+.btn:active:not(:disabled) { transform: translateY(1px); box-shadow: var(--sombra-1); }
+.btn:disabled { opacity: 0.5; cursor: default; box-shadow: none; }
+
+/* Anel de foco visível em tudo que recebe teclado, na cor do acento. O anel só
+   aparece na navegação por teclado, então o clique de mouse não deixa contorno
+   sobrando. */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+::selection { background: var(--accent-suave); }
+
+/* Barra de rolagem discreta, na cor da interface. A padrão do Windows é uma
+   faixa cinza clara que grita no tema escuro. */
+* { scrollbar-width: thin; scrollbar-color: var(--axis) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--axis); background-clip: content-box; }
 
 .login {
   min-height: 100vh;
@@ -448,5 +590,19 @@ select, input {
   place-items: center;
   padding: 24px;
 }
-.login form { display: grid; gap: 10px; width: 320px; }
+.login form {
+  display: grid;
+  gap: 11px;
+  width: 340px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--sombra-2);
+  padding: 26px 24px;
+}
 .login .erro { color: var(--critical); font-size: 13px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .toggle, tbody tr, select, input, textarea { transition: none; }
+  .btn:active:not(:disabled) { transform: none; }
+}
