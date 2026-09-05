@@ -134,7 +134,17 @@ dias grátis, e não posso criar conta nem enviar certificado em nome de ningué
 1. Criar a conta em <https://focusnfe.com.br>.
 2. No painel deles, **CADASTRAR EMPRESA**. A primeira vai pela tela mesmo,
    porque é ela que gera o token com o qual todas as outras podem ser criadas
-   pela API. É aqui que entra o certificado A1 e a inscrição municipal.
+   pela API.
+
+   **O certificado é opcional aqui.** No esquema de criação de empresa da Focus,
+   `senha_certificado` é "obrigatória apenas se informado
+   `arquivo_certificado_base64`", e nenhum campo é obrigatório. Sem certificado
+   a empresa existe, tem token, aceita gatilho e responde à API. O que não
+   acontece é assinar documento, porque a assinatura é do certificado.
+
+   Ou seja: dá para cadastrar hoje, rodar o instalador, ver a tela de Notas
+   fiscais com os dados reais e conferir tudo que não é assinatura. O
+   certificado entra depois, pela mesma tela, e a empresa passa a emitir.
 3. Copiar o token de **produção** dessa empresa em Painel API > Tokens de
    Acesso. É o token administrativo.
 4. Gerar um segredo longo para o gatilho:
@@ -206,6 +216,30 @@ devolve o que falta em português: inscrição municipal, código IBGE, item da
 lista de serviço, documento do tomador. A maior parte do que dá errado numa
 NFS-e é payload, não rede, e por isso o teste roda sem token nenhum.
 
+## Onde conseguir o certificado A1
+
+Não é comprado na Focus. É um certificado ICP-Brasil, e-CNPJ tipo A1, emitido
+por autoridade certificadora: Certisign, Serasa, Valid, Soluti, Safeweb. Custa
+na faixa de R$ 130 a R$ 250 por ano e sai no mesmo dia, com validação por
+videoconferência.
+
+Antes de comprar, vale procurar o que já existe. Toda empresa ativa já tem um,
+porque ele é obrigatório para DCTFWeb, eSocial e emissão de guia. Quem costuma
+estar com ele:
+
+- **A contabilidade.** No caso da DriveData é o próprio Diogo, que faz o BPO. É
+  quase certo que a BDGAL já tenha o e-CNPJ da DriveData para as obrigações
+  acessórias.
+- **Quem abriu a empresa**, no computador em que foi instalado.
+
+Atenção a um detalhe que atrapalha: certificado A1 é instalado no computador e
+**só pode ser exportado como `.pfx` se tiver sido marcado como exportável na
+instalação**. Se não foi, não dá para tirar de lá e é mais rápido emitir outro
+do que tentar.
+
+Tipo A3, o de cartão ou token USB, **não serve**. A chave privada não sai do
+dispositivo, e nenhuma API consegue usá-la. Tem que ser A1.
+
 ## MDF-e
 
 O MDF-e é o manifesto de carga, e é o documento que interessa à BDGAL, que é
@@ -234,7 +268,16 @@ Este é o pedaço com menos concorrência do que foi construído aqui.
   cliente, com cursor incremental pelo campo `versao` e cabeçalho
   `X-Max-Version`. É o mesmo CDC que construímos para a Conta Azul, só que
   melhor. Puxar isso traz a despesa direto da Receita, sem depender de ninguém
-  lançar no ERP. `nfesRecebidas` e `ctesRecebidos` já existem no cliente; falta
-  a ingestão e a tela.
+  lançar no ERP.
+
+  O caminho já está aberto: `habilita_manifestacao` e `habilita_manifestacao_cte`
+  ligam a busca no cadastro da empresa, `nfesRecebidas` e `ctesRecebidos` estão
+  no cliente, e `cursor_recebidas_nfe` e `cursor_recebidas_cte` guardam até onde
+  já lemos. Falta a ingestão e a tela.
+
+  Vale ligar as flags no cadastro mesmo antes de existir a tela: a Focus só
+  guarda documento recebido a partir do momento em que a busca está ligada, e
+  histórico que não foi capturado não se recupera depois. É a mesma lógica da
+  memória de previsão.
 - **Escrita de volta no Conta Azul.** Emitida a nota, gravar o número e o link
   no título de origem lá. Fecha o ciclo do jeito que o Diogo descreveu.

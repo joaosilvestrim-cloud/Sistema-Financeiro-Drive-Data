@@ -115,8 +115,10 @@ for (const e of lista) {
        (tenant_id, conta_id, connection_id, cnpj, razao_social, nome_fantasia,
         inscricao_municipal, inscricao_estadual, municipio, uf, codigo_municipio,
         habilita_nfse, habilita_nfe, habilita_nfce, habilita_cte, habilita_mdfe,
-        token_homologacao_enc, token_producao_enc, externo_id, status)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,'ativo')
+        token_homologacao_enc, token_producao_enc, externo_id,
+        habilita_nfse_nacional, habilita_recebidas_nfe, habilita_recebidas_cte, status)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,
+             $20,$21,$22,'ativo')
      on conflict (tenant_id, cnpj) do update set
        conta_id = excluded.conta_id,
        connection_id = coalesce(excluded.connection_id, core.fiscal_emitente.connection_id),
@@ -131,6 +133,9 @@ for (const e of lista) {
        token_homologacao_enc = coalesce(excluded.token_homologacao_enc, core.fiscal_emitente.token_homologacao_enc),
        token_producao_enc = coalesce(excluded.token_producao_enc, core.fiscal_emitente.token_producao_enc),
        externo_id = coalesce(excluded.externo_id, core.fiscal_emitente.externo_id),
+       habilita_nfse_nacional = excluded.habilita_nfse_nacional,
+       habilita_recebidas_nfe = excluded.habilita_recebidas_nfe,
+       habilita_recebidas_cte = excluded.habilita_recebidas_cte,
        status = 'ativo', atualizado_em = now()
      returning id, razao_social, gatilhos_em`,
     [
@@ -144,12 +149,17 @@ for (const e of lista) {
       e.token_homologacao ? encrypt(e.token_homologacao) : null,
       e.token_producao ? encrypt(e.token_producao) : null,
       e.id ? String(e.id) : null,
+      !!e.habilita_nfsen_producao,
+      !!e.habilita_manifestacao,
+      !!e.habilita_manifestacao_cte,
     ],
   )
 
   const tem = [
-    e.habilita_nfse && 'NFS-e', e.habilita_nfe && 'NFe',
-    e.habilita_cte && 'CT-e', e.habilita_mdfe && 'MDF-e',
+    e.habilita_nfse && 'NFS-e', e.habilita_nfsen_producao && 'NFS-e nacional',
+    e.habilita_nfe && 'NFe', e.habilita_cte && 'CT-e', e.habilita_mdfe && 'MDF-e',
+    e.habilita_manifestacao && 'NFe recebidas',
+    e.habilita_manifestacao_cte && 'CT-e recebidas',
   ].filter(Boolean)
   console.log(`  ok        ${cnpj}  ${salvo.razao_social}`)
   console.log(`            ${tem.length ? tem.join(', ') : 'nenhum documento habilitado ainda'}`
