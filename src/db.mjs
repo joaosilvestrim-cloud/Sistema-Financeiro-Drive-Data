@@ -12,12 +12,26 @@ pg.types.setTypeParser(1700, (v) => (v === null ? null : Number(v)))
 // a rota so para coletar configuracao. Um process.exit no import derrubava o
 // build inteiro por causa de uma variavel que so faz falta em requisicao.
 //
-// A ordem das variaveis importa. O worker roda com DATABASE_URL, o modo sessao,
-// porque precisa de conexao longa. O app na Vercel so tem DATABASE_URL_POOLED,
-// o pooler em modo transacao. O advisory lock daqui e por transacao de
-// proposito, entao funciona nos dois.
+// A ordem das variaveis depende de onde o codigo esta rodando, e inverte-la
+// custa caro.
+//
+// Na minha maquina e no worker vale DATABASE_URL, a conexao direta em modo
+// sessao, porque sao processos longos e poucos.
+//
+// Na Vercel vale o pooler, sempre. Cada invocacao de funcao abre a propria
+// conexao e some, e conexao direta em modo sessao nao e devolvida a tempo: com
+// o cron rodando de 30 em 30 minutos mais o trafego das telas, o limite do
+// Postgres estoura e o erro aparece como "too many connections" numa tela
+// qualquer, longe da causa. Se as duas variaveis existirem la, como existem
+// hoje, escolher DATABASE_URL seria escolher errado em silencio.
+//
+// O advisory lock deste modulo e por transacao de proposito, entao vale nos
+// dois modos.
 function connectionString() {
-  const url = process.env.DATABASE_URL || process.env.DATABASE_URL_POOLED
+  const naVercel = !!process.env.VERCEL
+  const url = naVercel
+    ? (process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL)
+    : (process.env.DATABASE_URL || process.env.DATABASE_URL_POOLED)
   if (!url) {
     throw new Error(
       'Falta DATABASE_URL (ou DATABASE_URL_POOLED) no ambiente. ' +

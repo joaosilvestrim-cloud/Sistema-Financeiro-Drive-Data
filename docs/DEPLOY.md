@@ -110,3 +110,31 @@ planos apenas registra a intenção de compra. Nada mais quebra.
 
 `GROQ_API_KEY` e `GROQ_MODEL` continuam opcionais. Sem elas o produto funciona
 inteiro, só sem as leituras de IA.
+
+## Conferência das variáveis na Vercel (05/09/2026)
+
+O que o código lê, e o que precisa estar lá.
+
+**Obrigatórias.** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+`DATABASE_URL_POOLED`, `CONTAAZUL_CLIENT_ID`, `CONTAAZUL_CLIENT_SECRET`,
+`CONTAAZUL_REDIRECT_URI`, `OAUTH_STATE_SECRET`, `TOKEN_ENCRYPTION_KEY`,
+`CRON_SECRET`.
+
+**Opcionais com padrão correto no código.** `CONTAAZUL_LOGIN_URL`,
+`CONTAAZUL_TOKEN_URL`, `CONTAAZUL_API_URL`, `CONTAAZUL_SCOPE`, `GROQ_API_KEY`,
+`GROQ_MODEL`.
+
+**Não existe.** `CONTAAZUL_AUTH_URL` não é lida por nada. O nome certo é
+`CONTAAZUL_LOGIN_URL`.
+
+**`DATABASE_URL` na Vercel.** Não precisa e atrapalhava. O `src/db.mjs` escolhia
+a conexão direta quando as duas existiam, e conexão direta em modo sessão não
+serve para função serverless: cada invocação abre a própria conexão e não a
+devolve a tempo, e o limite do Postgres estoura longe da causa. Hoje o módulo
+detecta a Vercel e prefere o pooler, então deixar a variável lá não quebra mais
+nada. Mas o worker de pg-boss, esse sim, precisa de `DATABASE_URL` no host onde
+rodar.
+
+**Escopo Production e Preview.** Metade das variáveis está só em Production. O
+app funciona, mas qualquer deploy de preview sobe sem Supabase e responde 503 na
+tela de configuração incompleta. Se preview não for usado, tudo bem.
