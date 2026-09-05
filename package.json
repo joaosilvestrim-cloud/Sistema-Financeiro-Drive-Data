@@ -41,7 +41,8 @@
     "cursorteste": "node --env-file=.env scripts/cursorteste.mjs",
     "vendateste": "node --conditions=react-server --env-file=.env scripts/vendateste.mjs",
     "impostoteste": "node --conditions=react-server --env-file=.env scripts/impostoteste.mjs",
-    "paginas": "node --env-file=.env scripts/paginas.mjs"
+    "paginas": "node --env-file=.env scripts/paginas.mjs",
+    "funil": "node --conditions=react-server --env-file=.env scripts/funil.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
