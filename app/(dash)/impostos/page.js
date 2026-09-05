@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { revalidatePath } from 'next/cache'
 import { requireSession } from '@/lib/session'
 import { comAviso } from '@/lib/acao'
 import Aviso from '@/components/Aviso'

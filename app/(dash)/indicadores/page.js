@@ -41,6 +41,13 @@ export default async function Indicadores() {
     receitaReal(sessao, 24), tiposPreenchidos(sessao),
   ])
 
+  // Uma consulta para os doze desvios, e nao uma por clique. As chaves da busca
+  // sao o proprio resultado da lista de desvios.
+  const lancamentos = await lancamentosDosDesvios(sessao, anomalos)
+  const doDesvio = (a) => lancamentos.filter(
+    (l) => l.categoria === a.categoria && l.kind === a.kind && l.competencia === a.competencia,
+  )
+
   const receber = prazos.find((p) => p.kind === 'receivable')
   const pagar = prazos.find((p) => p.kind === 'payable')
   const prazoReceber = Number(receber?.prazo ?? 0)
@@ -168,11 +175,13 @@ export default async function Indicadores() {
         <p className="sub">
           Meses em que uma categoria fugiu do próprio histórico. Comparação por mediana e desvio absoluto
           mediano dos 12 meses anteriores, que não se deixa levar pelo próprio outlier.
+          Clique numa linha para ver os lançamentos daquele mês.
         </p>
         {anomalos.length ? (
           <table>
             <thead>
               <tr>
+                <th />
                 <th>Mês</th><th>Categoria</th><th>Tipo</th>
                 <th className="num">Valor</th><th className="num">Padrão</th><th className="num">Desvio</th>
               </tr>
@@ -181,17 +190,25 @@ export default async function Indicadores() {
               {anomalos.map((a, i) => {
                 const acima = Number(a.escore) > 0
                 const ruim = (a.kind === 'payable' && acima) || (a.kind === 'receivable' && !acima)
+                const dentro = doDesvio(a)
                 return (
-                  <tr key={i}>
-                    <td>{rotuloMes(a.competencia)}</td>
-                    <td>{a.categoria}</td>
-                    <td>{a.kind === 'receivable' ? 'receita' : 'despesa'}</td>
-                    <td className="num">{brl(a.valor)}</td>
-                    <td className="num" style={{ color: 'var(--text-muted)' }}>{brl(a.mediana)}</td>
-                    <td className="num" style={{ color: ruim ? 'var(--critical)' : 'var(--good-text)' }}>
-                      {acima ? '+' : ''}{Number(a.escore).toFixed(1)}
-                    </td>
-                  </tr>
+                  <LinhaExpansivel
+                    key={i} colunas={7} campos={LANCAMENTOS}
+                    itens={dentro.slice(0, 8)} total={dentro.length}
+                    rotulo={`${dentro.length} lançamento(s) em ${a.categoria} · ${rotuloMes(a.competencia)}`}
+                    celulas={
+                      <>
+                        <td>{rotuloMes(a.competencia)}</td>
+                        <td>{a.categoria}</td>
+                        <td>{a.kind === 'receivable' ? 'receita' : 'despesa'}</td>
+                        <td className="num">{brl(a.valor)}</td>
+                        <td className="num" style={{ color: 'var(--text-muted)' }}>{brl(a.mediana)}</td>
+                        <td className="num" style={{ color: ruim ? 'var(--critical)' : 'var(--good-text)' }}>
+                          {acima ? '+' : ''}{Number(a.escore).toFixed(1)}
+                        </td>
+                      </>
+                    }
+                  />
                 )
               })}
             </tbody>

@@ -1,7 +1,8 @@
 import { Suspense } from 'react'
 import { requireSession } from '@/lib/session'
 import {
-  conciliacao, agingDuplo, duasSemanas, dezMaiores, titulosPorFaixa,
+  conciliacao, agingDuplo, duasSemanas, dezMaiores,
+  titulosPorFaixa, perdas,
 } from '@/lib/executivo'
 import LinhaExpansivel from '@/components/LinhaExpansivel'
 import { possiveisDuplicados } from '@/lib/duplicidade'
@@ -38,7 +39,7 @@ const soma = (linhas, filtro = () => true) =>
 export default async function Resumo() {
   const sessao = await requireSession()
   const [conc, aging, semanas, clientes, fornecedores, duplicados,
-         tituloReceber, tituloPagar] = await Promise.all([
+         tituloReceber, tituloPagar, perda] = await Promise.all([
     conciliacao(sessao), agingDuplo(sessao), duasSemanas(sessao),
     dezMaiores(sessao, 'receivable'), dezMaiores(sessao, 'payable'),
     possiveisDuplicados(sessao, 12),
@@ -46,6 +47,7 @@ export default async function Resumo() {
     // os dez maiores agrupam por pessoa, a partir da mesma lista. Vinte
     // consultas separadas dariam o mesmo resultado com vinte idas ao banco.
     titulosPorFaixa(sessao, 'receivable'), titulosPorFaixa(sessao, 'payable'),
+    perdas(sessao, 12),
   ])
 
   // Dentro da linha aberta o que decide é o que pesa. Só os maiores viajam, e o
@@ -209,6 +211,49 @@ export default async function Resumo() {
           </div>
         ))}
       </div>
+
+      {perda.total > 0 && (
+        <div className="card" style={{ marginBottom: 14 }}>
+          <h2>Perdas reconhecidas</h2>
+          <p className="sub">
+            {perda.titulos} título(s) que a empresa marcou como perdidos no ERP,
+            somando {brl(perda.total)} nos últimos 12 meses.
+            {perda.acelerando && (
+              <> Os últimos três meses somam {brl(perda.ultimos)} contra{' '}
+              {brl(perda.anteriores)} nos três anteriores.</>
+            )}
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Vencimento</th><th>Cliente</th><th>Descrição</th><th className="num">Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              {perda.linhas.map((l, i) => (
+                <tr key={i}>
+                  <td>{dataCurta(l.data_vencimento)}</td>
+                  <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {l.pessoa}
+                  </td>
+                  <td style={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {l.descricao ?? '—'}
+                  </td>
+                  <td className="num" style={{ color: 'var(--critical)' }}>{brl(l.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 12, marginBottom: 0 }}>
+            Estes títulos <strong>continuam somando receita no DRE</strong>, e é
+            isso mesmo em regime de competência: o serviço foi prestado. O que
+            não existe é a despesa correspondente, porque o ERP não lança nada
+            quando alguém marca um título como perdido. Na prática o resultado do
+            período está otimista em {brl(perda.total)} enquanto essa baixa não
+            for lançada como perda.
+          </p>
+        </div>
+      )}
 
       {duplicados.length > 0 && (
         <div className="card" style={{ marginBottom: 14 }}>

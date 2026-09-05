@@ -6,7 +6,7 @@ import {
   listarSeries, valoresDaSerie, serie, criarSerie, apagarSerie,
   gravarValores, lerCsv, TIPOS, UNIDADES,
 } from '@/lib/auxiliares'
-import { brl, rotuloMes } from '@/lib/format'
+import { rotuloMes } from '@/lib/format'
 import GradeMensal from '@/components/GradeMensal'
 
 export const dynamic = 'force-dynamic'
