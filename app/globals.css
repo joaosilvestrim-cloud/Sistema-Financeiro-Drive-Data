@@ -140,6 +140,28 @@ a { color: inherit; text-decoration: none; }
   box-shadow: inset 0 0 0 1px var(--border);
 }
 
+.tema-flutuante {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 50;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+/* Com barra lateral o botao do rodape e o que vale. Dois botoes para a mesma
+   coisa confundem, e o daqui perdia porque o display inline ganhava da folha. */
 body:has(.shell) .tema-flutuante { display: none; }
 
 .sidebar footer { margin-top: auto; font-size: 11px; color: var(--text-muted); }

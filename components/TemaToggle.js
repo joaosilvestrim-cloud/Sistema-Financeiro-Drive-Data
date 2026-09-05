@@ -46,15 +46,6 @@ export default function TemaToggle({ flutuante = true }) {
       onClick={alternar}
       aria-label={rotulo}
       title={rotulo}
-      style={{
-        position: 'fixed', right: 14, bottom: 14, zIndex: 50,
-        width: 34, height: 34, borderRadius: 999,
-        border: '1px solid var(--border)', background: 'var(--surface)',
-        color: 'var(--text-secondary)', cursor: 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 15, lineHeight: 1, padding: 0,
-        boxShadow: '0 1px 4px rgba(0,0,0,0.10)',
-      }}
     >
       {tema === 'dark' ? '☀' : '☾'}
     </button>
