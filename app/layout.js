@@ -28,7 +28,12 @@ const DECIDIR_TEMA = `
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="pt-BR" data-theme="light">
+    // O script inline troca o data-theme antes da hidratação, de propósito, e o
+    // React acusa a diferença entre o que o servidor mandou e o que ele
+    // encontrou. Aqui a diferença é o comportamento desejado, não um defeito, e
+    // esta marcação diz isso ao React. Ela vale só para os atributos deste
+    // elemento, então não esconde divergência de nenhum outro lugar.
+    <html lang="pt-BR" data-theme="light" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: DECIDIR_TEMA }} />
       </head>

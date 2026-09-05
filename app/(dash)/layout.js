@@ -20,29 +20,29 @@ import TemaToggle from '@/components/TemaToggle'
 // nunca vem antes de conteúdo.
 const MENU = [
   ['Panorama', [
-    ['/resumo', 'Resumo executivo'],
-    ['/', 'Visão geral'],
+    ['/resumo', 'Resumo executivo', 'resumo'],
+    ['/', 'Visão geral', 'visao'],
   ]],
   ['Caixa', [
-    ['/fluxo', 'Fluxo de caixa'],
-    ['/previsao', 'Projeção de saldo'],
-    ['/recebiveis', 'Recebíveis'],
+    ['/fluxo', 'Fluxo de caixa', 'fluxo'],
+    ['/previsao', 'Projeção de saldo', 'previsao'],
+    ['/recebiveis', 'Recebíveis', 'recebiveis'],
   ]],
   ['Resultado', [
-    ['/dre', 'DRE gerencial'],
-    ['/precificacao', 'Preço e custo'],
-    ['/impostos', 'Impostos'],
+    ['/dre', 'DRE gerencial', 'dre'],
+    ['/precificacao', 'Preço e custo', 'preco'],
+    ['/impostos', 'Impostos', 'impostos'],
   ]],
   ['Análise', [
-    ['/indicadores', 'Indicadores'],
-    ['/clientes', 'Clientes'],
-    ['/produtividade', 'Produtividade'],
-    ['/metas', 'Metas'],
+    ['/indicadores', 'Indicadores', 'indicadores'],
+    ['/clientes', 'Clientes', 'clientes'],
+    ['/produtividade', 'Produtividade', 'produtividade'],
+    ['/metas', 'Metas', 'metas'],
   ]],
   ['Dados', [
-    ['/fatura', 'Fatura de cartão'],
-    ['/dados', 'Dados auxiliares'],
-    ['/conexoes', 'Conexões'],
+    ['/fatura', 'Fatura de cartão', 'fatura'],
+    ['/dados', 'Dados auxiliares', 'dados'],
+    ['/conexoes', 'Conexões', 'conexoes'],
   ]],
 ]
 
@@ -64,6 +64,11 @@ export default async function DashLayout({ children }) {
     .sort()
     .at(-1)
 
+  // A idade do dado vira cor no rodapé. Duas horas é o dobro do intervalo de
+  // sincronização, então até aí está normal. Meio dia parado já é sintoma.
+  const horas = ultimoSync ? (Date.now() - new Date(ultimoSync)) / 3600000 : Infinity
+  const idade = horas < 2 ? 'novo' : horas < 12 ? 'velho' : 'parado'
+
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -79,8 +84,8 @@ export default async function DashLayout({ children }) {
           {MENU.map(([grupo, itens]) => (
             <div key={grupo}>
               <div className="grupo">{grupo}</div>
-              {itens.map(([href, titulo]) => (
-                <NavLink key={href} href={href}>{titulo}</NavLink>
+              {itens.map(([href, titulo, icone]) => (
+                <NavLink key={href} href={href} icone={icone}>{titulo}</NavLink>
               ))}
             </div>
           ))}
@@ -95,7 +100,9 @@ export default async function DashLayout({ children }) {
                 : `teste: ${sessao.conta.diasRestantes} ${sessao.conta.diasRestantes === 1 ? 'dia' : 'dias'}`}
             </div>
           )}
-          <div>sincronizado {desde(ultimoSync)}</div>
+          <div className="sync" data-idade={idade}>
+            {ultimoSync ? `sincronizado ${desde(ultimoSync)}` : 'nunca sincronizado'}
+          </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
             <form action="/auth/signout" method="post">
               <button className="toggle" type="submit">Sair</button>
