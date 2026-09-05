@@ -1,4 +1,5 @@
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { requireSession } from '@/lib/session'
 import {
   emitentes, emitenteDoEscopo, documentos, recebiveisSemNota,
@@ -38,32 +39,62 @@ const EVENTOS = [
   { chave: 'mensagem', titulo: 'O que a prefeitura ou a SEFAZ respondeu', tipo: 'texto', largura: 420 },
 ]
 
-export default async function Notas() {
+// Falha de emissão é recado, não tela quebrada.
+//
+// Toda ação aqui pode falhar por motivo de cadastro: emitente sem habilitação,
+// inscrição municipal em branco, cliente sem CNPJ, prefeitura recusando por uma
+// regra que só ela tem. Deixar o erro subir de uma Server Action derruba a
+// página inteira e o Next esconde a mensagem em produção, então quem clicou vê
+// "a server error occurred" e não faz ideia do que fazer.
+//
+// O erro volta pela URL e vira um aviso no topo. Feio? É explícito, sobrevive
+// ao redesenho do servidor e não precisa de estado no cliente.
+async function comAviso(fn) {
+  let recado = null
+  try {
+    await fn()
+  } catch (e) {
+    recado = e?.message ?? 'Não foi possível concluir.'
+  }
+  revalidatePath('/notas')
+  // O redirect precisa ficar fora do try: ele funciona lançando, e dentro do
+  // catch viraria "erro" em vez de navegação.
+  redirect(recado ? `/notas?erro=${encodeURIComponent(recado)}` : '/notas')
+}
+
+export default async function Notas({ searchParams }) {
   const sessao = await requireSession()
+  const busca = await searchParams
+  const erro = busca?.erro ? String(busca.erro) : null
   const lista = await emitentes(sessao)
 
   async function emitir(formData) {
     'use server'
-    const s = await requireSession()
-    await emitirNfseDeTitulo(s, String(formData.get('titulo')))
-    revalidatePath('/notas')
+    const titulo = String(formData.get('titulo'))
+    await comAviso(async () => {
+      const s = await requireSession()
+      await emitirNfseDeTitulo(s, titulo)
+    })
   }
 
   async function atualizar(formData) {
     'use server'
-    const s = await requireSession()
-    await sincronizarDocumento(s, String(formData.get('documento')))
-    revalidatePath('/notas')
+    const documento = String(formData.get('documento'))
+    await comAviso(async () => {
+      const s = await requireSession()
+      await sincronizarDocumento(s, documento)
+    })
   }
 
   async function encerrar(formData) {
     'use server'
-    const s = await requireSession()
-    await encerrarManifesto(s, String(formData.get('documento')), {
-      uf: String(formData.get('uf') || '').toUpperCase(),
-      municipio: String(formData.get('municipio') || ''),
+    const documento = String(formData.get('documento'))
+    const uf = String(formData.get('uf') || '').toUpperCase()
+    const municipio = String(formData.get('municipio') || '')
+    await comAviso(async () => {
+      const s = await requireSession()
+      await encerrarManifesto(s, documento, { uf, municipio })
     })
-    revalidatePath('/notas')
   }
 
   // Sem emitente não há o que mostrar, e mostrar tabela vazia faria parecer
@@ -139,6 +170,13 @@ export default async function Notas() {
         />
       </div>
 
+      {erro && (
+        <div className="card" style={{ marginBottom: 14, borderColor: 'var(--critical)' }}>
+          <h2 style={{ color: 'var(--critical)' }}>A emissão não foi concluída</h2>
+          <p style={{ margin: 0 }}>{erro}</p>
+        </div>
+      )}
+
       <div className="grid cols-4" style={{ marginBottom: 14 }}>
         <Tile
           label="A receber sem nota" valor={brl(resumo.semNota?.valor)}
@@ -212,7 +250,18 @@ export default async function Notas() {
           Competência já vencida e sem documento fiscal emitido. É a lista do dia
           primeiro do mês.
         </p>
-        {!emitente ? (
+        {emitente && !emitente.habilita_nfse ? (
+          // O caminho que derrubou a tela em producao. O emitente existe e esta
+          // ativo, mas a empresa foi criada no emissor sem marcar NFS-e, entao
+          // o botao prometia uma coisa que a validacao ia recusar tres linhas
+          // depois. Melhor nao oferecer.
+          <p className="empty">
+            <strong>{emitente.razao_social}</strong> ainda não está habilitada
+            para NFS-e no emissor. Marque NFS-e no cadastro da empresa, preencha
+            a inscrição municipal e rode <code>npm run fiscalinstalar</code> para
+            trazer a mudança.
+          </p>
+        ) : !emitente ? (
           // Duas razões diferentes para não haver emitente, e dizer a errada
           // manda a pessoa procurar no lugar errado.
           <p className="empty">
