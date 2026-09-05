@@ -40,7 +40,8 @@
     "agendateste": "node --env-file=.env scripts/agendateste.mjs",
     "cursorteste": "node --env-file=.env scripts/cursorteste.mjs",
     "vendateste": "node --conditions=react-server --env-file=.env scripts/vendateste.mjs",
-    "impostoteste": "node --conditions=react-server --env-file=.env scripts/impostoteste.mjs"
+    "impostoteste": "node --conditions=react-server --env-file=.env scripts/impostoteste.mjs",
+    "paginas": "node --env-file=.env scripts/paginas.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
