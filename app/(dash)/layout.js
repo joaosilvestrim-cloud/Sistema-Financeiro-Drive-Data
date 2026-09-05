@@ -35,6 +35,7 @@ const MENU = [
   ]],
   ['Análise', [
     ['/indicadores', 'Indicadores', 'indicadores'],
+    ['/qualidade', 'Qualidade da previsão', 'qualidade'],
     ['/clientes', 'Clientes', 'clientes'],
     ['/produtividade', 'Produtividade', 'produtividade'],
     ['/metas', 'Metas', 'metas'],

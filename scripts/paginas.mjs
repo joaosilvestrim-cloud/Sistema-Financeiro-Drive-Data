@@ -35,6 +35,7 @@ const ROTAS = [
   ['/precificacao', 'Como o multiplicador sai'],
   ['/impostos', 'Como o número sai'],
   ['/indicadores', 'Prazo'],
+  ['/qualidade', 'Qualidade da previsão'],
   ['/clientes', 'Faturado'],
   ['/produtividade', 'Produtividade'],
   ['/metas', 'Metas'],

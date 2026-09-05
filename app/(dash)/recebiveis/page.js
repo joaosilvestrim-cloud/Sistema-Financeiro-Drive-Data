@@ -1,5 +1,6 @@
 import { requireSession } from '@/lib/session'
 import { aging, recebiveisAbertos } from '@/lib/queries'
+import Exportar from '@/components/Exportar'
 import { brl, dataCurta } from '@/lib/format'
 import HBars from '@/components/charts/HBars'
 
@@ -55,8 +56,25 @@ export default async function Recebiveis() {
       </div>
 
       <div className="card" style={{ overflowX: 'auto' }}>
-        <h2>Títulos em aberto</h2>
-        <p className="sub">Os {titulos.length} mais antigos primeiro.</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 12 }}>
+          <div>
+            <h2>Títulos em aberto</h2>
+            <p className="sub">Os {titulos.length} mais antigos primeiro.</p>
+          </div>
+          <Exportar
+            linhas={titulos} arquivo="titulos-em-aberto"
+            colunas={[
+              ['data_vencimento', 'Vencimento', 'data'],
+              ['cliente', 'Cliente', 'texto'],
+              ['descricao', 'Descrição', 'texto'],
+              ['categoria', 'Categoria', 'texto'],
+              ['total', 'Total', 'dinheiro'],
+              ['nao_pago', 'Em aberto', 'dinheiro'],
+              ['dias_atraso', 'Dias de atraso', 'inteiro'],
+              ['status_traduzido', 'Situação', 'texto'],
+            ]}
+          />
+        </div>
         <table>
           <thead>
             <tr>

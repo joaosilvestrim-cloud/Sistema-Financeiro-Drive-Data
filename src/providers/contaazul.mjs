@@ -20,6 +20,12 @@ const STATUS = {
   PENDING: 'EM_ABERTO', PENDENTE: 'EM_ABERTO', EM_ABERTO: 'EM_ABERTO', OPEN: 'EM_ABERTO',
   OVERDUE: 'ATRASADO', ATRASADO: 'ATRASADO', VENCIDO: 'ATRASADO',
   RECEIVED: 'RECEBIDO', RECEBIDO: 'RECEBIDO',
+  // A busca devolve ACQUITTED com status_traduzido RECEBIDO, e o detalhe
+  // devolve QUITADO sem traducao nenhuma. Sao a mesma coisa. Sem os dois aqui,
+  // a mesma parcela alternava entre RECEBIDO e QUITADO conforme o endpoint que
+  // a viu por ultimo, e cada troca gravava uma versao SCD2 que nao representa
+  // mudanca nenhuma no negocio.
+  ACQUITTED: 'RECEBIDO', QUITADO: 'RECEBIDO',
   PAID: 'PAGO', PAGO: 'PAGO',
   PARTIALLY_RECEIVED: 'PARCIAL', RECEBIDO_PARCIAL: 'PARCIAL',
   PARTIALLY_PAID: 'PARCIAL', PAGO_PARCIAL: 'PARCIAL', PARCIAL: 'PARCIAL',
@@ -189,7 +195,7 @@ export const mapBaixa = (installmentId) => (b) => {
 }
 
 // Formato da busca. Enxuto, sem evento e sem conta financeira.
-function daBusca(r, kind) {
+export function daBusca(r, kind) {
   return {
     external_id: id(r.id),
     event_external_id: id(first(r.id_evento, r.evento?.id)),
@@ -213,7 +219,7 @@ function daBusca(r, kind) {
 }
 
 // Formato do detalhe. Traz o evento, o rateio e as baixas.
-function doDetalhe(r) {
+export function doDetalhe(r) {
   const rateio = r.evento?.rateio?.[0]
   const bruto = first(r.valor_composicao?.valor_bruto, r.valor_composicao?.valor_liquido, r.valor_total_liquido)
   const pago = num(first(r.valor_pago, r.pago)) ?? 0

@@ -1,5 +1,6 @@
 import { requireSession } from '@/lib/session'
 import { topClientes } from '@/lib/queries'
+import Exportar from '@/components/Exportar'
 import { brl } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
@@ -24,6 +25,17 @@ export default async function Clientes() {
             {concentracao > 0.6 ? '. Concentração alta, vale acompanhar.' : '.'}
           </p>
         </div>
+        <Exportar
+          linhas={clientes} arquivo="clientes"
+          colunas={[
+            ['cliente', 'Cliente', 'texto'],
+            ['faturado', 'Faturado', 'dinheiro'],
+            ['em_aberto', 'Em aberto', 'dinheiro'],
+            ['vencido', 'Vencido', 'dinheiro'],
+            ['atraso_medio_dias', 'Atraso médio em dias', 'inteiro'],
+            ['participacao', 'Participação', 'percentual'],
+          ]}
+        />
       </div>
 
       <div className="card" style={{ overflowX: 'auto' }}>

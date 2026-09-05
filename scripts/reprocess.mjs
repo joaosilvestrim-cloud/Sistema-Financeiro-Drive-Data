@@ -11,7 +11,7 @@
 // milhares de chamadas na cota do cliente.
 
 import { pool, query } from '../src/db.mjs'
-import { mapBaixa } from '../src/providers/contaazul.mjs'
+import { mapBaixa, daBusca, doDetalhe } from '../src/providers/contaazul.mjs'
 import { ingestSettlements, ingestInstallments, loadDimensionMaps } from '../src/ingest.mjs'
 
 const args = Object.fromEntries(
@@ -54,6 +54,27 @@ for (const conn of conexoes) {
     if (recurso === 'settlement') {
       const baixas = fatia.map((r) => mapBaixa(r.payload.id_parcela)(r.payload))
       await ingestSettlements(ctx, maps, baixas)
+    } else if (recurso === 'installment') {
+      // O payload da busca e o do detalhe têm formatos diferentes, e só o
+      // detalhe traz o evento com o rateio. A presença de `evento` é o que
+      // separa os dois, e usar o mapeador errado perderia categoria e centro de
+      // custo em silêncio.
+      //
+      // O `kind` da busca não vem no payload, então ele é deduzido pelo que já
+      // está gravado. Parcela cujo tipo não dá para determinar fica de fora, o
+      // que é melhor que gravar do lado errado do DRE.
+      const tipos = new Map(
+        (await query(
+          `select external_id, kind from core.installment where connection_id = $1`,
+          [conn.id],
+        )).rows.map((x) => [x.external_id, x.kind]),
+      )
+      const parcelas = fatia
+        .map((x) => (x.payload.evento
+          ? doDetalhe(x.payload)
+          : daBusca(x.payload, tipos.get(String(x.payload.id)))))
+        .filter((p) => p.kind)
+      await ingestInstallments(ctx, maps, parcelas)
     } else {
       console.error(`recurso ${recurso} ainda nao tem reprocessamento`)
       await pool.end()

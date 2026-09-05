@@ -42,7 +42,9 @@
     "vendateste": "node --conditions=react-server --env-file=.env scripts/vendateste.mjs",
     "impostoteste": "node --conditions=react-server --env-file=.env scripts/impostoteste.mjs",
     "paginas": "node --env-file=.env scripts/paginas.mjs",
-    "funil": "node --conditions=react-server --env-file=.env scripts/funil.mjs"
+    "funil": "node --conditions=react-server --env-file=.env scripts/funil.mjs",
+    "csvsaida": "node scripts/csvsaida.mjs",
+    "memoriateste": "node --conditions=react-server --env-file=.env scripts/memoriateste.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

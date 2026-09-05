@@ -7,6 +7,7 @@ import {
 import { brl } from '@/lib/format'
 import Tile from '@/components/Tile'
 import Classificador from '@/components/Classificador'
+import Exportar from '@/components/Exportar'
 
 export const dynamic = 'force-dynamic'
 
@@ -137,7 +138,7 @@ export default async function Precificacao() {
         </table>
 
         {e.multiplicador && (
-          <p style={{ fontSize: 14, marginTop: 14, marginBottom: 0 }}>
+          <p style={{ fontSize: 14, marginTop: 14, marginBottom: 14 }}>
             Um serviço que custa <strong>{brl(1000)}</strong> para entregar precisa
             ser vendido por pelo menos{' '}
             <strong>{brl(1000 * e.multiplicador)}</strong> para não dar prejuízo.
@@ -146,6 +147,77 @@ export default async function Precificacao() {
             )}
           </p>
         )}
+      </div>
+
+      <div className="grid cols-2" style={{ marginBottom: 14 }}>
+        <div className="card">
+          <h2>Ponto de equilíbrio</h2>
+          <p className="sub">
+            Quanto precisa faturar para o resultado ser zero. Custo fixo dividido
+            pela margem de contribuição, que é o que sobra de cada real vendido
+            depois do custo direto e do imposto.
+          </p>
+          <table>
+            <tbody>
+              <tr>
+                <td>Margem de contribuição</td>
+                <td className="num">{pct(e.margemContribuicao)}</td>
+              </tr>
+              <tr>
+                <td>Custo fixo em 12 meses</td>
+                <td className="num">{brl(e.fixo)}</td>
+              </tr>
+              <tr style={{ fontWeight: 600 }}>
+                <td>Faturamento para empatar, por mês</td>
+                <td className="num">
+                  {e.pontoEquilibrio ? brl(e.pontoEquilibrio / e.meses) : '—'}
+                </td>
+              </tr>
+              <tr>
+                <td>Faturado por mês, na média</td>
+                <td className="num">{brl(e.receita / e.meses)}</td>
+              </tr>
+            </tbody>
+          </table>
+          {e.pontoEquilibrio && (
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 10, marginBottom: 0 }}>
+              {e.receita / e.meses > e.pontoEquilibrio / e.meses
+                ? `A empresa fatura ${brl(e.receita / e.meses - e.pontoEquilibrio / e.meses)} por mês acima do ponto de equilíbrio.`
+                : `Faltam ${brl(e.pontoEquilibrio / e.meses - e.receita / e.meses)} por mês para empatar.`}
+            </p>
+          )}
+        </div>
+
+        <div className="card">
+          <h2>Resultado operacional</h2>
+          <p className="sub">
+            EBITDA gerencial: receita menos custo direto, variável e fixo. Juros,
+            investimento e movimento não operacional ficam de fora, porque estão
+            classificados fora da operação.
+          </p>
+          <table>
+            <tbody>
+              <tr><td>Receita em {e.meses} meses</td><td className="num">{brl(e.receita)}</td></tr>
+              <tr><td>Custo direto</td><td className="num">−{brl(e.direto)}</td></tr>
+              <tr><td>Custo variável</td><td className="num">−{brl(e.variavel)}</td></tr>
+              <tr><td>Custo fixo</td><td className="num">−{brl(e.fixo)}</td></tr>
+              <tr style={{ fontWeight: 600, borderTop: '1px solid var(--border)' }}>
+                <td>EBITDA gerencial</td>
+                <td className="num" style={{ color: e.ebitda >= 0 ? 'var(--good-text)' : 'var(--critical)' }}>
+                  {brl(e.ebitda)}
+                </td>
+              </tr>
+              <tr><td>Margem</td><td className="num">{pct(e.margemEbitda)}</td></tr>
+            </tbody>
+          </table>
+          {!confiavel && (
+            <p style={{ fontSize: 12, color: 'var(--warning)', marginTop: 10, marginBottom: 0 }}>
+              Com {brl(e.naoClassificado)} sem classificação, este resultado está
+              otimista: o que falta classificar é despesa que ainda não entrou na
+              conta.
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
@@ -159,7 +231,19 @@ export default async function Precificacao() {
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
-        <h2>Resultado por centro de custo</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 12 }}>
+          <h2>Resultado por centro de custo</h2>
+          <Exportar
+            linhas={centros} arquivo="resultado-por-centro-de-custo"
+            colunas={[
+              ['centro', 'Centro de custo', 'texto'],
+              ['receita', 'Receita', 'dinheiro'],
+              ['despesa', 'Despesa', 'dinheiro'],
+              ['resultado', 'Resultado', 'dinheiro'],
+              ['titulos', 'Lançamentos', 'inteiro'],
+            ]}
+          />
+        </div>
         <p className="sub">
           Últimos 12 meses fechados. Não é resultado por produto, mas onde o
           centro de custo acompanha a linha de serviço, já responde o que dá
@@ -192,7 +276,17 @@ export default async function Precificacao() {
       </div>
 
       <div className="card">
-        <h2>Receita por cliente</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 12 }}>
+          <h2>Receita por cliente</h2>
+          <Exportar
+            linhas={clientes} arquivo="receita-por-cliente"
+            colunas={[
+              ['cliente', 'Cliente', 'texto'],
+              ['receita', 'Receita em 12 meses', 'dinheiro'],
+              ['titulos', 'Títulos', 'inteiro'],
+            ]}
+          />
+        </div>
         <p className="sub">
           Últimos 12 meses fechados. Isto é peso na receita, não lucro por
           cliente: o Conta Azul não amarra despesa a cliente, então o custo de

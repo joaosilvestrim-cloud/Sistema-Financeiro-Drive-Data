@@ -32,6 +32,8 @@ const D = {
   clientes: 'M6.1 7.4a2.3 2.3 0 1 0 0-4.6 2.3 2.3 0 0 0 0 4.6M1.7 13.6c0-2.4 2-4.1 4.4-4.1s4.4 1.7 4.4 4.1M11 3.1a2.2 2.2 0 0 1 0 4.2M12.3 9.9c1.3.5 2 1.8 2 3.2',
   // Relógio.
   produtividade: 'M8 1.7a6.3 6.3 0 1 0 0 12.6A6.3 6.3 0 0 0 8 1.7M8 4.4V8l2.6 1.6',
+  // Relogio com seta de voltar, para memoria da previsao.
+  qualidade: 'M2.4 8a5.6 5.6 0 1 0 1.7-4M2.4 3.1v3.2h3.2M8 5.2V8.4l2.4 1.5',
   // Alvo.
   metas: 'M8 1.9a6.1 6.1 0 1 0 0 12.2A6.1 6.1 0 0 0 8 1.9M8 5.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6M8 7.7h.01',
   // Cartão com tarja.

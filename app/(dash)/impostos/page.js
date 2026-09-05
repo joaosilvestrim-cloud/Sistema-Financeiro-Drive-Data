@@ -8,6 +8,7 @@ import {
 import { brl, rotuloMes } from '@/lib/format'
 import Tile from '@/components/Tile'
 import RegimeCliente from '@/components/RegimeCliente'
+import Exportar from '@/components/Exportar'
 
 export const dynamic = 'force-dynamic'
 
@@ -165,7 +166,20 @@ export default async function Impostos({ searchParams }) {
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
-        <h2>Faturamento por cliente</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 12 }}>
+          <h2>Faturamento por cliente</h2>
+          <Exportar
+            linhas={p.clientes} arquivo={`provisao-imposto-${mes}`}
+            colunas={[
+              ['cliente', 'Cliente', 'texto'],
+              ['anexo', 'Anexo', 'texto'],
+              ['receita', 'Faturamento', 'dinheiro'],
+              ['aliquota', 'Alíquota em %', 'numero'],
+              ['imposto', 'Imposto', 'dinheiro'],
+              ['titulos', 'Títulos', 'inteiro'],
+            ]}
+          />
+        </div>
         <p className="sub">
           O anexo é decidido pela atividade e pelo fator R de cada contrato, não
           pela empresa. Por isso ele é marcado cliente a cliente, e fica guardado
