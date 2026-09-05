@@ -138,3 +138,48 @@ rodar.
 **Escopo Production e Preview.** Metade das variáveis está só em Production. O
 app funciona, mas qualquer deploy de preview sobe sem Supabase e responde 503 na
 tela de configuração incompleta. Se preview não for usado, tudo bem.
+
+## Variáveis da emissão fiscal (05/09/2026)
+
+Duas, e só duas:
+
+| Variável | Valor | Para quê |
+| --- | --- | --- |
+| `FOCUS_AMBIENTE` | `homologacao` ou `producao` | decide se a nota é de verdade |
+| `FOCUS_WEBHOOK_SECRET` | valor longo e aleatório | autentica o gatilho que a Focus manda de volta |
+
+O token da Focus **não** vai para a Vercel. Ele mora cifrado em
+`core.fiscal_conta`, com a mesma chave dos tokens da Conta Azul, e quem o coloca
+lá é `npm run fiscalinstalar`. Ver `docs/FISCAL.md`.
+
+Para gerar o segredo:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+```
+
+## A pegadinha que custou uma hora
+
+**A Vercel prende a variável ao build.** Adicionar uma variável não afeta o
+deploy que já está rodando. O painel mostra a variável lá, o processo não a
+enxerga, e o sintoma é uma rota respondendo que a variável está ausente enquanto
+você olha para ela na tela.
+
+Aconteceu exatamente isso com `FOCUS_WEBHOOK_SECRET`: o commit no ar era o
+certo, todas as etapas passavam, e as duas variáveis novas apareciam como
+ausentes. Não era código, era build velho.
+
+Depois de adicionar ou mudar qualquer variável, **refaça o deploy**. E confira
+se o alvo Production está marcado, porque marcar só Preview produz o mesmo
+sintoma.
+
+Para saber o que está no ar de verdade, em vez de adivinhar:
+
+```bash
+npm run saude
+```
+
+Ele diz qual commit está servindo, avisa se o commit local é outro, lista as
+variáveis que o processo enxerga (só se existem, nunca o valor) e roda as
+consultas das telas contra o banco de produção. `DATABASE_URL` aparecendo como
+ausente está certo: em produção o app usa o pooler.
