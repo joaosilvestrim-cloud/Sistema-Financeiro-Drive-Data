@@ -1,19 +1,20 @@
 'use client'
 import { useEffect, useState } from 'react'
 
-// Botão de tema, flutuante no canto.
+// Troca entre tema claro e escuro.
 //
-// Fica fora do painel de propósito: as telas de cadastro, planos, termos e
-// carga também precisam dele, e nenhuma delas tem barra lateral.
+// Duas formas, o mesmo comportamento. Dentro do painel ele é um botão escrito,
+// no rodapé da barra lateral, onde alguém procuraria por uma preferência. Fora
+// do painel, nas telas que não têm barra lateral, ele flutua no canto.
 //
-// A escolha vive no localStorage e é aplicada pelo script inline do layout,
-// antes da primeira pintura. Aqui só trocamos o atributo e guardamos.
+// A escolha vive no localStorage e quem a aplica é o script inline do layout
+// raiz, antes da primeira pintura. Aqui só trocamos o atributo e guardamos.
 
-export default function TemaToggle() {
+export default function TemaToggle({ flutuante = true }) {
   const [tema, setTema] = useState(null)
 
-  // Lê o que o script inline já decidiu, em vez de decidir de novo. Decidir
-  // duas vezes daria divergência entre o servidor e o cliente.
+  // Lê o que o script inline já decidiu, em vez de decidir de novo. Decidir duas
+  // vezes daria divergência entre o servidor e o cliente.
   useEffect(() => {
     setTema(document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light')
   }, [])
@@ -25,15 +26,26 @@ export default function TemaToggle() {
     setTema(novo)
   }
 
-  // Enquanto não sabe o tema, não desenha. Desenhar "escuro" e corrigir para
-  // "claro" no instante seguinte é o mesmo piscar que o script inline evita.
+  // Enquanto não sabe o tema, não desenha. Desenhar um estado e corrigir no
+  // instante seguinte é o mesmo piscar que o script inline evita.
   if (!tema) return null
+
+  const rotulo = tema === 'dark' ? 'Tema claro' : 'Tema escuro'
+
+  if (!flutuante) {
+    return (
+      <button className="toggle" type="button" onClick={alternar} title={rotulo}>
+        {tema === 'dark' ? '☀' : '☾'} {rotulo}
+      </button>
+    )
+  }
 
   return (
     <button
+      className="tema-flutuante"
       onClick={alternar}
-      aria-label={tema === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-      title={tema === 'dark' ? 'Tema claro' : 'Tema escuro'}
+      aria-label={rotulo}
+      title={rotulo}
       style={{
         position: 'fixed', right: 14, bottom: 14, zIndex: 50,
         width: 34, height: 34, borderRadius: 999,

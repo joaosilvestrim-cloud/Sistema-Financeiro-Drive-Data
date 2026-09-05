@@ -5,23 +5,45 @@ import Marca from '@/components/Marca'
 import NavLink from '@/components/NavLink'
 import EmpresaSelect from '@/components/EmpresaSelect'
 import { desde } from '@/lib/format'
+import TemaToggle from '@/components/TemaToggle'
 
-const PAGINAS = [
-  ['/resumo', 'Resumo executivo'],
-  ['/', 'Visão geral'],
-  ['/fluxo', 'Fluxo de caixa'],
-  ['/recebiveis', 'Recebíveis'],
-  ['/previsao', 'Previsão'],
-  ['/indicadores', 'Indicadores'],
-  ['/metas', 'Metas'],
-  ['/produtividade', 'Produtividade'],
-  ['/dre', 'DRE gerencial'],
-  ['/precificacao', 'Preço e custo'],
-  ['/impostos', 'Impostos'],
-  ['/clientes', 'Clientes'],
-  ['/dados', 'Dados auxiliares'],
-  ['/fatura', 'Fatura de cartão'],
-  ['/conexoes', 'Conexões'],
+// O menu segue a ordem em que um financeiro lê a empresa, e não a ordem em que
+// as telas foram construídas.
+//
+// A separação entre Caixa e Resultado é a divisão contábil que mais importa e a
+// que mais gera confusão: caixa é quando o dinheiro entra e sai, resultado é
+// quando o fato acontece. Ver as duas coisas na mesma lista faz alguém comparar
+// o fluxo de caixa com o DRE e achar que um dos dois está errado.
+//
+// Depois vem Análise, que interpreta o que os dois primeiros mostraram, e por
+// último Dados, que é onde se alimenta e se conecta o sistema. Configuração
+// nunca vem antes de conteúdo.
+const MENU = [
+  ['Panorama', [
+    ['/resumo', 'Resumo executivo'],
+    ['/', 'Visão geral'],
+  ]],
+  ['Caixa', [
+    ['/fluxo', 'Fluxo de caixa'],
+    ['/previsao', 'Projeção de saldo'],
+    ['/recebiveis', 'Recebíveis'],
+  ]],
+  ['Resultado', [
+    ['/dre', 'DRE gerencial'],
+    ['/precificacao', 'Preço e custo'],
+    ['/impostos', 'Impostos'],
+  ]],
+  ['Análise', [
+    ['/indicadores', 'Indicadores'],
+    ['/clientes', 'Clientes'],
+    ['/produtividade', 'Produtividade'],
+    ['/metas', 'Metas'],
+  ]],
+  ['Dados', [
+    ['/fatura', 'Fatura de cartão'],
+    ['/dados', 'Dados auxiliares'],
+    ['/conexoes', 'Conexões'],
+  ]],
 ]
 
 export default async function DashLayout({ children }) {
@@ -54,8 +76,13 @@ export default async function DashLayout({ children }) {
         />
 
         <nav className="nav">
-          {PAGINAS.map(([href, titulo]) => (
-            <NavLink key={href} href={href}>{titulo}</NavLink>
+          {MENU.map(([grupo, itens]) => (
+            <div key={grupo}>
+              <div className="grupo">{grupo}</div>
+              {itens.map(([href, titulo]) => (
+                <NavLink key={href} href={href}>{titulo}</NavLink>
+              ))}
+            </div>
           ))}
         </nav>
 
@@ -69,9 +96,12 @@ export default async function DashLayout({ children }) {
             </div>
           )}
           <div>sincronizado {desde(ultimoSync)}</div>
-          <form action="/auth/signout" method="post">
-            <button className="toggle" style={{ marginTop: 8 }} type="submit">Sair</button>
-          </form>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+            <form action="/auth/signout" method="post">
+              <button className="toggle" type="submit">Sair</button>
+            </form>
+            <TemaToggle flutuante={false} />
+          </div>
         </footer>
       </aside>
 
