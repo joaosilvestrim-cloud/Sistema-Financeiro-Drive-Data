@@ -94,6 +94,36 @@ export async function GET() {
     return t.map((x) => x.table_name)
   }))
 
+  // O caminho exato que as telas fazem. As etapas acima passam e as telas
+  // quebram, entao o erro esta entre a sessao e a primeira consulta da pagina.
+  etapas.push(await tenta('requireSession completo', async () => {
+    const { requireSession } = await import('@/lib/session')
+    const s = await requireSession()
+    return {
+      tenant: s.tenantNome, escopo: s.connectionId ?? 'consolidado',
+      conexoes: s.conexoes?.length, conta: s.conta,
+    }
+  }))
+
+  etapas.push(await tenta('dados da tela DRE', async () => {
+    const { requireSession } = await import('@/lib/session')
+    const { dre } = await import('@/lib/dre')
+    const d = await dre(await requireSession(), 'mes')
+    return { periodos: d.periodos.length, receitas: d.receitas.length }
+  }))
+
+  etapas.push(await tenta('dados do Resumo executivo', async () => {
+    const { requireSession } = await import('@/lib/session')
+    const { conciliacao } = await import('@/lib/executivo')
+    const c = await conciliacao(await requireSession())
+    return { pendentes: c.pendentes, conciliadas: c.conciliadas }
+  }))
+
+  etapas.push(await tenta('componente Marca', async () => {
+    const m = await import('@/components/Marca')
+    return { carregou: typeof m.default === 'function' }
+  }))
+
   return NextResponse.json({
     ambiente: {
       vercel: !!process.env.VERCEL,
