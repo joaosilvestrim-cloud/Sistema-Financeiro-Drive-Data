@@ -115,8 +115,11 @@ export default function Cascata({ passos, formato = 'brl' }) {
                 <rect x={x(i)} y={cima} width={largura} height={Math.max(alto, 2)}
                       fill="none" stroke="var(--text-muted)" strokeDasharray="4 3" rx="3" />
               )}
+              {/* Subtotal e total nao tem valor proprio: eles mostram onde o
+                  acumulado chegou. Rotular pelo `valor` deles imprimiria zero. */}
               <text className="rotulo-valor" x={x(i) + largura / 2} y={cima - 7} textAnchor="middle">
-                {b.tipo === 'baixa' ? '−' : ''}{compacto(b.valor)}
+                {b.tipo === 'baixa' ? '−' : ''}
+                {compacto(b.tipo === 'subtotal' || b.tipo === 'total' ? b.ate : b.valor)}
               </text>
             </g>
           )
@@ -143,10 +146,13 @@ export default function Cascata({ passos, formato = 'brl' }) {
           <div className="t-title">{barras[ativo].rotulo}</div>
           <div className="t-row">
             <span>{barras[ativo].tipo === 'baixa' ? 'sai' : 'valor'}</span>
-            <span>{fmt(barras[ativo].valor)}</span>
+            <span>
+              {fmt(barras[ativo].tipo === 'subtotal' || barras[ativo].tipo === 'total'
+                ? barras[ativo].ate : barras[ativo].valor)}
+            </span>
           </div>
-          {barras[ativo].acumulado !== null && (
-            <div className="t-row"><span>acumulado</span><span>{fmt(barras[ativo].acumulado)}</span></div>
+          {barras[ativo].tipo === 'baixa' && barras[ativo].acumulado !== null && (
+            <div className="t-row"><span>sobra</span><span>{fmt(barras[ativo].acumulado)}</span></div>
           )}
           {barras[ativo].nota && (
             <div className="t-row" style={{ color: 'var(--text-muted)', marginTop: 4 }}>

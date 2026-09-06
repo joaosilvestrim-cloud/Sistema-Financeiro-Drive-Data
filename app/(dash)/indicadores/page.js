@@ -7,10 +7,11 @@ import { brl, rotuloMes, indice } from '@/lib/format'
 import { Suspense } from 'react'
 import Tile from '@/components/Tile'
 import BulletIA from '@/components/BulletIA'
-import HBars from '@/components/charts/HBars'
 import LinhaKpi from '@/components/charts/LinhaKpi'
 import FaltaSerie from '@/components/FaltaSerie'
 import LinhaExpansivel from '@/components/LinhaExpansivel'
+import Pareto from '@/components/charts/Pareto'
+import Calendario from '@/components/charts/Calendario'
 
 export const dynamic = 'force-dynamic'
 
@@ -97,16 +98,7 @@ export default async function Indicadores() {
             Meses com menos de dois anos de histórico ficam de fora.
           </p>
           {comSazonalidade.length ? (
-            <HBars
-              formato="indice"
-              dados={comSazonalidade.map((s) => ({
-                rotulo: MESES[s.mes_do_ano - 1],
-                valor: Number(s.indice),
-                cor: Number(s.indice) >= 1 ? 'var(--series-1)' : 'var(--ramp-250)',
-                nota: brl(s.media),
-              }))}
-              altura={24}
-            />
+            <Calendario meses={comSazonalidade} />
           ) : (
             <p className="empty">
               Menos de dois anos de histórico. O índice sazonal só passa a valer com dois ciclos completos.
@@ -117,8 +109,17 @@ export default async function Indicadores() {
 
         <div className="card">
           <h2>Concentração de receita</h2>
-          <p className="sub">Participação de cada cliente e acumulado, para leitura de Pareto.</p>
-          <table>
+          <p className="sub">
+            Quantos clientes seguram a empresa. As barras acesas são as que
+            somam os primeiros 80% do faturamento.
+          </p>
+          <Pareto dados={acumulado.map((c) => ({
+            rotulo: c.cliente,
+            valor: Number(c.faturado),
+            participacao: Number(c.participacao),
+            acumulado: c.acumulado,
+          }))} />
+          <table style={{ marginTop: 16 }}>
             <thead>
               <tr><th>Cliente</th><th className="num">Participação</th><th className="num">Acumulado</th></tr>
             </thead>

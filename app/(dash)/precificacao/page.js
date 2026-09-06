@@ -10,6 +10,7 @@ import Tile from '@/components/Tile'
 import Classificador from '@/components/Classificador'
 import Exportar from '@/components/Exportar'
 import LinhaExpansivel from '@/components/LinhaExpansivel'
+import Cascata from '@/components/charts/Cascata'
 
 export const dynamic = 'force-dynamic'
 
@@ -138,7 +139,24 @@ export default async function Precificacao({ searchParams }) {
           coisa. O que resta é o teto que o custo do que você entrega pode
           ocupar. Clique numa linha para ver as categorias por trás dela.
         </p>
-        <table>
+        <Cascata passos={[
+          { rotulo: 'Receita', valor: e.receita, tipo: 'base' },
+          { rotulo: 'Custo variável', valor: e.variavel, tipo: 'baixa',
+            nota: 'imposto e comissão' },
+          { rotulo: 'Custo fixo', valor: e.fixo, tipo: 'baixa',
+            nota: 'existe mesmo sem vender' },
+          { rotulo: 'Sobra', valor: 0, tipo: 'subtotal',
+            nota: 'o teto do custo direto' },
+          { rotulo: 'Custo direto', valor: e.direto, tipo: 'baixa',
+            nota: 'o que a entrega consumiu' },
+          { rotulo: 'Resultado', valor: 0, tipo: 'total' },
+          ...(e.naoClassificado > 0 ? [{
+            rotulo: 'Sem classificação', valor: e.naoClassificado, tipo: 'fora',
+            nota: `${e.titulosNaoClassificados} título(s) sem classe no ERP`,
+          }] : []),
+        ]} />
+
+        <table style={{ marginTop: 18 }}>
           <thead>
             <tr>
               <th />

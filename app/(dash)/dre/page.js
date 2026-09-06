@@ -3,6 +3,7 @@ import { requireSession } from '@/lib/session'
 import { dre, rotuloPeriodo, granularidades } from '@/lib/dre'
 import { brl } from '@/lib/format'
 import LinhaExpansivel from '@/components/LinhaExpansivel'
+import Rosca from '@/components/charts/Rosca'
 
 export const dynamic = 'force-dynamic'
 
@@ -163,6 +164,27 @@ export default async function Dre({ searchParams }) {
               Por {g.rotulo}
             </Link>
           ))}
+        </div>
+      </div>
+
+      <div className="grid cols-2" style={{ marginBottom: 14 }}>
+        <div className="card">
+          <h2>Para onde vai a despesa</h2>
+          <p className="sub">
+            Composição dos {rotuloPeriodo(d.periodos[0], grao)} até{' '}
+            {rotuloPeriodo(d.periodos.at(-1), grao)}, por grupo do plano de contas.
+          </p>
+          <Rosca titulo="despesa"
+                 fatias={d.despesas.map((g) => ({ rotulo: nomeDoGrupo(g.grupo), valor: g.total }))} />
+        </div>
+        <div className="card">
+          <h2>De onde vem a receita</h2>
+          <p className="sub">
+            Mesma janela. Quando um grupo só ocupa quase tudo, a empresa depende
+            de uma linha de serviço.
+          </p>
+          <Rosca titulo="receita"
+                 fatias={d.receitas.map((g) => ({ rotulo: nomeDoGrupo(g.grupo), valor: g.total }))} />
         </div>
       </div>
 

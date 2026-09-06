@@ -51,7 +51,8 @@
     "saude": "node --conditions=react-server --env-file=.env scripts/saude.mjs",
     "conferirvercel": "node --conditions=react-server --env-file=.env scripts/conferirvercel.mjs",
     "segurancateste": "node --conditions=react-server --env-file=.env scripts/segurancateste.mjs",
-    "lintar": "node scripts/lintar.mjs"
+    "lintar": "node scripts/lintar.mjs",
+    "desenhos": "node --conditions=react-server --env-file=.env scripts/desenhos.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
