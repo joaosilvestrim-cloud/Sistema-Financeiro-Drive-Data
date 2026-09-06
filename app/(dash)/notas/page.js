@@ -118,12 +118,36 @@ export default async function Notas({ searchParams }) {
     manifestosEmViagem(sessao), resumoFiscal(sessao), motivosSemNota(sessao, meses),
   ])
 
+  // Uma frase por motivo, no singular ou no plural conforme o número. Texto que
+  // erra a concordância no próprio painel do contador não passa despercebido.
+  const frase = (m, um, muitos) => {
+    const n = m?.titulos ?? 0
+    return n > 0 ? `${n} ${n === 1 ? um : muitos}` : null
+  }
   const fora = [
-    motivos.nota_no_erp && `${motivos.nota_no_erp.titulos} já têm nota emitida no Conta Azul`,
-    motivos.nota_nossa && `${motivos.nota_nossa.titulos} já foram emitidos daqui`,
-    motivos.sem_documento && `${motivos.sem_documento.titulos} estão sem CPF ou CNPJ do cliente no ERP`,
-    motivos.sem_valor && `${motivos.sem_valor.titulos} não têm valor`,
+    frase(motivos.nota_no_erp, 'já tem nota emitida no Conta Azul', 'já têm nota emitida no Conta Azul'),
+    frase(motivos.nota_nossa, 'já foi emitido daqui', 'já foram emitidos daqui'),
+    frase(motivos.sem_documento, 'está sem CPF ou CNPJ do cliente no ERP', 'estão sem CPF ou CNPJ do cliente no ERP'),
+    frase(motivos.sem_valor, 'não tem valor', 'não têm valor'),
   ].filter(Boolean)
+
+  // O que impede a emissão agora, se algo impedir. Uma razão só, na ordem em
+  // que elas se resolvem.
+  const impedimento = !emitente
+    ? (!sessao.connectionId && lista.length > 1
+        ? 'Selecione uma empresa no topo da barra lateral. Com mais de um emitente '
+          + 'e nenhuma empresa escolhida, emitir pela errada seria fácil demais.'
+        : semToken.length
+        ? `${semToken.map((e) => e.razao_social).join(', ')} está cadastrada mas sem token `
+          + 'da Focus, então não emite. Rode npm run fiscalinstalar.'
+        : 'Nenhum emitente está ligado à empresa selecionada. O vínculo entre a empresa '
+          + 'do Conta Azul e a empresa na Focus é o que faz a nota nascer do título. '
+          + 'Rode npm run fiscalinstalar para criá-lo.')
+    : !emitente.habilita_nfse
+    ? `${emitente.razao_social} ainda não está habilitada para NFS-e no emissor. `
+      + 'Marque NFS-e no cadastro da empresa, preencha a inscrição municipal e rode '
+      + 'npm run fiscalinstalar para trazer a mudança.'
+    : null
 
   // Emitente cadastrado e sem token não emite, e o erro só apareceria no
   // clique, falando de outra coisa.
@@ -165,8 +189,14 @@ export default async function Notas({ searchParams }) {
 
       <div className="grid cols-4" style={{ marginBottom: 14 }}>
         <Tile
-          label="A receber sem nota" valor={brl(resumo.semNota?.valor)}
-          nota={`${resumo.semNota?.titulos ?? 0} título(s) pendente(s), em todo o histórico`}
+          label="A receber sem nota" valor={brl(motivos.pendente?.valor ?? 0)}
+          nota={(() => {
+            const n = motivos.pendente?.titulos ?? 0
+            const todos = resumo.semNota?.titulos ?? 0
+            if (!meses) return `${todos} ${todos === 1 ? 'título pendente' : 'títulos pendentes'}`
+            return `${n} ${n === 1 ? 'pendente' : 'pendentes'} nos últimos ${meses} meses`
+              + `, de ${todos} no histórico`
+          })()}
           tom={Number(resumo.semNota?.titulos) > 0 ? 'warn' : null}
         />
         <Tile
@@ -251,34 +281,20 @@ export default async function Notas({ searchParams }) {
             ))}
           </div>
         </div>
-        {emitente && !emitente.habilita_nfse ? (
-          // O caminho que derrubou a tela em producao. O emitente existe e esta
-          // ativo, mas a empresa foi criada no emissor sem marcar NFS-e, entao
-          // o botao prometia uma coisa que a validacao ia recusar tres linhas
-          // depois. Melhor nao oferecer.
+        {/* O impedimento é um aviso, não uma cortina.
+            
+            A versão anterior trocava a tabela inteira pela explicação de por que
+            não dá para emitir, e escondia justamente o que a Tamires pediu para
+            ver: quais títulos estão sem nota. Saber o que falta faturar não
+            depende de o emissor estar pronto, e é útil antes disso. */}
+        {impedimento && (
+          <p className="empty" style={{ textAlign: 'left', marginBottom: 4 }}>{impedimento}</p>
+        )}
+
+        {semNota.length === 0 ? (
           <p className="empty">
-            <strong>{emitente.razao_social}</strong> ainda não está habilitada
-            para NFS-e no emissor. Marque NFS-e no cadastro da empresa, preencha
-            a inscrição municipal e rode <code>npm run fiscalinstalar</code> para
-            trazer a mudança.
-          </p>
-        ) : !emitente ? (
-          // Duas razões diferentes para não haver emitente, e dizer a errada
-          // manda a pessoa procurar no lugar errado.
-          <p className="empty">
-            {!sessao.connectionId && lista.length > 1
-              ? 'Selecione uma empresa no topo da barra lateral. Com mais de um '
-                + 'emitente e nenhuma empresa escolhida, emitir pela errada seria fácil demais.'
-              : semToken.length
-              ? `${semToken.map((e) => e.razao_social).join(', ')} está cadastrada mas sem `
-                + 'token da Focus, então não emite. Rode npm run fiscalinstalar.'
-              : 'Nenhum emitente está ligado à empresa selecionada. O vínculo entre '
-                + 'a empresa do Conta Azul e a empresa na Focus é o que faz a nota '
-                + 'nascer do título. Rode npm run fiscalinstalar para criá-lo.'}
-          </p>
-        ) : semNota.length === 0 ? (
-          <p className="empty">
-            Nada pendente nesta janela. {fora.length > 0 && `Dos títulos do período, ${fora.join(', ')}.`}
+            Nada pendente nesta janela.
+            {fora.length > 0 && ` Dos títulos do período, ${fora.join('; ')}.`}
           </p>
         ) : (
           <table>
@@ -304,8 +320,8 @@ export default async function Notas({ searchParams }) {
                     <form action={emitir}>
                       <input type="hidden" name="titulo" value={t.installment_id} />
                       <button className="toggle" type="submit"
-                              disabled={!t.pessoa_documento}
-                              title={t.pessoa_documento ? undefined : 'Cliente sem CPF ou CNPJ no ERP'}>
+                              disabled={!!impedimento}
+                              title={impedimento ?? undefined}>
                         Emitir NFS-e
                       </button>
                     </form>
@@ -318,8 +334,8 @@ export default async function Notas({ searchParams }) {
 
         {fora.length > 0 && (
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 12, marginBottom: 0 }}>
-            Nesta janela, {fora.join('; ')}. Eles não aparecem acima de
-            propósito: o botão de emitir só existe onde emitir é o que falta.
+            {`Nesta janela, ${fora.join('; ')}. Eles não aparecem acima de propósito: `
+              + 'o botão de emitir só existe onde emitir é o que falta.'}
           </p>
         )}
       </div>
