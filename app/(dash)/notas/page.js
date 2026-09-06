@@ -4,8 +4,9 @@ import Aviso from '@/components/Aviso'
 import {
   emitentes, emitenteDoEscopo, documentos, recebiveisSemNota,
   manifestosEmViagem, resumoFiscal, emitirNfseDeTitulo,
-  sincronizarDocumento, encerrarManifesto,
+  sincronizarDocumento, encerrarManifesto, motivosSemNota,
 } from '@/lib/fiscal'
+import Link from 'next/link'
 import { brl, dataCurta } from '@/lib/format'
 import Tile from '@/components/Tile'
 import Exportar from '@/components/Exportar'
@@ -43,6 +44,11 @@ export default async function Notas({ searchParams }) {
   const sessao = await requireSession()
   const busca = await searchParams
   const erro = busca?.erro ? String(busca.erro) : null
+  // Janela de competência. Três meses por padrão: nota de competência antiga
+  // quase nunca é emissão esquecida, é histórico, e abrir a tela com 381 linhas
+  // de 2024 enterrava as seis que importam hoje.
+  const JANELAS = [['3', '3 meses'], ['6', '6 meses'], ['12', '12 meses'], ['0', 'tudo']]
+  const meses = JANELAS.some(([v]) => v === busca?.meses) ? Number(busca.meses) : 3
   const lista = await emitentes(sessao)
 
   async function emitir(formData) {
@@ -106,10 +112,18 @@ export default async function Notas({ searchParams }) {
     )
   }
 
-  const [emitente, docs, semNota, viagem, resumo] = await Promise.all([
-    emitenteDoEscopo(sessao), documentos(sessao, 60), recebiveisSemNota(sessao, 60),
-    manifestosEmViagem(sessao), resumoFiscal(sessao),
+  const [emitente, docs, semNota, viagem, resumo, motivos] = await Promise.all([
+    emitenteDoEscopo(sessao), documentos(sessao, 60),
+    recebiveisSemNota(sessao, { meses, limite: 60 }),
+    manifestosEmViagem(sessao), resumoFiscal(sessao), motivosSemNota(sessao, meses),
   ])
+
+  const fora = [
+    motivos.nota_no_erp && `${motivos.nota_no_erp.titulos} já têm nota emitida no Conta Azul`,
+    motivos.nota_nossa && `${motivos.nota_nossa.titulos} já foram emitidos daqui`,
+    motivos.sem_documento && `${motivos.sem_documento.titulos} estão sem CPF ou CNPJ do cliente no ERP`,
+    motivos.sem_valor && `${motivos.sem_valor.titulos} não têm valor`,
+  ].filter(Boolean)
 
   // Emitente cadastrado e sem token não emite, e o erro só apareceria no
   // clique, falando de outra coisa.
@@ -152,7 +166,7 @@ export default async function Notas({ searchParams }) {
       <div className="grid cols-4" style={{ marginBottom: 14 }}>
         <Tile
           label="A receber sem nota" valor={brl(resumo.semNota?.valor)}
-          nota={`${resumo.semNota?.titulos ?? 0} título(s) de competência já vencida`}
+          nota={`${resumo.semNota?.titulos ?? 0} título(s) pendente(s), em todo o histórico`}
           tom={Number(resumo.semNota?.titulos) > 0 ? 'warn' : null}
         />
         <Tile
@@ -217,11 +231,26 @@ export default async function Notas({ searchParams }) {
       )}
 
       <div className="card" style={{ marginBottom: 14 }}>
-        <h2>A receber que ainda não virou nota</h2>
-        <p className="sub">
-          Competência já vencida e sem documento fiscal emitido. É a lista do dia
-          primeiro do mês.
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <h2>A receber que ainda não virou nota</h2>
+            <p className="sub">
+              Só o que realmente não tem nota. Título que o Conta Azul já
+              faturou traz o número na própria descrição e fica de fora, porque
+              emitir de novo criaria nota duplicada.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {JANELAS.map(([valor, rotulo]) => (
+              <Link
+                key={valor} href={`/notas?meses=${valor}`} className="toggle"
+                style={String(meses) === valor ? { borderColor: 'var(--text-primary)' } : undefined}
+              >
+                {rotulo}
+              </Link>
+            ))}
+          </div>
+        </div>
         {emitente && !emitente.habilita_nfse ? (
           // O caminho que derrubou a tela em producao. O emitente existe e esta
           // ativo, mas a empresa foi criada no emissor sem marcar NFS-e, entao
@@ -248,7 +277,9 @@ export default async function Notas({ searchParams }) {
                 + 'nascer do título. Rode npm run fiscalinstalar para criá-lo.'}
           </p>
         ) : semNota.length === 0 ? (
-          <p className="empty">Tudo que venceu já tem nota. Nada a fazer aqui.</p>
+          <p className="empty">
+            Nada pendente nesta janela. {fora.length > 0 && `Dos títulos do período, ${fora.join(', ')}.`}
+          </p>
         ) : (
           <table>
             <thead>
@@ -283,6 +314,13 @@ export default async function Notas({ searchParams }) {
               ))}
             </tbody>
           </table>
+        )}
+
+        {fora.length > 0 && (
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 12, marginBottom: 0 }}>
+            Nesta janela, {fora.join('; ')}. Eles não aparecem acima de
+            propósito: o botão de emitir só existe onde emitir é o que falta.
+          </p>
         )}
       </div>
 

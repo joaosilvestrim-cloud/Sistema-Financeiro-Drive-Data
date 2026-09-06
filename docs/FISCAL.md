@@ -256,6 +256,51 @@ Notas fiscais mostra um cartão com os que estão em viagem e há quantos dias, 
 
 Este é o pedaço com menos concorrência do que foi construído aqui.
 
+## "Somente as que realmente não têm nota"
+
+Pedido da Tamires, olhando a tela no primeiro dia. A lista mostrava 381 títulos
+e R$ 1,7 milhão, começando em outubro de 2024, com o botão de emitir em todos.
+
+Era pior que uma lista suja. O botão oferecia emitir uma **segunda** nota para
+venda já faturada, e nota duplicada é imposto duplicado e retificação na
+prefeitura. A lista errada era o defeito; o botão era o risco.
+
+A causa: a view só sabia de nota emitida por nós. Como o sistema começou
+ontem, todo o histórico parecia pendente.
+
+O sinal que faltava estava na frente o tempo todo. O Conta Azul carimba o
+número na própria descrição do título quando a nota sai por lá:
+
+```
+Venda 298 / NFS-e:333 - RPS:360
+```
+
+São 277 dos 381. Ler isso não custa nada, é auto-corrigível (quem emitir a nota
+no ERP some da lista na sincronização seguinte) e não depende de mais nenhuma
+integração.
+
+A view `mart.recebivel_para_nota` deixou de filtrar e passou a **explicar**.
+Ela devolve todo recebível com um motivo, e quem decide o que mostrar é a tela:
+
+| Motivo | Quantos | Valor |
+| --- | --- | --- |
+| `nota_no_erp` | 277 | R$ 1.343.553 |
+| `pendente` | 75 | R$ 342.508 |
+| `sem_documento` | 28 | R$ 82.251 |
+| `sem_valor` | 1 | R$ 0 |
+
+Assim o número que sobra é defensável: a tela diz quantos ficaram de fora e por
+quê, em vez de entregar uma lista menor sem justificativa, que é como se perde
+confiança num sistema que mexe com imposto.
+
+A tela ganhou também uma janela de competência, três meses por padrão. Nota de
+competência antiga quase nunca é emissão esquecida, é histórico. Na janela
+padrão sobram seis títulos, que é uma lista que alguém resolve numa sentada.
+
+A recusa vale na ação, não só na tela: quem chegar com um id direto, por um
+botão que ficou aberto numa aba velha, esbarra na mesma regra e recebe a frase
+com o número da nota que já existe.
+
 ## O que ainda não existe
 
 - **Cadastro do emitente pela tela.** Hoje `cadastrarEmitente` existe em

@@ -41,8 +41,8 @@ console.log('== ESQUEMA ==')
      'emitente tem o proprio par de tokens')
   const { rows: [v] } = await query(
     `select count(*) as n from information_schema.views
-      where table_schema = 'mart' and table_name = 'recebivel_sem_nota'`)
-  ok(Number(v.n) === 1, 'view mart.recebivel_sem_nota')
+      where table_schema = 'mart' and table_name = 'recebivel_para_nota'`)
+  ok(Number(v.n) === 1, 'view mart.recebivel_para_nota')
 
   // A referencia e' chave de idempotencia. Sem a unicidade no banco, dois
   // cliques no botao emitiriam duas notas e o cliente pagaria imposto em dobro.
@@ -53,30 +53,53 @@ console.log('== ESQUEMA ==')
   ok(Number(u.n) === 1, 'referencia unica por tenant')
 }
 
-console.log('\n== RECEBIVEL SEM NOTA ==')
+console.log('\n== O QUE ENTRA NA LISTA DE EMISSAO ==')
 {
   const { rows } = await query(
-    `select count(*) as titulos, coalesce(sum(total), 0) as valor
-       from mart.recebivel_sem_nota
-      where tenant_id = $1 and data_competencia <= current_date`, [t.id])
-  console.log(`  ${rows[0].titulos} titulo(s), ${Number(rows[0].valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`)
+    `select motivo, count(*)::int n, coalesce(sum(total),0) valor
+       from mart.recebivel_para_nota
+      where tenant_id = $1 and data_competencia <= current_date
+      group by 1 order by 2 desc`, [t.id])
+  for (const r of rows) {
+    console.log(`  ${String(r.n).padStart(4)}  ${r.motivo.padEnd(14)} ${Number(r.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`)
+  }
 
-  // Todo recebivel entra na lista enquanto nao tiver nota. Quando tiver, sai.
-  // Conferido contra a propria tabela para a view nao poder mentir.
-  const { rows: [cruz] } = await query(
+  // A regra que a Tamires pediu, virada em teste: titulo que o Conta Azul ja
+  // faturou nunca pode aparecer como pendente. O ERP carimba o numero na
+  // descricao, e emitir de novo criaria nota duplicada, que e' imposto em dobro
+  // e retificacao na prefeitura.
+  const { rows: [d] } = await query(
+    `select count(*) n from mart.recebivel_para_nota
+      where tenant_id = $1 and motivo = 'pendente'
+        and descricao ~ 'NFS-?e\s*:\s*[0-9]+'`, [t.id])
+  ok(Number(d.n) === 0, 'nenhum titulo com nota do ERP entra como pendente', `${d.n} entrariam`)
+
+  // E o numero da nota do ERP tem que ser lido, senao a regra acima passaria
+  // por nao achar nada em vez de por estar certa.
+  const { rows: [ler] } = await query(
+    `select count(*) n from mart.recebivel_para_nota
+      where tenant_id = $1 and nota_no_erp is not null`, [t.id])
+  ok(Number(ler.n) > 0, 'o numero da NFS-e e lido da descricao do ERP', `${ler.n} titulo(s)`)
+
+  // Sem CPF ou CNPJ do tomador a NFS-e nao sai. Oferecer o botao ali seria
+  // prometer uma coisa que a validacao recusa depois.
+  const { rows: [semdoc] } = await query(
+    `select count(*) n from mart.recebivel_para_nota
+      where tenant_id = $1 and motivo = 'pendente'
+        and coalesce(regexp_replace(pessoa_documento, '[^0-9]', '', 'g'), '') !~ '^([0-9]{11}|[0-9]{14})$'`,
+    [t.id])
+  ok(Number(semdoc.n) === 0, 'nenhum pendente sem documento do tomador', `${semdoc.n} entrariam`)
+
+  // Todo recebivel tem exatamente um motivo. Se algum cair fora do CASE, ele
+  // some da tela sem ninguem perceber.
+  const { rows: [cobre] } = await query(
     `select
-       (select count(*) from core.installment i
-         where i.tenant_id = $1 and i.kind = 'receivable' and i.deleted_at is null
-           and i.data_competencia is not null)                       as recebiveis,
-       (select count(*) from mart.recebivel_sem_nota r where r.tenant_id = $1) as sem_nota,
-       (select count(distinct d.installment_id) from core.fiscal_documento d
-         where d.tenant_id = $1 and d.installment_id is not null
-           and d.status in ('processando', 'autorizado'))            as com_nota`, [t.id])
-  ok(
-    Number(cruz.recebiveis) === Number(cruz.sem_nota) + Number(cruz.com_nota),
-    'sem nota + com nota = total de recebiveis',
-    `${cruz.sem_nota} + ${cruz.com_nota} = ${cruz.recebiveis}`,
-  )
+       (select count(*) from core.installment
+         where tenant_id = $1 and kind = 'receivable' and deleted_at is null
+           and data_competencia is not null) todos,
+       (select count(*) from mart.recebivel_para_nota where tenant_id = $1) na_view`, [t.id])
+  ok(Number(cobre.todos) === Number(cobre.na_view), 'a view cobre todo recebivel',
+     `${cobre.todos} contra ${cobre.na_view}`)
 }
 
 console.log('\n== MONTAGEM DA NFS-e ==')
