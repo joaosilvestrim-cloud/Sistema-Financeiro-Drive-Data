@@ -603,6 +603,17 @@ tr.detalhe tbody tr:hover td { background: transparent; }
    de fora, que ja e fixo, e as duas faixas se sobreporiam. */
 tr.detalhe thead th { position: static; }
 
+/* Célula que corta em vez de quebrar.
+   
+   Isto era estilo inline repetido em cada célula de cada linha, e numa razão de
+   150 títulos o mesmo objeto de estilo ia serializado quase mil vezes dentro do
+   payload da página. Nome curto na classe pelo mesmo motivo: ele também viaja
+   uma vez por célula. */
+td.corta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+td.corta-p { max-width: 150px; }
+td.corta-m { max-width: 200px; }
+td.corta-g { max-width: 260px; }
+
 /* Cabeçalho que fica enquanto a tabela rola. Tabela longa sem isso obriga a
    subir para lembrar qual coluna é qual. */
 .card table thead th {

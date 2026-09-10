@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { requireSession } from '@/lib/session'
 import { fluxoDeCaixa } from '@/lib/cashflow'
 import { brl, dataCurta, pct, rotuloMes } from '@/lib/format'
@@ -11,6 +12,13 @@ import LinhasFluxo from '@/components/charts/LinhasFluxo'
 export const dynamic = 'force-dynamic'
 
 const HORIZONTES = [3, 6, 12]
+
+// Ultimo dia do mes, em ISO. O dia zero do mes seguinte e' o ultimo do atual, e
+// isso evita a tabela de quantos dias tem cada mes e o caso de fevereiro.
+function fimDoMes(competencia) {
+  const [ano, mes] = competencia.split('-').map(Number)
+  return new Date(ano, mes, 0).toISOString().slice(0, 10)
+}
 
 export default async function Fluxo({ searchParams }) {
   const sessao = await requireSession()
@@ -204,10 +212,22 @@ export default async function Fluxo({ searchParams }) {
               <tbody>
                 {previstos.map((m) => {
                   const ajuste = (m.carteiraEntradas ?? 0) - (m.erpEntradas ?? 0)
+                  // O mes abre a razao no recorte exato dele. E' isto que faz o
+                  // fluxo ser conferivel: o numero para de ser uma afirmacao e
+                  // vira uma lista de titulos que alguem pode somar na mao.
+                  const doMes = (kind) => {
+                    const p = new URLSearchParams({
+                      tipo: kind, situacao: 'aberto', periodo: 'tudo',
+                      de: `${m.competencia}-01`, ate: fimDoMes(m.competencia),
+                    })
+                    return `/contas?${p}`
+                  }
                   return (
                     <tr key={m.competencia}>
                       <td>{rotuloMes(m.competencia)}</td>
-                      <td className="num">{brl(m.erpEntradas)}</td>
+                      <td className="num">
+                        <Link href={doMes('receivable')}>{brl(m.erpEntradas)}</Link>
+                      </td>
                       <td className="num" style={{ color: 'var(--text-muted)' }}>
                         {ajuste ? brl(ajuste) : '—'}
                       </td>
@@ -215,7 +235,9 @@ export default async function Fluxo({ searchParams }) {
                         {m.novosEntradas ? `+${brl(m.novosEntradas)}` : '—'}
                       </td>
                       <td className="num" style={{ fontWeight: 600 }}>{brl(m.entradas)}</td>
-                      <td className="num">{brl(m.erpSaidas)}</td>
+                      <td className="num">
+                        <Link href={doMes('payable')}>{brl(m.erpSaidas)}</Link>
+                      </td>
                       <td className="num" style={{ color: 'var(--text-muted)' }}>
                         {m.novosSaidas ? `+${brl(m.novosSaidas)}` : '—'}
                       </td>

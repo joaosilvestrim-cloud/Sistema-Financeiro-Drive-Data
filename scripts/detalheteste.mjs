@@ -138,6 +138,23 @@ console.log('\n== FLUXO: a ponte com o Conta Azul fecha ==')
     conferir(`erp ${m.competencia} saidas`, m.saidas, m.erpSaidas ?? 0)
     conferir(`erp ${m.competencia} sem negocio novo`, m.novosEntradas ?? 0, 0)
   }
+  // A razao tem que reproduzir o fluxo, senao o link que abre o mes leva a uma
+  // lista que nao soma o numero de onde ela veio, e a tela promete conferencia
+  // e entrega contradicao. Este e' o teste que sustenta o modulo inteiro.
+  const { totaisDaRazao } = await import('../lib/razao.js')
+  const fimDoMes = (c) => {
+    const [ano, mes] = c.split('-').map(Number)
+    return new Date(ano, mes, 0).toISOString().slice(0, 10)
+  }
+  for (const m of e.meses.filter((x) => x.tipo === 'previsto')) {
+    const de = `${m.competencia}-01`
+    const ate = fimDoMes(m.competencia)
+    const r = await totaisDaRazao(sessao, { kind: 'receivable', situacao: 'aberto', de, ate })
+    const pg = await totaisDaRazao(sessao, { kind: 'payable', situacao: 'aberto', de, ate })
+    conferir(`razao reproduz ${m.competencia} a receber`, m.entradas, r.aberto)
+    conferir(`razao reproduz ${m.competencia} a pagar`, m.saidas, pg.aberto)
+  }
+
   // E o passado nao pode mudar com o modo: ali nao ha projecao nenhuma.
   const passadoP = f.meses.filter((m) => m.tipo === 'realizado')
   for (const m of passadoP) {

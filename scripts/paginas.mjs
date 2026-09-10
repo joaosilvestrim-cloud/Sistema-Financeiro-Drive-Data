@@ -31,6 +31,8 @@ const ROTAS = [
   ['/fluxo', 'Fluxo de caixa'],
   ['/previsao', 'Projeção'],
   ['/recebiveis', 'Títulos em aberto'],
+  ['/contas', 'Contas a pagar e a receber'],
+  ['/contas?tipo=payable&situacao=vencido', 'Contas a pagar e a receber'],
   ['/notas', 'Notas fiscais'],
   // O caminho que derrubou a tela em producao: a acao falhou, o erro voltou
   // pela URL, e a pagina tem que mostrar o recado em vez de morrer.
