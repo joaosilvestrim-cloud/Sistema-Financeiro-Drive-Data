@@ -255,10 +255,14 @@ export default async function Fluxo({ searchParams }) {
             entra tudo, na data.
           </p>
           <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8, marginBottom: 0 }}>
-            <strong>Negócio novo.</strong> Média dos últimos 12 meses ajustada
-            pela sazonalidade, menos o que já está lançado para o mês. O ERP não
-            projeta venda que ainda não existe, então esta coluna é zero para ele
-            e some quando a carteira do mês já passa da média.
+            <strong>Negócio novo.</strong> Parte do nível da empresa hoje,{' '}
+            {brl(f.premissas.mediaReceita)} por mês de receita e{' '}
+            {brl(f.premissas.mediaDespesa)} de despesa, pela{' '}
+            {f.premissas.baseReceita}. Desse nível sai o que já está lançado
+            para o mês, para não contar duas vezes, e o resto entra no caixa
+            repartido pelo prazo médio: {f.premissas.prazoReceber} dias para
+            receber e {f.premissas.prazoPagar} para pagar. O ERP não projeta
+            venda que ainda não existe, então esta coluna é zero para ele.
           </p>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8, marginBottom: 0 }}>
             Para o passado não há diferença de método: entrada e saída realizadas
