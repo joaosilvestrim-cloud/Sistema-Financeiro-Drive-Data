@@ -127,6 +127,23 @@ console.log('\n== FLUXO: a ponte com o Conta Azul fecha ==')
     conferir(`${m.competencia} ajuste e a taxa`,
              m.carteiraEntradas ?? 0, (m.erpEntradas ?? 0) * f.premissas.taxaNoPrazo)
   }
+
+  // No modo agenda o numero tem que ser o do ERP, sem sobra de casa decimal. Se
+  // algum ajuste escapar para dentro dele, a tela promete conferencia e entrega
+  // outra coisa, que e' pior do que nao oferecer o modo.
+  const e = await fluxoDeCaixa(sessao, { mesesAtras: 3, mesesFrente: 6, modo: 'erp' })
+  conferir('modo erp devolve o rotulo', e.modo === 'erp' ? 1 : 0, 1)
+  for (const m of e.meses.filter((x) => x.tipo === 'previsto')) {
+    conferir(`erp ${m.competencia} entradas`, m.entradas, m.erpEntradas ?? 0)
+    conferir(`erp ${m.competencia} saidas`, m.saidas, m.erpSaidas ?? 0)
+    conferir(`erp ${m.competencia} sem negocio novo`, m.novosEntradas ?? 0, 0)
+  }
+  // E o passado nao pode mudar com o modo: ali nao ha projecao nenhuma.
+  const passadoP = f.meses.filter((m) => m.tipo === 'realizado')
+  for (const m of passadoP) {
+    const par = e.meses.find((x) => x.competencia === m.competencia)
+    conferir(`passado ${m.competencia} nao muda`, m.entradas, par?.entradas ?? -1)
+  }
 }
 
 console.log(falhas ? `\n${falhas} divergencia(s).` : '\nTudo fecha.')

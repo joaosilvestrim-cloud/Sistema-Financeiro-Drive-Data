@@ -16,8 +16,16 @@ export default async function Fluxo({ searchParams }) {
   const sessao = await requireSession()
   const busca = await searchParams
   const frente = HORIZONTES.includes(Number(busca?.meses)) ? Number(busca.meses) : 6
+  // Projeção é o padrão porque é o que o Conta Azul não faz, e é para isso que
+  // o sistema existe. A agenda do ERP fica a um clique para quem está
+  // conferindo, que é uma necessidade diferente e igualmente legítima.
+  const modo = busca?.modo === 'erp' ? 'erp' : 'projecao'
+  const link = (extra) => {
+    const p = new URLSearchParams({ meses: String(frente), modo, ...extra })
+    return `/fluxo?${p}`
+  }
 
-  const f = await fluxoDeCaixa(sessao, { mesesAtras: 12, mesesFrente: frente })
+  const f = await fluxoDeCaixa(sessao, { mesesAtras: 12, mesesFrente: frente, modo })
 
   if (!f.meses.length) {
     return (
@@ -57,19 +65,35 @@ export default async function Fluxo({ searchParams }) {
         <div>
           <h1>Fluxo de caixa</h1>
           <p>
-            Doze meses medidos e {frente} projetados. Saldo apurado em {dataCurta(f.saldoEm)}.
+            {modo === 'erp'
+              ? `Doze meses medidos e ${frente} pela agenda de vencimentos, como no Conta Azul.`
+              : `Doze meses medidos e ${frente} projetados.`}{' '}
+            Saldo apurado em {dataCurta(f.saldoEm)}.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>projetar</span>
-          {HORIZONTES.map((h) => (
-            <a key={h} href={`/fluxo?meses=${h}`} className="toggle"
-               style={h === frente ? {
-                 borderColor: 'var(--series-1)', color: 'var(--series-1)', fontWeight: 600,
-               } : undefined}>
-              {h} meses
-            </a>
-          ))}
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>o futuro é</span>
+            {[['projecao', 'projeção'], ['erp', 'agenda do ERP']].map(([v, rotulo]) => (
+              <a key={v} href={link({ modo: v })} className="toggle"
+                 style={v === modo ? {
+                   borderColor: 'var(--series-1)', color: 'var(--series-1)', fontWeight: 600,
+                 } : undefined}>
+                {rotulo}
+              </a>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>projetar</span>
+            {HORIZONTES.map((h) => (
+              <a key={h} href={link({ meses: String(h) })} className="toggle"
+                 style={h === frente ? {
+                   borderColor: 'var(--series-1)', color: 'var(--series-1)', fontWeight: 600,
+                 } : undefined}>
+                {h} meses
+              </a>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -142,7 +166,20 @@ export default async function Fluxo({ searchParams }) {
           Aqui a ponte fica linha a linha: o número que ela vê no ERP, os dois
           ajustes com sinal, e o nosso. Quem confere precisa ver de onde vem a
           diferença, não ouvir que existe uma. */}
-      {previstos.length > 0 && (
+      {previstos.length > 0 && modo === 'erp' && (
+        <div className="card" style={{ marginBottom: 14 }}>
+          <h2>Estes números são os do Conta Azul</h2>
+          <p className="sub" style={{ marginBottom: 0 }}>
+            O futuro aqui é a agenda de vencimentos: valor cheio, na data, sem
+            desconto e sem estimativa. É o que você confere contra o ERP linha
+            por linha. Para ver o que esperamos que <strong>entre de verdade</strong>,
+            com a taxa de recebimento desta empresa e o negócio novo, troque para
+            projeção acima.
+          </p>
+        </div>
+      )}
+
+      {previstos.length > 0 && modo === 'projecao' && (
         <div className="card" style={{ marginBottom: 14 }}>
           <h2>Conferindo contra o Conta Azul</h2>
           <p className="sub">
@@ -212,7 +249,9 @@ export default async function Fluxo({ searchParams }) {
         <div className="card">
           <h2>De onde vem o previsto</h2>
           <p className="sub">
-            Quanto da entrada projetada já está lançada no ERP e quanto é estimativa.
+            {modo === 'erp'
+              ? 'Na agenda do ERP tudo já está lançado, por definição: ela não projeta venda que ainda não existe.'
+              : 'Quanto da entrada projetada já está lançada no ERP e quanto é estimativa.'}
           </p>
           <table>
             <tbody>
@@ -236,10 +275,20 @@ export default async function Fluxo({ searchParams }) {
             </tfoot>
           </table>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 10, marginBottom: 0 }}>
-            Quanto maior a fatia já lançada, mais firme é a projeção. A parte estimada sai da
-            média dos últimos 12 meses ajustada pela sazonalidade, e sobre os títulos aplicamos a
-            taxa de {pct(f.premissas.taxaNoPrazo)}, que é quanto do que vence costuma entrar
-            até 30 dias depois nesta empresa.
+            {modo === 'erp' ? (
+              <>
+                Nenhum ajuste foi aplicado. A projeção desconta {pct(f.premissas.taxaNoPrazo)} sobre
+                os títulos, que é quanto do que vence costuma entrar até 30 dias depois nesta
+                empresa, e soma a média de negócio novo dos últimos 12 meses.
+              </>
+            ) : (
+              <>
+                Quanto maior a fatia já lançada, mais firme é a projeção. A parte estimada sai da
+                média dos últimos 12 meses ajustada pela sazonalidade, e sobre os títulos aplicamos a
+                taxa de {pct(f.premissas.taxaNoPrazo)}, que é quanto do que vence costuma entrar
+                até 30 dias depois nesta empresa.
+              </>
+            )}
           </p>
           <Suspense fallback={null}><BulletIA sessao={sessao} chave="composicao_previsto" /></Suspense>
         </div>
