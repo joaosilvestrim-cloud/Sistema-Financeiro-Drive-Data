@@ -48,6 +48,7 @@ export default async function Fluxo({ searchParams }) {
   const carteira = aVir.reduce((a, m) => a + (m.carteiraEntradas ?? 0), 0)
   const estimado = aVir.reduce((a, m) => a + (m.novosEntradas ?? 0), 0)
   const parteCarteira = entradasPrev > 0 ? carteira / entradasPrev : 0
+  const previstos = f.meses.filter((m) => m.tipo === 'previsto')
   const apertaAbaixoDe = f.pior && f.pior.saldoFim < f.saldoHoje * 0.5
 
   return (
@@ -128,6 +129,84 @@ export default async function Fluxo({ searchParams }) {
         </p>
         <MovimentoChart meses={f.meses} mesAtual={f.mesAtual} />
       </div>
+
+      {/* A tabela de conferência contra o ERP.
+          
+          A gestora comparou mês a mês com o Conta Azul e os números não bateram,
+          e ela estava certa. O nosso previsto não é a agenda de vencimentos: ele
+          desconta a carteira pela taxa histórica de recebimento e soma a
+          estimativa de negócio novo. São perguntas diferentes, as duas
+          legítimas, e até aqui a tela só explicava isso em prosa num cartão do
+          rodapé, agregado no horizonte inteiro.
+          
+          Aqui a ponte fica linha a linha: o número que ela vê no ERP, os dois
+          ajustes com sinal, e o nosso. Quem confere precisa ver de onde vem a
+          diferença, não ouvir que existe uma. */}
+      {previstos.length > 0 && (
+        <div className="card" style={{ marginBottom: 14 }}>
+          <h2>Conferindo contra o Conta Azul</h2>
+          <p className="sub">
+            O Conta Azul mostra o que vence no mês. Nós mostramos o que
+            esperamos que entre e saia de verdade. As duas contas partem do mesmo
+            lugar, e a diferença é sempre estes dois ajustes.
+          </p>
+          <div style={{ overflowX: 'auto' }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Mês</th>
+                  <th className="num">A receber no ERP</th>
+                  <th className="num">Ajuste de recebimento</th>
+                  <th className="num">Negócio novo</th>
+                  <th className="num">Nossa entrada</th>
+                  <th className="num">A pagar no ERP</th>
+                  <th className="num">Despesa nova</th>
+                  <th className="num">Nossa saída</th>
+                </tr>
+              </thead>
+              <tbody>
+                {previstos.map((m) => {
+                  const ajuste = (m.carteiraEntradas ?? 0) - (m.erpEntradas ?? 0)
+                  return (
+                    <tr key={m.competencia}>
+                      <td>{rotuloMes(m.competencia)}</td>
+                      <td className="num">{brl(m.erpEntradas)}</td>
+                      <td className="num" style={{ color: 'var(--text-muted)' }}>
+                        {ajuste ? brl(ajuste) : '—'}
+                      </td>
+                      <td className="num" style={{ color: 'var(--text-muted)' }}>
+                        {m.novosEntradas ? `+${brl(m.novosEntradas)}` : '—'}
+                      </td>
+                      <td className="num" style={{ fontWeight: 600 }}>{brl(m.entradas)}</td>
+                      <td className="num">{brl(m.erpSaidas)}</td>
+                      <td className="num" style={{ color: 'var(--text-muted)' }}>
+                        {m.novosSaidas ? `+${brl(m.novosSaidas)}` : '—'}
+                      </td>
+                      <td className="num" style={{ fontWeight: 600 }}>{brl(m.saidas)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 12, marginBottom: 0 }}>
+            <strong>Ajuste de recebimento.</strong> Sobre o que está a receber
+            aplicamos {pct(f.premissas.taxaNoPrazo)}, que é quanto do que vence
+            costuma entrar até 30 dias depois nesta empresa. O ERP assume que
+            entra tudo, na data.
+          </p>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8, marginBottom: 0 }}>
+            <strong>Negócio novo.</strong> Média dos últimos 12 meses ajustada
+            pela sazonalidade, menos o que já está lançado para o mês. O ERP não
+            projeta venda que ainda não existe, então esta coluna é zero para ele
+            e some quando a carteira do mês já passa da média.
+          </p>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8, marginBottom: 0 }}>
+            Para o passado não há diferença de método: entrada e saída realizadas
+            saem das baixas, pela data de pagamento, igual ao extrato.
+          </p>
+        </div>
+      )}
 
       <div className="grid cols-2">
         <div className="card">

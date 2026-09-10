@@ -106,6 +106,29 @@ console.log('\n== DESVIOS: soma dos lancamentos contra o valor do desvio ==')
   }
 }
 
+console.log('\n== FLUXO: a ponte com o Conta Azul fecha ==')
+{
+  // A gestora comparou o fluxo mes a mes com o ERP e os numeros nao bateram.
+  // Estava certa: o nosso previsto desconta a carteira pela taxa de recebimento
+  // e soma negocio novo. Sao perguntas diferentes, as duas legitimas.
+  //
+  // O que nao pode e' a ponte entre os dois nao fechar. Se um dia o ajuste
+  // deixar de explicar a diferenca inteira, a tabela de conferencia vira mais
+  // um numero que ninguem reconcilia, e a confianca vai junto.
+  const { fluxoDeCaixa } = await import('../lib/cashflow.js')
+  const f = await fluxoDeCaixa(sessao, { mesesAtras: 3, mesesFrente: 6 })
+  const previstos = f.meses.filter((m) => m.tipo === 'previsto')
+  conferir('meses previstos existem', previstos.length > 0 ? 1 : 0, 1)
+  for (const m of previstos) {
+    conferir(`${m.competencia} entradas`, m.entradas,
+             (m.erpEntradas ?? 0) + ((m.carteiraEntradas ?? 0) - (m.erpEntradas ?? 0)) + (m.novosEntradas ?? 0))
+    conferir(`${m.competencia} saidas`, m.saidas, (m.erpSaidas ?? 0) + (m.novosSaidas ?? 0))
+    // E o ajuste tem que ser exatamente a taxa, nao um numero solto.
+    conferir(`${m.competencia} ajuste e a taxa`,
+             m.carteiraEntradas ?? 0, (m.erpEntradas ?? 0) * f.premissas.taxaNoPrazo)
+  }
+}
+
 console.log(falhas ? `\n${falhas} divergencia(s).` : '\nTudo fecha.')
 await pool.end()
 process.exit(falhas ? 1 : 0)
