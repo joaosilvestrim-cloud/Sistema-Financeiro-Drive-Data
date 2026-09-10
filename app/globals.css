@@ -136,18 +136,27 @@ a { color: inherit; text-decoration: none; }
 .shell { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; }
 
 .sidebar {
-  border-right: 1px solid var(--border);
-  padding: 20px 12px 16px;
+  /* A barra ganha um plano ligeiramente à frente do conteúdo. Antes as duas
+     áreas dividiam o mesmo fundo e só um fio de 1px as separava, o que fazia o
+     menu parecer parte da página em vez de moldura dela. O degradê é curto e de
+     cima para baixo, então ele lê como luz, não como cor. */
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface) 85%, var(--plane)) 0%,
+      color-mix(in srgb, var(--surface) 42%, var(--plane)) 260px
+    );
+  border-right: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  padding: 18px 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
   /* Gruda enquanto o conteúdo rola. O painel tem telas longas, e ter que voltar
      ao topo para trocar de tela é atrito puro. */
   position: sticky;
   top: 0;
   align-self: start;
   height: 100vh;
-  background: var(--plane);
 }
 
 /* Só a lista rola. Se a barra inteira rolasse, o rodapé com o estado da
@@ -158,24 +167,77 @@ a { color: inherit; text-decoration: none; }
   min-height: 0;
   overflow-y: auto;
   /* Barra de rolagem discreta, para a lista não ganhar uma faixa cinza no meio
-     da interface toda vez que o menu não couber. */
+     da interface toda vez que o menu não couber. O Firefox entende as duas
+     primeiras; o resto precisa das pseudo-classes do WebKit, e sem elas a
+     barra voltava larga e clara justamente no navegador mais usado. */
   scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  scrollbar-color: color-mix(in srgb, var(--border) 90%, transparent) transparent;
+  scrollbar-gutter: stable;
+}
+.sidebar .nav::-webkit-scrollbar { width: 6px; }
+.sidebar .nav::-webkit-scrollbar-track { background: transparent; }
+.sidebar .nav::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-muted) 26%, transparent);
+  border-radius: 999px;
+}
+.sidebar .nav:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-muted) 45%, transparent);
+}
+
+/* Marca e seletor de empresa, com o fio que fecha o bloco. O fio vai até a
+   borda da barra, e não até a borda do texto, para funcionar como divisão de
+   área e não como sublinhado. */
+.sidebar .topo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 14px;
+  margin: 0 -12px 0;
+  padding-left: 12px;
+  padding-right: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 }
 
 .brand { font-weight: 650; letter-spacing: -0.01em; line-height: 1.2; }
 .brand span { display: block; font-size: 11px; font-weight: 450; color: var(--text-muted); }
 
-.nav { display: flex; flex-direction: column; gap: 1px; }
-.nav .grupo {
-  font-size: 10px;
-  font-weight: 650;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  padding: 16px 10px 5px;
+/* O seletor de empresa deixa de parecer campo de formulário. Ele não recebe
+   digitação nem é enviado por um botão: é um comutador de contexto, e a
+   aparência de caixa branca no meio da barra escura anunciava a coisa errada.
+   A seta vem de um SVG embutido porque a nativa não aceita cor do tema. */
+.sidebar .topo select {
+  width: 100%;
+  background: transparent;
+  border-color: color-mix(in srgb, var(--border) 80%, transparent);
+  color: var(--text-primary);
+  font-size: 12.5px;
+  font-weight: 550;
+  padding: 8px 30px 8px 10px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6.5L8 10.5L12 6.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  background-size: 13px;
+  cursor: pointer;
 }
-.nav .grupo:first-child { padding-top: 2px; }
+.sidebar .topo select:hover {
+  background-color: var(--accent-suave);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.nav { display: flex; flex-direction: column; gap: 1px; }
+/* O rótulo de grupo é sinalização, não conteúdo: ele fica menor, mais espaçado
+   e mais apagado que qualquer item, para o olho passar por cima dele quando
+   está procurando uma tela e encontrá-lo só quando está procurando uma área. */
+.nav .grupo {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text-muted) 78%, transparent);
+  padding: 18px 10px 6px;
+}
+.nav .grupo:first-child { padding-top: 4px; }
 
 .nav a {
   /* Grade de duas colunas: ícone e rótulo. Com bloco simples, o rótulo de duas
@@ -185,10 +247,16 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   gap: 10px;
   position: relative;
-  padding: 8px 10px;
-  border-radius: 8px;
+  padding: 7px 10px;
+  border-radius: 7px;
   color: var(--text-secondary);
   font-size: 13.5px;
+  /* O rótulo mais longo do menu é "Qualidade da previsão" e ele cabe. Se um dia
+     entrar um maior, ele corta em vez de quebrar em duas linhas e desalinhar a
+     lista inteira. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   /* Transição curta e só no que muda. Animar `all` faria o navegador vigiar
      propriedades que nunca mudam. */
   transition: background-color 140ms ease, color 140ms ease, transform 140ms ease;
@@ -198,12 +266,14 @@ a { color: inherit; text-decoration: none; }
   transition: color 140ms ease, transform 200ms cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
-/* A barra de acento à esquerda. Nasce com altura zero e cresce a partir do
-   centro, o que dá a sensação de que ela acompanha o clique em vez de piscar. */
+/* O trilho de acento à esquerda. Nasce com altura zero e cresce a partir do
+   centro, o que dá a sensação de que ele acompanha o clique em vez de piscar.
+   Ele encosta na borda da barra de propósito: preso ali, lê como marcador de
+   posição na lista; solto no meio, leria como enfeite. */
 .nav a::before {
   content: '';
   position: absolute;
-  left: 0;
+  left: -12px;
   top: 50%;
   width: 3px;
   height: 0;
@@ -214,24 +284,30 @@ a { color: inherit; text-decoration: none; }
 }
 
 .nav a:hover {
-  background: var(--accent-suave);
+  background: color-mix(in srgb, var(--accent-suave) 65%, transparent);
   color: var(--text-primary);
-  transform: translateX(2px);
 }
 .nav a:hover .icone { color: var(--accent); transform: scale(1.08); }
-.nav a:hover::before { height: 14px; }
+.nav a:hover::before { height: 12px; }
 
+/* O ativo não é um retângulo com borda, é uma pílula tingida com o trilho
+   inteiro ao lado. A versão anterior somava fundo, cor e anel de foco no mesmo
+   item, e o resultado parecia um campo selecionado em vez de a página em que
+   você está. */
 .nav a[data-active='true'] {
   background: var(--accent-suave);
   color: var(--accent-forte);
   font-weight: 600;
 }
 .nav a[data-active='true'] .icone { color: var(--accent); }
-.nav a[data-active='true']::before { height: 20px; }
+.nav a[data-active='true']::before { height: 100%; border-radius: 0 3px 3px 0; }
 
+/* O anel de foco acompanha o raio da pílula e fica por dentro, senão ele
+   escapa pela borda da barra e some pela metade. */
 .nav a:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline-offset: -2px;
+  border-radius: 7px;
 }
 
 /* Estado de sincronização, no rodapé. O ponto colorido carrega a informação
@@ -293,7 +369,39 @@ a { color: inherit; text-decoration: none; }
    coisa confundem, e o daqui perdia porque o display inline ganhava da folha. */
 body:has(.shell) .tema-flutuante { display: none; }
 
-.sidebar footer { margin-top: auto; font-size: 11px; color: var(--text-muted); }
+/* O rodapé fecha a barra com o mesmo fio do topo, e ganha respiro entre as
+   três informações que carrega: de quem é a conta, quão fresco está o dado, e
+   as duas ações que ninguém procura mas todo mundo precisa achar. */
+.sidebar footer {
+  margin-top: auto;
+  font-size: 11px;
+  color: var(--text-muted);
+  display: grid;
+  gap: 5px;
+  padding-top: 12px;
+  margin-left: -12px;
+  margin-right: -12px;
+  padding-left: 12px;
+  padding-right: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+.sidebar footer > div:first-child {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: -0.01em;
+}
+/* As ações do rodapé são as mais discretas da interface. Sair e trocar de tema
+   não competem com o menu, então elas perdem a borda e só aparecem no hover. */
+.sidebar footer .toggle {
+  border-color: transparent;
+  padding: 4px 8px;
+  color: var(--text-muted);
+}
+.sidebar footer .toggle:hover {
+  border-color: color-mix(in srgb, var(--border) 80%, transparent);
+  color: var(--text-primary);
+}
 
 .content { padding: 26px 30px 64px; max-width: 1280px; }
 

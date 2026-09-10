@@ -74,13 +74,17 @@ export default async function DashLayout({ children }) {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <Marca />
-
-        <EmpresaSelect
-          conexoes={sessao.conexoes}
-          selecionada={sessao.connectionId}
-          action={selecionarEmpresa}
-        />
+        {/* Marca e seletor de empresa formam um bloco só: os dois respondem
+            "que sistema é este e de qual empresa estou vendo", e separá-los
+            faria o seletor parecer o primeiro item do menu. */}
+        <div className="topo">
+          <Marca />
+          <EmpresaSelect
+            conexoes={sessao.conexoes}
+            selecionada={sessao.connectionId}
+            action={selecionarEmpresa}
+          />
+        </div>
 
         <nav className="nav">
           {MENU.map(([grupo, itens]) => (
