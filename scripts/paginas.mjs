@@ -32,6 +32,10 @@ const ROTAS = [
   ['/previsao', 'Projeção'],
   ['/recebiveis', 'Títulos em aberto'],
   ['/contas', 'Contas a pagar e a receber'],
+  // O fluxo abre no real. Se o padrao voltar a ser projecao, a tela passa a
+  // mostrar estimativa antes de fato, que foi o que confundiu a gestora.
+  ['/fluxo', 'Sem estimativa nossa'],
+  ['/fluxo?modo=projecao', 'com a nossa estimativa por cima'],
   ['/contas?tipo=payable&situacao=vencido', 'Contas a pagar e a receber'],
   ['/notas', 'Notas fiscais'],
   // O caminho que derrubou a tela em producao: a acao falhou, o erro voltou

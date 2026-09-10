@@ -24,16 +24,29 @@ export default async function Fluxo({ searchParams }) {
   const sessao = await requireSession()
   const busca = await searchParams
   const frente = HORIZONTES.includes(Number(busca?.meses)) ? Number(busca.meses) : 6
-  // Projeção é o padrão porque é o que o Conta Azul não faz, e é para isso que
-  // o sistema existe. A agenda do ERP fica a um clique para quem está
-  // conferindo, que é uma necessidade diferente e igualmente legítima.
-  const modo = busca?.modo === 'erp' ? 'erp' : 'projecao'
+  // O real é o padrão.
+  //
+  // Era projeção, e o João corrigiu: "sempre ver o real e a projeção depois".
+  // Ele tem razão, e o episódio de outubro provou. A tela abria com um mês no
+  // vermelho que vinha inteiro de estimativa nossa, e quem olhava não tinha como
+  // saber disso sem procurar. Estimativa que aparece antes do fato vira fato na
+  // cabeça de quem lê.
+  //
+  // Real aqui é tudo que existe: o passado medido nas baixas e o futuro pela
+  // agenda de vencimentos. A projeção continua a um clique, e continua sendo o
+  // que o Conta Azul não faz.
+  //
+  // `erp` segue aceito porque links já saíram assim.
+  const modo = ['projecao'].includes(busca?.modo) ? 'projecao' : 'real'
+  const real = modo === 'real'
   const link = (extra) => {
     const p = new URLSearchParams({ meses: String(frente), modo, ...extra })
     return `/fluxo?${p}`
   }
 
-  const f = await fluxoDeCaixa(sessao, { mesesAtras: 12, mesesFrente: frente, modo })
+  const f = await fluxoDeCaixa(sessao, {
+    mesesAtras: 12, mesesFrente: frente, modo: real ? 'erp' : 'projecao',
+  })
 
   if (!f.meses.length) {
     return (
@@ -73,16 +86,16 @@ export default async function Fluxo({ searchParams }) {
         <div>
           <h1>Fluxo de caixa</h1>
           <p>
-            {modo === 'erp'
-              ? `Doze meses medidos e ${frente} pela agenda de vencimentos, como no Conta Azul.`
-              : `Doze meses medidos e ${frente} projetados.`}{' '}
+            {real
+              ? `Doze meses medidos nas baixas e ${frente} pela agenda de vencimentos, como no Conta Azul. Sem estimativa nossa.`
+              : `Doze meses medidos e ${frente} projetados, com a nossa estimativa por cima da agenda.`}{' '}
             Saldo apurado em {dataCurta(f.saldoEm)}.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>o futuro é</span>
-            {[['projecao', 'projeção'], ['erp', 'agenda do ERP']].map(([v, rotulo]) => (
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>ver</span>
+            {[['real', 'real'], ['projecao', 'com projeção']].map(([v, rotulo]) => (
               <a key={v} href={link({ modo: v })} className="toggle"
                  style={v === modo ? {
                    borderColor: 'var(--series-1)', color: 'var(--series-1)', fontWeight: 600,
@@ -109,20 +122,56 @@ export default async function Fluxo({ searchParams }) {
         <Tile label="Saldo hoje" valor={brl(f.saldoHoje)}
               nota={`${f.contas.length} conta${f.contas.length === 1 ? '' : 's'} financeira${f.contas.length === 1 ? '' : 's'}`}
               insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="saldo" /></Suspense>} />
-        <Tile label={`Saldo projetado em ${frente} meses`} valor={brl(f.saldoFinal)}
+        <Tile label={`Saldo ${real ? 'pela agenda' : 'projetado'} em ${frente} meses`}
+              valor={brl(f.saldoFinal)}
               nota={`${variacao >= 0 ? 'crescimento' : 'queda'} de ${brl(Math.abs(variacao))}`}
               tom={variacao >= 0 ? 'good' : 'bad'} 
               insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="saldo_projetado" /></Suspense>} />
         <Tile label="Menor saldo do período"
               valor={f.pior ? brl(f.pior.saldoFim) : '—'}
-              nota={f.pior ? `em ${rotuloMes(f.pior.competencia)}` : 'sem projeção'}
+              nota={f.pior ? `em ${rotuloMes(f.pior.competencia)}` : 'sem meses à frente'}
               tom={f.pior && f.pior.saldoFim < 0 ? 'bad' : apertaAbaixoDe ? 'bad' : 'good'} 
               insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="menor_saldo" /></Suspense>} />
-        <Tile label="Resultado projetado" valor={brl(entradasPrev - saidasPrev)}
+        <Tile label={real ? 'Resultado já agendado' : 'Resultado projetado'}
+              valor={brl(entradasPrev - saidasPrev)}
               nota={`${brl(entradasPrev)} a entrar, ${brl(saidasPrev)} a sair`}
               tom={entradasPrev - saidasPrev >= 0 ? 'good' : 'bad'} 
               insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="resultado_projetado" /></Suspense>} />
       </div>
+
+      {/* O saldo por conta vem antes de qualquer curva.
+
+          Ele é o único número medido desta tela: veio do extrato, não de
+          conta nossa. O João pediu para o real vir primeiro e a projeção
+          depois, e é isto na prática: primeiro onde o dinheiro está, e só
+          então para onde ele vai. */}
+      <div className="card" style={{ marginBottom: 14 }}>
+          <h2>Onde está o dinheiro hoje</h2>
+          <p className="sub">Saldo por conta financeira na última apuração.</p>
+          <table>
+            <thead>
+              <tr><th>Conta</th><th>Tipo</th><th className="num">Saldo</th></tr>
+            </thead>
+            <tbody>
+              {f.contas.map((c, i) => (
+                <tr key={i}>
+                  <td>{c.nome}</td>
+                  <td style={{ color: 'var(--text-muted)' }}>
+                    {String(c.tipo ?? '').toLowerCase().replaceAll('_', ' ')}
+                  </td>
+                  <td className="num">{brl(c.saldo)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>Total</td><td />
+                <td className="num">{brl(f.saldoHoje)}</td>
+              </tr>
+            </tfoot>
+          </table>
+          <Suspense fallback={null}><BulletIA sessao={sessao} chave="contas" /></Suspense>
+        </div>
 
       {f.pior && f.pior.saldoFim < 0 && (
         <p style={{
@@ -174,20 +223,21 @@ export default async function Fluxo({ searchParams }) {
           Aqui a ponte fica linha a linha: o número que ela vê no ERP, os dois
           ajustes com sinal, e o nosso. Quem confere precisa ver de onde vem a
           diferença, não ouvir que existe uma. */}
-      {previstos.length > 0 && modo === 'erp' && (
+      {previstos.length > 0 && real && (
         <div className="card" style={{ marginBottom: 14 }}>
-          <h2>Estes números são os do Conta Azul</h2>
+          <h2>Nada aqui é estimativa nossa</h2>
           <p className="sub" style={{ marginBottom: 0 }}>
-            O futuro aqui é a agenda de vencimentos: valor cheio, na data, sem
-            desconto e sem estimativa. É o que você confere contra o ERP linha
-            por linha. Para ver o que esperamos que <strong>entre de verdade</strong>,
-            com a taxa de recebimento desta empresa e o negócio novo, troque para
-            projeção acima.
+            O passado sai das baixas, pela data de pagamento, igual ao extrato. O
+            futuro é a agenda de vencimentos: valor cheio, na data. É o que você
+            confere contra o Conta Azul linha por linha. Para ver o que esperamos
+            que <strong>entre de verdade</strong>, com a taxa de recebimento desta
+            empresa e o negócio que ainda não foi lançado, troque para{' '}
+            <strong>com projeção</strong> acima.
           </p>
         </div>
       )}
 
-      {previstos.length > 0 && modo === 'projecao' && (
+      {previstos.length > 0 && !real && (
         <div className="card" style={{ marginBottom: 14 }}>
           <h2>Conferindo contra o Conta Azul</h2>
           <p className="sub">
@@ -271,12 +321,11 @@ export default async function Fluxo({ searchParams }) {
         </div>
       )}
 
-      <div className="grid cols-2">
         <div className="card">
           <h2>De onde vem o previsto</h2>
           <p className="sub">
-            {modo === 'erp'
-              ? 'Na agenda do ERP tudo já está lançado, por definição: ela não projeta venda que ainda não existe.'
+            {real
+              ? 'No real tudo já está lançado, por definição: a agenda não projeta venda que ainda não existe.'
               : 'Quanto da entrada projetada já está lançada no ERP e quanto é estimativa.'}
           </p>
           <table>
@@ -301,7 +350,7 @@ export default async function Fluxo({ searchParams }) {
             </tfoot>
           </table>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 10, marginBottom: 0 }}>
-            {modo === 'erp' ? (
+            {real ? (
               <>
                 Nenhum ajuste foi aplicado. A projeção desconta {pct(f.premissas.taxaNoPrazo)} sobre
                 os títulos, que é quanto do que vence costuma entrar até 30 dias depois nesta
@@ -309,44 +358,16 @@ export default async function Fluxo({ searchParams }) {
               </>
             ) : (
               <>
-                Quanto maior a fatia já lançada, mais firme é a projeção. A parte estimada sai da
-                média dos últimos 12 meses ajustada pela sazonalidade, e sobre os títulos aplicamos a
-                taxa de {pct(f.premissas.taxaNoPrazo)}, que é quanto do que vence costuma entrar
-                até 30 dias depois nesta empresa.
+                Quanto maior a fatia já lançada, mais firme é a projeção. A parte
+                estimada parte do nível da empresa hoje, {brl(f.premissas.mediaReceita)} por
+                mês pela {f.premissas.baseReceita}, e sobre os títulos aplicamos a taxa
+                de {pct(f.premissas.taxaNoPrazo)}, que é quanto do que vence costuma
+                entrar até 30 dias depois nesta empresa.
               </>
             )}
           </p>
           <Suspense fallback={null}><BulletIA sessao={sessao} chave="composicao_previsto" /></Suspense>
         </div>
-
-        <div className="card">
-          <h2>Onde está o dinheiro hoje</h2>
-          <p className="sub">Saldo por conta financeira na última apuração.</p>
-          <table>
-            <thead>
-              <tr><th>Conta</th><th>Tipo</th><th className="num">Saldo</th></tr>
-            </thead>
-            <tbody>
-              {f.contas.map((c, i) => (
-                <tr key={i}>
-                  <td>{c.nome}</td>
-                  <td style={{ color: 'var(--text-muted)' }}>
-                    {String(c.tipo ?? '').toLowerCase().replaceAll('_', ' ')}
-                  </td>
-                  <td className="num">{brl(c.saldo)}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td>Total</td><td />
-                <td className="num">{brl(f.saldoHoje)}</td>
-              </tr>
-            </tfoot>
-          </table>
-          <Suspense fallback={null}><BulletIA sessao={sessao} chave="contas" /></Suspense>
-        </div>
-      </div>
     </>
   )
 }
