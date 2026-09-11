@@ -143,6 +143,85 @@ duas contas divergirem, o script falha antes do cliente perceber.
 
 ---
 
+## Reunião de 11/09/2026, revisão tela por tela
+
+O Diogo navegou o sistema inteiro com o João apresentando. Dezenove itens, na
+ordem em que renderam conversa. Os marcados com (feito) foram implementados no
+mesmo dia.
+
+**Correções que ele apontou olhando os números:**
+
+1. (feito) **Conciliação com 262 pendentes.** "Não temos 262 pendentes." Ele
+   pediu a tabela e o critério para validar.
+2. (feito) **Aging do resumo sem o "acima de 90".** As vendas projetadas para
+   cima incham o a vencer longo, e o resumo é budget de curto prazo. Acima de
+   90 dias sai do resumo e continua nas telas de detalhe.
+3. (feito) **Duplicidade de verdade é um baixado e outro aberto.** Dois
+   lançamentos iguais com um pago e outro pendente é o clique duplo clássico.
+   Dois abertos ou dois pagos é outro problema, de outro tamanho.
+4. (feito) **Limite de cartão não é saldo.** O Conta Azul soma o limite do
+   cartão (Inter) como se fosse dinheiro. Tamires: "quero ver o que eu tenho de
+   dinheiro, dinheiro meu". Cartão sai da soma e vira linha separada; a conta
+   "caixa movimentação" idem.
+5. **Sem classificação no DRE (R$ 114 mil).** Ele vai validar o porquê olhando
+   a tabela. Mandar a relação das categorias e valores.
+
+**Método financeiro que ele ensinou:**
+
+6. **DRE: declarar caixa ou competência.** Antecipação de lucros não é DRE.
+   Seguro pago é despesa antecipada, não entra no caixa do DRE, rateia para
+   frente. O que não é DRE desce para uma linha de "desembolso financeiro".
+7. **Sócio operante entra no custo.** A antecipação de dividendos do João e da
+   Tamires precisa entrar como custo na rentabilidade, senão o multiplicador
+   subestima o custo real dos projetos.
+8. **RT12 do Simples Nacional.** A alíquota não é fixa: a receita bruta dos 12
+   meses anteriores determina a faixa, com parcela a deduzir, tabela do anexo.
+   Fator R de 28% transforma anexo V em III. Ele passa as fórmulas e valida
+   junto. Com isso o sistema projeta o imposto da nota antes de emitir.
+9. (feito) **Inadimplência histórica por cliente.** O Conta Azul zera o atraso
+   quando o título é pago; o histórico se perde. Contar da emissão ao pagamento
+   real e manter o rastro: "quando eu for vender de novo para a TAMBASA, quero
+   ver que ela costuma atrasar tantos dias". Farol de saúde por cliente.
+10. **Meta por resultado e caixa, não por faturamento.** "Você pode ter uma
+    receita enxuta e um caixa bom. O que manda é quanto você converte de caixa."
+11. **Projeção conservadora: 24 meses de base.** Startup projeta para cima;
+    ele quer o conservador como âncora e três cenários: conservador, agressivo
+    ("moon shot") e drástico (perder 30% do resultado). E a projeção tem que
+    dizer "quanto tenho que correr atrás para me manter".
+
+**Produto e comercialização:**
+
+12. **Resumo executivo em uma página.** "Um highlight, tipo sheet de Power BI."
+    O que hoje desce muita página migra para a Visão geral.
+13. **Consolidação multi-empresa com eliminações.** Holding com 6 empresas, 3
+    no Conta Azul e 3 no Totvs. Consolidar exige eliminar o intercompany
+    (transferência entre empresas do grupo soma zero). "Pensar no futuro, não
+    agora."
+14. **Planilha padrão para empresa fora do Conta Azul.** Template de import, e
+    o ideal é exportar o template já com as categorias do Conta Azul da empresa
+    atreladas, para o de-para não ser manual.
+15. **Dois modelos de venda.** Direto: sistema puro, cara DriveAzul, logo do
+    cliente só na nota fiscal. White label: paleta e logo do parceiro contador,
+    com taxa de setup. As duas vertentes convivem.
+16. **Preços de referência que ele levantou:** concorrente básico R$ 89 por
+    CNPJ, premium R$ 350 por CNPJ. Falta definir o nosso preço final e o do
+    white label.
+17. **Nome.** DriveAzul limita ao Conta Azul; quando expandir para Nibo/Omie,
+    troca. Por ora mantém. Tamires pensa em nomes.
+18. **Módulo estilo SIEG para comércio.** Compras e vendas por nota fiscal,
+    NCM, top produtos e fornecedores, substituição tributária, lendo as notas
+    do Conta Azul. O Conta Azul está entrando em e-commerce (plugins Mercado
+    Livre, Shopee, 25 marketplaces por R$ 50), o que abre esse público.
+19. **Emissor como produto separado: fórum próprio.** Ele quer explicar o que o
+    mercado está pedindo antes de decidir se o emissor "pula para fora" do
+    DriveAzul. Aguardar a conversa.
+
+**Benchmark que ele mostrou:** o Conta Azul lançou um dash consolidado nativo
+(grupos de clientes, previsto x realizado, com eliminações), grátis e feio, que
+os escritórios já usam. É o pano de fundo do nosso preço.
+
+---
+
 ## 5. O que ele quer e ainda não existe
 
 **Rentabilidade por produto e por serviço, de verdade.** Cada produto com código único,

@@ -23,8 +23,14 @@ export const dynamic = 'force-dynamic'
 // A visão geral continua existindo, com o mês e o ano. Esta tela é a de entrada
 // porque a ação de quem opera é de duas semanas, não de dois meses.
 
+// O resumo mostra o aging de quem faz budget: o que vence em até 90 dias e o
+// que já venceu. O "a vencer" além de 90 dias fica fora da tabela de
+// propósito, pedido do Diogo em 11/09: eles lançam venda projetada com
+// vencimento longe, e somar 2027 aqui fazia parecer que há R$ 600 mil
+// chegando. O valor de longo prazo é declarado no rodapé do cartão, e a lista
+// completa continua em Contas a pagar e receber.
 const FAIXA = {
-  a_vencer: 'A vencer', d1_30: '1 a 30', d31_60: '31 a 60',
+  a_vencer: 'A vencer (90 dias)', d1_30: '1 a 30', d31_60: '31 a 60',
   d61_90: '61 a 90', d90_mais: '+90',
 }
 const ORDEM = ['a_vencer', 'd1_30', 'd31_60', 'd61_90', 'd90_mais']
@@ -60,8 +66,9 @@ export default async function Resumo() {
     ? sessao.conexoes.find((c) => c.id === sessao.connectionId)?.nome
     : 'Todas as empresas'
 
-  const vencidoReceber = soma(aging.receber, (l) => l.faixa !== 'a_vencer')
-  const vencidoPagar = soma(aging.pagar, (l) => l.faixa !== 'a_vencer')
+  const naoVencida = (l) => l.faixa !== 'a_vencer' && l.faixa !== 'a_vencer_longe'
+  const vencidoReceber = soma(aging.receber, naoVencida)
+  const vencidoPagar = soma(aging.pagar, naoVencida)
   const pendentes = Number(conc.pendentes ?? 0)
 
   return (
@@ -163,11 +170,24 @@ export default async function Resumo() {
             </table>
           </>
         )}
+        {Number(conc.legado_titulos ?? 0) > 0 && (
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 10, marginBottom: 0 }}>
+            Fora desta conta: {conc.legado_titulos} baixas ({brl(conc.legado_valor)}) de antes
+            de {dataCurta(conc.inicio_uso)}, quando a conciliação ainda não era usada aqui.
+            Elas são história, não pendência da equipe.
+          </p>
+        )}
       </div>
 
       <div className="grid cols-2" style={{ marginBottom: 14 }}>
         {[['A receber', aging.receber, tituloReceber], ['A pagar', aging.pagar, tituloPagar]]
-          .map(([titulo, linhas, detalhes]) => (
+          .map(([titulo, todas, detalhes]) => {
+          // O longo prazo sai da tabela e vira uma frase. Sem separar, o total
+          // somaria linhas que a tabela nao mostra, e um total que nao bate com
+          // a soma visivel e' o jeito mais rapido de perder quem confere.
+          const linhas = todas.filter((l) => ORDEM.includes(l.faixa))
+          const longe = todas.find((l) => l.faixa === 'a_vencer_longe')
+          return (
           <div className="card" key={titulo}>
             <h2>{titulo}</h2>
             <p className="sub">Por tempo de atraso, em aberto hoje. Clique numa faixa para ver os títulos.</p>
@@ -208,8 +228,15 @@ export default async function Resumo() {
                 </tr>
               </tbody>
             </table>
+            {longe && (
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 10, marginBottom: 0 }}>
+                Fora deste resumo: {brl(longe.valor)} em {longe.titulos} título(s) com
+                vencimento além de 90 dias, boa parte venda projetada. A lista
+                completa está em Contas a pagar e receber.
+              </p>
+            )}
           </div>
-        ))}
+        )})}
       </div>
 
       {perda.total > 0 && (

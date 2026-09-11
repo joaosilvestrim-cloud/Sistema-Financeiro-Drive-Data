@@ -124,22 +124,31 @@ export default async function VisaoGeral({ searchParams }) {
             <tr><th>Conta</th><th>Tipo</th><th className="num">Saldo</th><th>Apurado em</th></tr>
           </thead>
           <tbody>
-            {contas.map((c, i) => (
-              <tr key={i}>
+            {contas.map((c, i) => {
+              // O "saldo" do cartão de crédito é limite disponível, dinheiro
+              // do banco. Somar ele ao caixa inflaria todas as telas de uma
+              // vez. Ele aparece, marcado, e fica fora do total.
+              const cartao = c.tipo === 'CARTAO_CREDITO'
+              return (
+              <tr key={i} style={cartao ? { color: 'var(--text-muted)' } : undefined}>
                 <td>{c.nome}</td>
                 <td>{TIPO_CONTA[c.tipo] ?? c.tipo ?? '—'}</td>
-                <td className="num" style={Number(c.saldo) < 0 ? { color: 'var(--critical)' } : undefined}>
+                <td className="num" style={!cartao && Number(c.saldo) < 0 ? { color: 'var(--critical)' } : undefined}>
                   {brl(c.saldo)}
+                  {cartao && <span style={{ fontSize: 11, display: 'block' }}>limite, não soma</span>}
                 </td>
                 <td style={desatualizada(c.snapshot_date) ? { color: 'var(--warning)' } : undefined}>
                   {dataCurta(c.snapshot_date)}
                   {desatualizada(c.snapshot_date) && ' · desatualizado'}
                 </td>
               </tr>
-            ))}
+              )
+            })}
             <tr style={{ fontWeight: 600 }}>
-              <td>Total</td><td></td>
-              <td className="num">{brl(contas.reduce((a, c) => a + Number(c.saldo), 0))}</td>
+              <td>Total em caixa</td><td></td>
+              <td className="num">{brl(contas
+                .filter((c) => c.tipo !== 'CARTAO_CREDITO')
+                .reduce((a, c) => a + Number(c.saldo), 0))}</td>
               <td></td>
             </tr>
           </tbody>

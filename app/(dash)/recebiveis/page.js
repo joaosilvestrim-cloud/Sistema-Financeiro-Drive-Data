@@ -9,7 +9,8 @@ import HBars from '@/components/charts/HBars'
 export const dynamic = 'force-dynamic'
 
 const FAIXAS = {
-  a_vencer: ['A vencer', 'var(--ramp-250)'],
+  a_vencer: ['A vencer (90 dias)', 'var(--ramp-250)'],
+  a_vencer_longe: ['A vencer (além de 90 dias)', 'var(--ramp-150)'],
   d1_30:    ['1 a 30 dias', 'var(--ramp-350)'],
   d31_60:   ['31 a 60 dias', 'var(--ramp-450)'],
   d61_90:   ['61 a 90 dias', 'var(--ramp-550)'],
@@ -55,7 +56,9 @@ export default async function Recebiveis() {
   }
 
   const emAberto = rec.reduce((a, f) => a + Number(f.valor), 0)
-  const vencido = rec.filter((f) => f.faixa !== 'a_vencer').reduce((a, f) => a + Number(f.valor), 0)
+  const vencido = rec
+    .filter((f) => f.faixa !== 'a_vencer' && f.faixa !== 'a_vencer_longe')
+    .reduce((a, f) => a + Number(f.valor), 0)
 
   const bars = (dados) => dados.map((f) => ({
     rotulo: FAIXAS[f.faixa]?.[0] ?? f.faixa,

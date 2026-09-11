@@ -7,6 +7,28 @@ import { brl } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
 
+// O farol de comportamento sai do histórico de baixas, não do que está vencido
+// agora. O Conta Azul zera o atraso quando o título é pago, então lá um cliente
+// que sempre paga com um mês de atraso parece igual a um pontual. Aqui a
+// pergunta é outra: dos títulos que ele já pagou, quantos pagou atrasado, e com
+// quantos dias. Mais de tolerância de 3 dias conta como atraso de verdade,
+// porque compensação bancária e fim de semana não são inadimplência.
+function comportamento(c) {
+  const pagos = Number(c.titulos_pagos ?? 0)
+  if (pagos < 3) return null
+  const pct = Number(c.pagos_com_atraso ?? 0) / pagos
+  const media = Number(c.atraso_medio_dias ?? 0)
+  if (pct >= 0.5 && media > 3) {
+    return ['Atrasa sempre', 'var(--critical)',
+      `pagou ${c.pagos_com_atraso} de ${pagos} títulos com atraso, média de ${media.toFixed(0)} dias`]
+  }
+  if (pct >= 0.2 || media > 3) {
+    return ['Atrasa às vezes', 'var(--warning)',
+      `${c.pagos_com_atraso} de ${pagos} títulos pagos com atraso, pior caso ${Number(c.atraso_maximo_dias ?? 0)} dias`]
+  }
+  return ['Pontual', 'var(--good)', `${pagos} títulos pagos, quase todos em dia`]
+}
+
 export default async function Clientes() {
   const sessao = await requireSession()
   const [clientes, titulos] = await Promise.all([
@@ -46,6 +68,8 @@ export default async function Clientes() {
             ['em_aberto', 'Em aberto', 'dinheiro'],
             ['vencido', 'Vencido', 'dinheiro'],
             ['atraso_medio_dias', 'Atraso médio em dias', 'inteiro'],
+            ['pagos_com_atraso', 'Títulos pagos com atraso', 'inteiro'],
+            ['titulos_pagos', 'Títulos pagos', 'inteiro'],
             ['participacao', 'Participação', 'percentual'],
           ]}
         />
@@ -61,6 +85,7 @@ export default async function Clientes() {
               <th className="num">Em aberto</th>
               <th className="num">Vencido</th>
               <th className="num">Atraso médio</th>
+              <th>Comportamento</th>
               <th className="num">Participação</th>
             </tr>
           </thead>
@@ -70,7 +95,7 @@ export default async function Clientes() {
               const dele = titulos.filter((t) => t.pessoa === c.cliente)
               return (
                 <LinhaExpansivel
-                  key={c.cliente} colunas={7}
+                  key={c.cliente} colunas={8}
                   itens={maiores(dele)} total={dele.length}
                   rotulo={`${dele.length} título(s) em aberto de ${c.cliente}`}
                   rodape="A lista completa está em Recebíveis."
@@ -84,6 +109,16 @@ export default async function Clientes() {
                       </td>
                       <td className="num">
                         {c.atraso_medio_dias === null ? '—' : `${Number(c.atraso_medio_dias).toFixed(0)} d`}
+                      </td>
+                      <td>
+                        {(() => {
+                          const f = comportamento(c)
+                          return f ? (
+                            <span title={f[2]} style={{ color: f[1], fontSize: 13, fontWeight: 500 }}>
+                              {f[0]}
+                            </span>
+                          ) : <span style={{ color: 'var(--text-muted)' }}>—</span>
+                        })()}
                       </td>
                       <td className="num">{(part * 100).toFixed(1).replace('.', ',')}%</td>
                     </>

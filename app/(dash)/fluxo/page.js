@@ -153,15 +153,19 @@ export default async function Fluxo({ searchParams }) {
               <tr><th>Conta</th><th>Tipo</th><th className="num">Saldo</th></tr>
             </thead>
             <tbody>
-              {f.contas.map((c, i) => (
-                <tr key={i}>
+              {f.contas.map((c, i) => {
+                const cartao = c.tipo === 'CARTAO_CREDITO'
+                return (
+                <tr key={i} style={cartao ? { color: 'var(--text-muted)' } : undefined}>
                   <td>{c.nome}</td>
                   <td style={{ color: 'var(--text-muted)' }}>
                     {String(c.tipo ?? '').toLowerCase().replaceAll('_', ' ')}
+                    {cartao && ' · limite, não soma'}
                   </td>
                   <td className="num">{brl(c.saldo)}</td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
             <tfoot>
               <tr>
