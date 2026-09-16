@@ -28,6 +28,10 @@ const ESPERADAS = [
   // que o ambiente precisa é do segredo que autentica o gatilho de volta e do
   // ambiente que decide se a nota é de verdade.
   'FOCUS_WEBHOOK_SECRET', 'FOCUS_AMBIENTE',
+  // E-mails transacionais (convite de equipe) saem pelo Resend. Sem a chave o
+  // convite ainda funciona pelo link copiável, mas o e-mail não sai, e isso
+  // precisa aparecer aqui em vez de ser descoberto por um convite mudo.
+  'RESEND_API_KEY',
 ]
 
 async function tenta(nome, fn) {
