@@ -5,7 +5,9 @@ import { requireSession } from '@/lib/session'
 import { comAviso, comRetorno } from '@/lib/acao'
 import { conexoes, ultimasRodadas } from '@/lib/queries'
 import { criarCredencial, revogarCredencial, credenciaisDoTenant } from '@/lib/tributostream'
+import { membros, convitesPendentes, convidar, revogarConvite, removerMembro, PAPEL_ROTULO } from '@/lib/equipe'
 import CredencialBancaria from '@/components/CredencialBancaria'
+import Equipe from '@/components/Equipe'
 import { desde, dataCurta } from '@/lib/format'
 import { criarState } from '@/lib/oauthState'
 import { buildAuthorizeUrl } from '@/src/oauth.mjs'
@@ -25,9 +27,9 @@ const STATUS = {
 export default async function Conexoes({ searchParams }) {
   const sessao = await requireSession()
   const busca = await searchParams
-  const [lista, rodadas, credenciais] = await Promise.all([
+  const [lista, rodadas, credenciais, equipe, convites] = await Promise.all([
     conexoes(sessao.tenantId), ultimasRodadas(sessao.tenantId, 15),
-    credenciaisDoTenant(sessao),
+    credenciaisDoTenant(sessao), membros(sessao), convitesPendentes(sessao),
   ])
 
   async function conectar() {
@@ -67,6 +69,36 @@ export default async function Conexoes({ searchParams }) {
     return comRetorno(async () => {
       const s = await requireSession()
       await revogarCredencial(s, id)
+      revalidatePath('/conexoes')
+      return { ok: true }
+    })
+  }
+
+  async function convidarPessoa(email, papel) {
+    'use server'
+    return comRetorno(async () => {
+      const s = await requireSession()
+      const r = await convidar(s, email, papel)
+      revalidatePath('/conexoes')
+      return r
+    })
+  }
+
+  async function revogarPessoa(id) {
+    'use server'
+    return comRetorno(async () => {
+      const s = await requireSession()
+      await revogarConvite(s, id)
+      revalidatePath('/conexoes')
+      return { ok: true }
+    })
+  }
+
+  async function removerPessoa(userId) {
+    'use server'
+    return comRetorno(async () => {
+      const s = await requireSession()
+      await removerMembro(s, userId)
       revalidatePath('/conexoes')
       return { ok: true }
     })
@@ -161,6 +193,19 @@ export default async function Conexoes({ searchParams }) {
             Nenhuma empresa conectada. Use o botão Conectar Conta Azul aí em cima.
           </p>
         )}
+      </div>
+
+      <div className="card" style={{ marginBottom: 14 }}>
+        <h2>Equipe</h2>
+        <p className="sub">
+          Quem entra aqui vê os números desta conta. O convidado cria a própria
+          senha e o acesso liga sozinho no primeiro login.
+        </p>
+        <Equipe
+          membros={equipe} convites={convites} dono={sessao.role === 'owner'}
+          convidar={convidarPessoa} revogar={revogarPessoa} remover={removerPessoa}
+          rotulos={PAPEL_ROTULO}
+        />
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>

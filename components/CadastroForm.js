@@ -9,10 +9,10 @@ import Marca from '@/components/Marca'
 // pública. O tenant nasce depois, no primeiro acesso autenticado, em
 // /bem-vindo. Assim o app não precisa da chave de service role para vender.
 
-export default function CadastroForm({ origem }) {
+export default function CadastroForm({ origem, convite = null, conviteInvalido = false }) {
   const router = useRouter()
   const [empresa, setEmpresa] = useState('')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(convite?.email ?? '')
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
   const [confirmar, setConfirmar] = useState(false)
@@ -32,7 +32,12 @@ export default function CadastroForm({ origem }) {
       email,
       password: senha,
       options: {
-        data: { empresa, origem: origem || 'direto' },
+        // O token do convite viaja nos metadados do usuário e é lido no
+        // primeiro login, para vincular à empresa certa mesmo que a pessoa
+        // troque o e-mail no formulário.
+        data: convite
+          ? { origem: 'convite', convite: convite.token }
+          : { empresa, origem: origem || 'direto' },
         emailRedirectTo: `${window.location.origin}/bem-vindo`,
       },
     })
@@ -75,13 +80,23 @@ export default function CadastroForm({ origem }) {
         <div style={{ marginBottom: 6 }}>
           <Marca tamanho={38} />
         </div>
-        <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 4px' }}>
-          14 dias grátis. Sem cartão de crédito.
-        </p>
-        <input
-          type="text" placeholder="Nome da sua empresa" value={empresa}
-          onChange={(e) => setEmpresa(e.target.value)} required
-        />
+        {convite ? (
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 4px' }}>
+            Você foi convidado para o painel da <strong>{convite.empresa}</strong>.
+            Crie sua senha para entrar.
+          </p>
+        ) : (
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 4px' }}>
+            14 dias grátis. Sem cartão de crédito.
+            {conviteInvalido && ' Este link de convite não vale mais; peça outro a quem convidou.'}
+          </p>
+        )}
+        {!convite && (
+          <input
+            type="text" placeholder="Nome da sua empresa" value={empresa}
+            onChange={(e) => setEmpresa(e.target.value)} required
+          />
+        )}
         <input
           type="email" placeholder="E-mail" value={email} autoComplete="username"
           onChange={(e) => setEmail(e.target.value)} required
