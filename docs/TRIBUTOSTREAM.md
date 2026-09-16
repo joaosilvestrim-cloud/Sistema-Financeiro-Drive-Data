@@ -28,9 +28,13 @@ A chave que amarra tudo é o `id_repasse`, o identificador transacional de segre
 
 O projeto não usa o client Supabase com `SUPABASE_SERVICE_ROLE_KEY` em rota nenhuma e essa chave nunca vai para a Vercel. O app conecta direto no Postgres via pooler com role própria (`lib/db.js`), que já passa por cima da RLS como o worker. Efeito idêntico ao service role no PostgREST, sem expor uma chave que entrega o banco inteiro. A atribuição de tenant é feita no código, pelo CNPJ, e testada no `segurancateste`.
 
+## Credencial por tenant (feito em 16/09, migration 0028)
+
+Requisito de autosserviço: o cliente gera a própria credencial na tela de Conexões, sem ninguém da plataforma no meio. `core.webhook_credencial` guarda o segredo cifrado (AES-256-GCM de `src/crypto.mjs`); o endpoint vira `POST /api/webhooks/bank/<id_publico>` e o segredo continua no header (o id da URL só identifica, quem autentica é o header). O segredo aparece uma única vez na criação; perdeu, revoga e gera outra. A atribuição de tenant vem da credencial e o CNPJ do payload vira conferência. A rota base com `BANK_WEBHOOK_SECRET` segue existindo para teste da plataforma.
+
 ## Próximos passos
 
 1. Processador assíncrono (cron) que reprocessa `raw.split_webhook` pendente e casa liquidação com título (valor + CNPJ + janela de vencimento) e com NFe (installment_id já liga as duas).
 2. Cálculo do `imposto_nfe` a partir do retorno da Focus e geração das divergências.
 3. Tela de pendências: órfãos, divergências abertas, retido a mais acumulado no mês.
-4. `BANK_WEBHOOK_SECRET` em produção (Vercel) e cadastro do endpoint no adquirente.
+4. Cadastro do endpoint no adquirente quando existir (cliente faz sozinho pela tela de Conexões).

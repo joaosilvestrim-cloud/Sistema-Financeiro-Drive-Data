@@ -2,8 +2,10 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { q } from '@/lib/db'
 import { requireSession } from '@/lib/session'
-import { comAviso } from '@/lib/acao'
+import { comAviso, comRetorno } from '@/lib/acao'
 import { conexoes, ultimasRodadas } from '@/lib/queries'
+import { criarCredencial, revogarCredencial, credenciaisDoTenant } from '@/lib/tributostream'
+import CredencialBancaria from '@/components/CredencialBancaria'
 import { desde, dataCurta } from '@/lib/format'
 import { criarState } from '@/lib/oauthState'
 import { buildAuthorizeUrl } from '@/src/oauth.mjs'
@@ -23,8 +25,9 @@ const STATUS = {
 export default async function Conexoes({ searchParams }) {
   const sessao = await requireSession()
   const busca = await searchParams
-  const [lista, rodadas] = await Promise.all([
+  const [lista, rodadas, credenciais] = await Promise.all([
     conexoes(sessao.tenantId), ultimasRodadas(sessao.tenantId, 15),
+    credenciaisDoTenant(sessao),
   ])
 
   async function conectar() {
@@ -46,6 +49,26 @@ export default async function Conexoes({ searchParams }) {
       const s = await requireSession()
       await q('update core.tenant set ia_habilitada = not ia_habilitada where id = $1', [s.tenantId])
       revalidatePath('/', 'layout')
+    })
+  }
+
+  async function criarCred(rotulo) {
+    'use server'
+    return comRetorno(async () => {
+      const s = await requireSession()
+      const r = await criarCredencial(s, rotulo)
+      revalidatePath('/conexoes')
+      return r
+    })
+  }
+
+  async function revogarCred(id) {
+    'use server'
+    return comRetorno(async () => {
+      const s = await requireSession()
+      await revogarCredencial(s, id)
+      revalidatePath('/conexoes')
+      return { ok: true }
     })
   }
 
@@ -138,6 +161,20 @@ export default async function Conexoes({ searchParams }) {
             Nenhuma empresa conectada. Use o botão Conectar Conta Azul aí em cima.
           </p>
         )}
+      </div>
+
+      <div className="card" style={{ marginBottom: 14 }}>
+        <h2>Conexão bancária (split payment)</h2>
+        <p className="sub">
+          Com a Reforma Tributária, o imposto é retido na hora em que o
+          pagamento liquida. Gere uma credencial e cadastre o endereço no seu
+          banco ou adquirente: cada liquidação chega aqui e é conferida contra
+          a nota fiscal, para acusar retenção a mais.
+        </p>
+        <CredencialBancaria
+          lista={credenciais} criar={criarCred} revogar={revogarCred}
+          base={process.env.APP_URL ?? 'https://driveazul.drivedata.com.br'}
+        />
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
