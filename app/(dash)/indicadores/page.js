@@ -1,6 +1,7 @@
 import { requireSession } from '@/lib/session'
 import {
   prazosMedios, sazonalidade, concentracao, indiceHhi, anomalias, lancamentosDosDesvios,
+  prazosSerie, pontualidadeMensal, recuperacaoPorIdade,
 } from '@/lib/queries'
 import { receitaReal, tiposPreenchidos } from '@/lib/indicadoresAux'
 import { brl, rotuloMes, indice } from '@/lib/format'
@@ -36,10 +37,11 @@ function leituraHhi(hhi) {
 
 export default async function Indicadores() {
   const sessao = await requireSession()
-  const [prazos, sazonal, conc, hhi, anomalos, real, tipos] = await Promise.all([
+  const [prazos, sazonal, conc, hhi, anomalos, real, tipos, serie, pontual, recup] = await Promise.all([
     prazosMedios(sessao), sazonalidade(sessao, 'receivable'),
     concentracao(sessao, 10), indiceHhi(sessao), anomalias(sessao, 3.5, 12),
     receitaReal(sessao, 24), tiposPreenchidos(sessao),
+    prazosSerie(sessao, 18), pontualidadeMensal(sessao, 18), recuperacaoPorIdade(sessao),
   ])
 
   // Uma consulta para os doze desvios, e nao uma por clique. As chaves da busca
@@ -55,6 +57,19 @@ export default async function Indicadores() {
   const prazoPagar = Number(pagar?.prazo ?? 0)
   const ciclo = prazoReceber - prazoPagar
   const [leitura, tomHhi] = leituraHhi(hhi?.hhi === null ? null : Number(hhi?.hhi))
+
+  // A tendência do prazo de recebimento: hoje contra seis meses atrás. Um
+  // prazo que só cresce é o cliente aprendendo que pode pagar depois.
+  const comReceber = serie.filter((m) => m.receber !== null)
+  const prazoAtras = comReceber.length > 6 ? Number(comReceber.at(-7).receber) : null
+  const tendencia = prazoAtras !== null ? Math.round(prazoReceber - prazoAtras) : null
+
+  const FAIXA_RECUP = {
+    d61_90: 'venceu há 2 a 3 meses',
+    d91_180: 'venceu há 3 a 6 meses',
+    d181_360: 'venceu há 6 a 12 meses',
+    d360_mais: 'venceu há mais de 1 ano',
+  }
 
   const comSazonalidade = sazonal.filter((s) => Number(s.anos) >= 2)
   const acumulado = []
@@ -75,8 +90,14 @@ export default async function Indicadores() {
 
       <div className="grid cols-4" style={{ marginBottom: 14 }}>
         <Tile label="Prazo de recebimento" valor={`${Math.round(prazoReceber)} dias`}
-              nota={`atraso médio de ${Math.round(Number(receber?.atraso ?? 0))} dias`}
-              tom={Number(receber?.atraso ?? 0) > 15 ? 'bad' : null} 
+              nota={tendencia === null
+                ? `atraso médio de ${Math.round(Number(receber?.atraso ?? 0))} dias`
+                : tendencia > 2 ? `${tendencia} dias a mais que há 6 meses`
+                : tendencia < -2 ? `${-tendencia} dias a menos que há 6 meses`
+                : 'estável nos últimos 6 meses'}
+              tom={tendencia !== null && tendencia > 5 ? 'bad'
+                : tendencia !== null && tendencia < -2 ? 'good'
+                : Number(receber?.atraso ?? 0) > 15 ? 'bad' : null} 
               insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="prazo_receber" /></Suspense>} />
         <Tile label="Prazo de pagamento" valor={`${Math.round(prazoPagar)} dias`}
               nota="da competência até sair do caixa" 
@@ -88,6 +109,83 @@ export default async function Indicadores() {
         <Tile label="Concentração (HHI)" valor={hhi?.hhi ? indice(hhi.hhi) : '—'}
               nota={`${leitura} · ${hhi?.clientes ?? 0} clientes`} tom={tomHhi} 
               insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="concentracao" /></Suspense>} />
+      </div>
+
+      <div className="grid cols-2" style={{ marginBottom: 14 }}>
+        <div className="card">
+          <h2>Prazos mês a mês</h2>
+          <p className="sub">
+            Quantos dias o dinheiro leva da competência até o caixa, ponderado
+            pelo valor. As duas linhas se cruzando é o ciclo financeiro mudando
+            de sinal.
+          </p>
+          {serie.length >= 3 ? (
+            <LinhaKpi
+              dados={serie} formato="numero"
+              series={[
+                { chave: 'receber', rotulo: 'Para receber', cor: 'var(--cat-1)' },
+                { chave: 'pagar', rotulo: 'Para pagar', cor: 'var(--cat-4)' },
+              ]}
+              titulo="Prazo médio em dias"
+            />
+          ) : (
+            <p className="empty">Ainda não há meses suficientes para desenhar a tendência.</p>
+          )}
+        </div>
+
+        <div className="card">
+          <h2>Pontualidade dos recebimentos</h2>
+          <p className="sub">
+            Dos títulos que entraram em cada mês, quantos foram pagos até 3
+            dias após o vencimento. É o histórico que o Conta Azul apaga ao
+            receber, e a mesma régua do farol da tela de Clientes.
+          </p>
+          {pontual.length >= 3 ? (
+            <LinhaKpi
+              dados={pontual} formato="percentual"
+              series={[{ chave: 'taxa', rotulo: 'Pagos em dia', cor: 'var(--cat-2)' }]}
+              titulo="Pontualidade"
+            />
+          ) : (
+            <p className="empty">Poucos títulos liquidados para medir pontualidade.</p>
+          )}
+
+          {recup.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <h3 style={{ fontSize: 13, margin: '0 0 4px' }}>Do que venceu, quanto voltou</h3>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 8px' }}>
+                Recuperação por idade da dívida, nos últimos 24 meses. É a curva
+                que a projeção usa para não contar com dinheiro que não volta.
+              </p>
+              <table>
+                <tbody>
+                  {recup.map((f) => {
+                    const pct = Number(f.taxa ?? 0)
+                    return (
+                      <tr key={f.faixa}>
+                        <td style={{ width: 170 }}>{FAIXA_RECUP[f.faixa] ?? f.faixa}</td>
+                        <td>
+                          <div style={{
+                            background: 'color-mix(in srgb, var(--cat-2) 12%, transparent)',
+                            borderRadius: 4, height: 10, overflow: 'hidden',
+                          }}>
+                            <div style={{
+                              width: `${Math.min(100, pct * 100)}%`, height: '100%',
+                              background: pct < 0.7 ? 'var(--critical)' : pct < 0.9 ? 'var(--warning)' : 'var(--cat-2)',
+                            }} />
+                          </div>
+                        </td>
+                        <td className="num" style={{ width: 64 }}>
+                          {(pct * 100).toFixed(1).replace('.', ',')}%
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid cols-2" style={{ marginBottom: 14 }}>
