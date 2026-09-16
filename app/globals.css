@@ -18,6 +18,7 @@
   --series-2:       #eb6834;  /* saídas, despesa */
   --series-3:       #1baf7a;
 
+  --ramp-150:       #b6d2f5;
   --ramp-250:       #86b6ef;
   --ramp-350:       #5598e7;
   --ramp-450:       #2a78d6;
@@ -64,6 +65,7 @@
     --series-2:       #d95926;
     --series-3:       #199e70;
 
+    --ramp-150:       #123c72;
     --ramp-250:       #184f95;
     --ramp-350:       #1c5cab;
     --ramp-450:       #256abf;
@@ -78,6 +80,8 @@
   --sombra-2:       0 4px 18px rgba(0, 0, 0, 0.42);
 
     --good-text:      #0ca30c;
+    --good:           #22b322;
+    --critical:       #e05252;
   }
 }
 
@@ -101,6 +105,7 @@
   --series-2:       #d95926;
   --series-3:       #199e70;
 
+  --ramp-150:       #123c72;
   --ramp-250:       #184f95;
   --ramp-350:       #1c5cab;
   --ramp-450:       #256abf;
@@ -115,6 +120,8 @@
   --sombra-2:       0 4px 18px rgba(0, 0, 0, 0.42);
 
   --good-text:      #0ca30c;
+  --good:           #22b322;
+  --critical:       #e05252;
 }
 
 * { box-sizing: border-box; }

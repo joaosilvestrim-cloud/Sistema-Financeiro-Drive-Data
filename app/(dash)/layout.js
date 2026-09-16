@@ -28,17 +28,23 @@ const MENU = [
     ['/previsao', 'Projeção de saldo', 'previsao'],
     ['/contas', 'Contas a pagar e receber', 'contas'],
     ['/recebiveis', 'Recebíveis', 'recebiveis'],
-    ['/notas', 'Notas fiscais', 'notas'],
   ]],
   ['Resultado', [
     ['/dre', 'DRE gerencial', 'dre'],
     ['/precificacao', 'Preço e custo', 'preco'],
+  ]],
+  // Fiscal ganhou grupo próprio quando deixou de ser uma tela: emissão de
+  // nota, carga tributária e, em breve, o split payment do TributoStream.
+  // Antes a emissão morava em Caixa e imposto em Resultado, e quem procurava
+  // "nota" não sabia qual dos dois abrir.
+  ['Fiscal', [
+    ['/notas', 'Notas fiscais', 'notas'],
     ['/impostos', 'Impostos', 'impostos'],
   ]],
   ['Análise', [
     ['/indicadores', 'Indicadores', 'indicadores'],
-    ['/qualidade', 'Qualidade da previsão', 'qualidade'],
     ['/clientes', 'Clientes', 'clientes'],
+    ['/qualidade', 'Qualidade da previsão', 'qualidade'],
     ['/produtividade', 'Produtividade', 'produtividade'],
     ['/metas', 'Metas', 'metas'],
   ]],
