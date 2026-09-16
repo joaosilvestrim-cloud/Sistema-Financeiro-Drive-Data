@@ -23,8 +23,11 @@ import { brl, compacto } from '@/lib/format'
 // E a rampa é de um tom só. Cores diferentes por fatia sugeririam categorias
 // independentes; aqui a ordem da rampa carrega a ordem do peso.
 
-const RAMPA = ['var(--ramp-650)', 'var(--ramp-550)', 'var(--ramp-450)',
-               'var(--ramp-350)', 'var(--ramp-250)']
+// Fatias sao categorias, coisas diferentes entre si, entao cada uma ganha um
+// matiz proprio. A rampa monocromatica que morava aqui dizia "mais e menos"
+// para dados que nao tem ordem nenhuma.
+const CORES = ['var(--cat-1)', 'var(--cat-4)', 'var(--cat-2)', 'var(--cat-5)',
+               'var(--cat-3)', 'var(--cat-6)', 'var(--cat-7)']
 const MAX = 7
 const MINIMO = 0.03
 
@@ -66,7 +69,7 @@ export default function Rosca({ fatias, titulo = 'total' }) {
     acumulado += fracao
     return {
       ...f, fracao, de, ate: acumulado,
-      cor: i === lista.length - 1 && resto.length ? 'var(--text-muted)' : RAMPA[i % RAMPA.length],
+      cor: i === lista.length - 1 && resto.length ? 'var(--text-muted)' : CORES[i % CORES.length],
     }
   })
 

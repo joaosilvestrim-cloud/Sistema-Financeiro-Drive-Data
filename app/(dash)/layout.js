@@ -18,18 +18,20 @@ import TemaToggle from '@/components/TemaToggle'
 // Depois vem Análise, que interpreta o que os dois primeiros mostraram, e por
 // último Dados, que é onde se alimenta e se conecta o sistema. Configuração
 // nunca vem antes de conteúdo.
+// A cor de cada area. Ela pinta o traco do rotulo, o trilho e o item ativo,
+// e nada alem disso: cor de area e orientacao, nao decoracao.
 const MENU = [
-  ['Panorama', [
+  ['Panorama', 'var(--cat-1)', [
     ['/resumo', 'Resumo executivo', 'resumo'],
     ['/', 'Visão geral', 'visao'],
   ]],
-  ['Caixa', [
+  ['Caixa', 'var(--cat-2)', [
     ['/fluxo', 'Fluxo de caixa', 'fluxo'],
     ['/previsao', 'Projeção de saldo', 'previsao'],
     ['/contas', 'Contas a pagar e receber', 'contas'],
     ['/recebiveis', 'Recebíveis', 'recebiveis'],
   ]],
-  ['Resultado', [
+  ['Resultado', 'var(--cat-5)', [
     ['/dre', 'DRE gerencial', 'dre'],
     ['/precificacao', 'Preço e custo', 'preco'],
   ]],
@@ -37,18 +39,18 @@ const MENU = [
   // nota, carga tributária e, em breve, o split payment do TributoStream.
   // Antes a emissão morava em Caixa e imposto em Resultado, e quem procurava
   // "nota" não sabia qual dos dois abrir.
-  ['Fiscal', [
+  ['Fiscal', 'var(--cat-3)', [
     ['/notas', 'Notas fiscais', 'notas'],
     ['/impostos', 'Impostos', 'impostos'],
   ]],
-  ['Análise', [
+  ['Análise', 'var(--cat-6)', [
     ['/indicadores', 'Indicadores', 'indicadores'],
     ['/clientes', 'Clientes', 'clientes'],
     ['/qualidade', 'Qualidade da previsão', 'qualidade'],
     ['/produtividade', 'Produtividade', 'produtividade'],
     ['/metas', 'Metas', 'metas'],
   ]],
-  ['Dados', [
+  ['Dados', 'var(--cat-8)', [
     ['/fatura', 'Fatura de cartão', 'fatura'],
     ['/dados', 'Dados auxiliares', 'dados'],
     ['/conexoes', 'Conexões', 'conexoes'],
@@ -94,8 +96,8 @@ export default async function DashLayout({ children }) {
         </div>
 
         <nav className="nav">
-          {MENU.map(([grupo, itens]) => (
-            <div key={grupo}>
+          {MENU.map(([grupo, cor, itens]) => (
+            <div key={grupo} style={{ '--g': cor }}>
               <div className="grupo">{grupo}</div>
               {itens.map(([href, titulo, icone]) => (
                 <NavLink key={href} href={href} icone={icone}>{titulo}</NavLink>
