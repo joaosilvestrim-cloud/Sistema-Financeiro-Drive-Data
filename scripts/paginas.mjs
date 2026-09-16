@@ -38,6 +38,7 @@ const ROTAS = [
   ['/fluxo?modo=projecao', 'com a nossa estimativa por cima'],
   ['/contas?tipo=payable&situacao=vencido', 'Contas a pagar e a receber'],
   ['/notas', 'Notas fiscais'],
+  ['/notas/ativar?outra=1', 'Ativar emiss'],
   // O caminho que derrubou a tela em producao: a acao falhou, o erro voltou
   // pela URL, e a pagina tem que mostrar o recado em vez de morrer.
   ['/notas?erro=emitente+sem+habilitacao', 'A emissão não foi concluída'],

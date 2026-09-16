@@ -103,10 +103,9 @@ export default async function Notas({ searchParams }) {
             que ele provou e a data em que vence, para avisar antes de ele
             expirar e derrubar a emissão da empresa inteira.
           </p>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 0 }}>
-            O passo a passo está em <code>docs/FISCAL.md</code>. Habilitação em
-            Conexões.
-          </p>
+          <a className="btn" href="/notas/ativar" style={{ display: 'inline-block' }}>
+            Ativar emissão de notas
+          </a>
         </div>
       </>
     )
