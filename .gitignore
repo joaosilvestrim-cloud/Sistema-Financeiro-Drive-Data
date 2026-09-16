@@ -11,3 +11,4 @@ dist/
 
 .next/
 next-env.d.ts
+scratchpad/
