@@ -5,7 +5,7 @@ import { requireSession } from '@/lib/session'
 import { comAviso, comRetorno } from '@/lib/acao'
 import { conexoes, ultimasRodadas } from '@/lib/queries'
 import { criarCredencial, revogarCredencial, credenciaisDoTenant } from '@/lib/tributostream'
-import { membros, convitesPendentes, convidar, revogarConvite, removerMembro, PAPEL_ROTULO } from '@/lib/equipe'
+import { membros, convitesPendentes, convidar, criarAcessoManual, revogarConvite, removerMembro, PAPEL_ROTULO } from '@/lib/equipe'
 import CredencialBancaria from '@/components/CredencialBancaria'
 import Equipe from '@/components/Equipe'
 import { desde, dataCurta } from '@/lib/format'
@@ -79,6 +79,16 @@ export default async function Conexoes({ searchParams }) {
     return comRetorno(async () => {
       const s = await requireSession()
       const r = await convidar(s, email, papel)
+      revalidatePath('/conexoes')
+      return r
+    })
+  }
+
+  async function criarAcessoDireto(email, senha, papel) {
+    'use server'
+    return comRetorno(async () => {
+      const s = await requireSession()
+      const r = await criarAcessoManual(s, email, senha, papel)
       revalidatePath('/conexoes')
       return r
     })
@@ -203,7 +213,8 @@ export default async function Conexoes({ searchParams }) {
         </p>
         <Equipe
           membros={equipe} convites={convites} dono={sessao.role === 'owner'}
-          convidar={convidarPessoa} revogar={revogarPessoa} remover={removerPessoa}
+          convidar={convidarPessoa} criarDireto={criarAcessoDireto}
+          revogar={revogarPessoa} remover={removerPessoa}
           rotulos={PAPEL_ROTULO}
         />
       </div>
