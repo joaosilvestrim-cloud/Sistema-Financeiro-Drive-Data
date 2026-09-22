@@ -1,7 +1,7 @@
 import { requireSession } from '@/lib/session'
 import { comAviso } from '@/lib/acao'
 import Aviso from '@/components/Aviso'
-import { kpis, fluxoMensal, aging, topClientes, saldosPorConta } from '@/lib/queries'
+import { kpis, fluxoMensal, aging, topClientes, saldosPorConta, mediaFaturamento } from '@/lib/queries'
 import { alertas } from '@/lib/alerts'
 import { analiseSalva, gerarAnalise } from '@/lib/analise'
 import Alerts from '@/components/Alerts'
@@ -54,10 +54,17 @@ export default async function VisaoGeral({ searchParams }) {
   const erro = (await searchParams)?.erro ?? null
   // Os KPIs vao primeiro porque os alertas se apoiam neles. O resto corre junto.
   const k = await kpis(sessao)
-  const [fluxo, agingRec, clientes, avisos, analise, contas] = await Promise.all([
+  const [fluxo, agingRec, clientes, avisos, analise, contas, fat] = await Promise.all([
     fluxoMensal(sessao), aging(sessao, 'receivable'), topClientes(sessao, 8),
     alertas(sessao, k), analiseSalva(sessao), saldosPorConta(sessao),
+    mediaFaturamento(sessao),
   ])
+
+  // A leitura do faturamento: o recente contra o proprio ano. Mais de 10% de
+  // distancia ja e tendencia, nao ruido de um mes.
+  const media12 = Number(fat?.media12 ?? 0)
+  const media3 = Number(fat?.media3 ?? 0)
+  const variacao = media12 > 0 ? (media3 - media12) / media12 : 0
 
   async function gerar() {
     'use server'
@@ -97,7 +104,13 @@ export default async function VisaoGeral({ searchParams }) {
 
       <Aviso erro={erro} />
 
-      <div className="grid cols-4" style={{ marginBottom: 14 }}>
+      <div className="grid cols-5" style={{ marginBottom: 14 }}>
+        <Tile label="Faturamento médio" valor={brl(media12)}
+              nota={fat?.meses >= 3
+                ? `últimos 3 meses: ${brl(media3)} (${variacao >= 0 ? '+' : ''}${(variacao * 100).toFixed(0)}%)`
+                : 'poucos meses fechados para comparar'}
+              tom={variacao > 0.1 ? 'good' : variacao < -0.1 ? 'bad' : null}
+              insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="faturamento_medio" /></Suspense>} />
         <Tile label="Saldo em conta" valor={brl(k.saldo_atual)}
               nota={`${brl(k.entradas_90d)} entraram em 90 dias`} 
               insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="saldo" /></Suspense>} />
