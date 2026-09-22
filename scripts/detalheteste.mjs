@@ -120,9 +120,13 @@ console.log('\n== FLUXO: a ponte com o Conta Azul fecha ==')
   const previstos = f.meses.filter((m) => m.tipo === 'previsto')
   conferir('meses previstos existem', previstos.length > 0 ? 1 : 0, 1)
   for (const m of previstos) {
+    // Vencidos rolados moram no primeiro mes previsto, como componente
+    // separado. A soma da linha tem que ser explicada por eles tambem.
     conferir(`${m.competencia} entradas`, m.entradas,
-             (m.erpEntradas ?? 0) + ((m.carteiraEntradas ?? 0) - (m.erpEntradas ?? 0)) + (m.novosEntradas ?? 0))
-    conferir(`${m.competencia} saidas`, m.saidas, (m.erpSaidas ?? 0) + (m.novosSaidas ?? 0))
+             (m.erpEntradas ?? 0) + ((m.carteiraEntradas ?? 0) - (m.erpEntradas ?? 0))
+               + (m.novosEntradas ?? 0) + (m.vencidosEntradas ?? 0))
+    conferir(`${m.competencia} saidas`, m.saidas,
+             (m.erpSaidas ?? 0) + (m.novosSaidas ?? 0) + (m.vencidosSaidas ?? 0))
     // E o ajuste tem que ser exatamente a taxa, nao um numero solto.
     conferir(`${m.competencia} ajuste e a taxa`,
              m.carteiraEntradas ?? 0, (m.erpEntradas ?? 0) * f.premissas.taxaNoPrazo)
@@ -134,8 +138,10 @@ console.log('\n== FLUXO: a ponte com o Conta Azul fecha ==')
   const e = await fluxoDeCaixa(sessao, { mesesAtras: 3, mesesFrente: 6, modo: 'erp' })
   conferir('modo erp devolve o rotulo', e.modo === 'erp' ? 1 : 0, 1)
   for (const m of e.meses.filter((x) => x.tipo === 'previsto')) {
-    conferir(`erp ${m.competencia} entradas`, m.entradas, m.erpEntradas ?? 0)
-    conferir(`erp ${m.competencia} saidas`, m.saidas, m.erpSaidas ?? 0)
+    conferir(`erp ${m.competencia} entradas`, m.entradas,
+             (m.erpEntradas ?? 0) + (m.vencidosEntradas ?? 0))
+    conferir(`erp ${m.competencia} saidas`, m.saidas,
+             (m.erpSaidas ?? 0) + (m.vencidosSaidas ?? 0))
     conferir(`erp ${m.competencia} sem negocio novo`, m.novosEntradas ?? 0, 0)
   }
   // A razao tem que reproduzir o fluxo, senao o link que abre o mes leva a uma
@@ -151,8 +157,16 @@ console.log('\n== FLUXO: a ponte com o Conta Azul fecha ==')
     const ate = fimDoMes(m.competencia)
     const r = await totaisDaRazao(sessao, { kind: 'receivable', situacao: 'aberto', de, ate })
     const pg = await totaisDaRazao(sessao, { kind: 'payable', situacao: 'aberto', de, ate })
-    conferir(`razao reproduz ${m.competencia} a receber`, m.entradas, r.aberto)
-    conferir(`razao reproduz ${m.competencia} a pagar`, m.saidas, pg.aberto)
+    // Os vencidos rolados abrem por outro recorte da mesma razao: situacao
+    // vencido, sem janela. E a ponte que a tela oferece no link "+vencidos".
+    let vr = 0, vp = 0
+    if ((m.vencidosEntradas ?? 0) || (m.vencidosSaidas ?? 0)) {
+      const rv = await totaisDaRazao(sessao, { kind: 'receivable', situacao: 'vencido' })
+      const pv = await totaisDaRazao(sessao, { kind: 'payable', situacao: 'vencido' })
+      vr = Number(rv.vencido); vp = Number(pv.vencido)
+    }
+    conferir(`razao reproduz ${m.competencia} a receber`, m.entradas, Number(r.aberto) + vr)
+    conferir(`razao reproduz ${m.competencia} a pagar`, m.saidas, Number(pg.aberto) + vp)
   }
 
   // E o passado nao pode mudar com o modo: ali nao ha projecao nenhuma.

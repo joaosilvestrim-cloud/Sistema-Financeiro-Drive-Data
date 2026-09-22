@@ -232,8 +232,9 @@ export default async function Fluxo({ searchParams }) {
           <h2>Nada aqui é estimativa nossa</h2>
           <p className="sub" style={{ marginBottom: 0 }}>
             O passado sai das baixas, pela data de pagamento, igual ao extrato. O
-            futuro é a agenda de vencimentos: valor cheio, na data. É o que você
-            confere contra o Conta Azul linha por linha. Para ver o que esperamos
+            futuro é a agenda de vencimentos: valor cheio, na data. O que já
+            venceu e segue em aberto rola para o próximo mês, como o Conta Azul
+            faz. É o que você confere contra o Conta Azul linha por linha. Para ver o que esperamos
             que <strong>entre de verdade</strong>, com a taxa de recebimento desta
             empresa e o negócio que ainda não foi lançado, troque para{' '}
             <strong>com projeção</strong> acima.
@@ -281,6 +282,13 @@ export default async function Fluxo({ searchParams }) {
                       <td>{rotuloMes(m.competencia)}</td>
                       <td className="num">
                         <Link href={doMes('receivable')}>{brl(m.erpEntradas)}</Link>
+                        {m.vencidosEntradas > 0 && (
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                            <Link href="/contas?tipo=receivable&situacao=vencido&periodo=tudo">
+                              +{brl(m.vencidosEntradas)} vencidos
+                            </Link>
+                          </div>
+                        )}
                       </td>
                       <td className="num" style={{ color: 'var(--text-muted)' }}>
                         {ajuste ? brl(ajuste) : '—'}
@@ -291,6 +299,13 @@ export default async function Fluxo({ searchParams }) {
                       <td className="num" style={{ fontWeight: 600 }}>{brl(m.entradas)}</td>
                       <td className="num">
                         <Link href={doMes('payable')}>{brl(m.erpSaidas)}</Link>
+                        {m.vencidosSaidas > 0 && (
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                            <Link href="/contas?tipo=payable&situacao=vencido&periodo=tudo">
+                              +{brl(m.vencidosSaidas)} vencidos
+                            </Link>
+                          </div>
+                        )}
                       </td>
                       <td className="num" style={{ color: 'var(--text-muted)' }}>
                         {m.novosSaidas ? `+${brl(m.novosSaidas)}` : '—'}
