@@ -13,6 +13,10 @@ import { criarState } from '@/lib/oauthState'
 import { buildAuthorizeUrl } from '@/src/oauth.mjs'
 
 export const dynamic = 'force-dynamic'
+// O sincronizar agora roda dentro da action e pode levar mais que os 15s
+// padrao quando o ERP teve um dia movimentado. O orcamento interno e menor
+// que isto, entao a action sempre termina antes do teto.
+export const maxDuration = 60
 
 // Página de confiança. Como não existe webhook na Conta Azul, o dado tem idade,
 // e o cliente precisa enxergar essa idade sem precisar perguntar.
@@ -114,6 +118,23 @@ export default async function Conexoes({ searchParams }) {
     })
   }
 
+  async function sincronizarAgora(formData) {
+    'use server'
+    await comAviso('/conexoes', async () => {
+      const s = await requireSession()
+      const id = formData.get('conexao')
+      // Dono da conexao e quem pode puxa-la. Sem esta checagem, qualquer
+      // usuario logado dispararia sync na conexao de outro tenant.
+      const dona = s.conexoes.some((c) => c.id === id)
+      if (!dona) throw new Error('Conexão inválida para esta conta.')
+      const { syncConnection } = await import('@/src/sync.mjs')
+      // Orcamento de 45s: o que nao couber fica salvo como retomada e o
+      // cron termina. Melhor um sync parcial agora que um timeout mudo.
+      await syncConnection(id, 'incremental', { orcamentoMs: 45_000 })
+      revalidatePath('/', 'layout')
+    })
+  }
+
   const precisaReconectar = lista.some((c) => c.status !== 'connected')
 
   return (
@@ -195,6 +216,12 @@ export default async function Conexoes({ searchParams }) {
                   <div style={{ color: 'var(--critical)', marginTop: 6, fontSize: 12 }}>{c.last_error}</div>
                 )}
               </div>
+              {c.status === 'connected' && (
+                <form action={sincronizarAgora} style={{ marginTop: 10 }}>
+                  <input type="hidden" name="conexao" value={c.id} />
+                  <button className="toggle" type="submit">Sincronizar agora</button>
+                </form>
+              )}
             </div>
           )
         })}
