@@ -68,41 +68,60 @@ console.log('\n== VISÃO GERAL · mart.kpi_overview ==')
 
 console.log('\n== INTEGRIDADE DO ESPELHO · installment ==')
 {
-  // O contrato do dado, com as duas exceções que o próprio ERP pratica e que
-  // esta auditoria descobriu olhando o payload bruto:
+  // O contrato do dado, com as exceções que o próprio ERP pratica, todas
+  // descobertas olhando payload bruto:
   //   1. PERDIDO zera pago e em aberto e mantém o total (a diferença É a perda).
-  //   2. `pago` é o BRUTO da quitação: líquido da baixa + taxa + juros − desconto.
-  // Fora dessas duas, total = pago + em aberto tem que fechar no centavo.
+  //   2. Em parte dos títulos, `pago` é o BRUTO da quitação (líquido + taxa
+  //      + juros − desconto) e excede o total pela taxa.
+  //   3. Em outra parte (QUITADO vindos do sync de 10/2026), `pago` é o valor
+  //      de FACE e a taxa sai do líquido da baixa. As duas convenções
+  //      coexistem na mesma base.
+  // O título fecha se QUALQUER uma das duas leituras explica o trio.
   const r = (await query(`
-    select count(*) fora, coalesce(sum(abs(desvio)),0) desvio from (
+    select count(*) fora, coalesce(sum(least(abs(d_face), abs(d_bruto))),0) desvio from (
       select i.id,
+             coalesce(i.total,0)-coalesce(i.pago,0)-coalesce(i.nao_pago,0) as d_face,
              coalesce(i.total,0)-coalesce(i.pago,0)-coalesce(i.nao_pago,0)
-               + coalesce(sum(s.taxa),0) + coalesce(sum(s.juros),0) - coalesce(sum(s.desconto),0) as desvio
+               + coalesce(sum(s.taxa),0) + coalesce(sum(s.juros),0) - coalesce(sum(s.desconto),0) as d_bruto
         from core.installment i
         left join core.settlement s on s.installment_id = i.id
        where i.tenant_id=$1 and i.deleted_at is null and i.status_traduzido <> 'PERDIDO'
        group by i.id
-    ) x where abs(desvio) > 0.011`, [T])).rows[0]
+    ) x where least(abs(d_face), abs(d_bruto)) > 0.011`, [T])).rows[0]
   conta('títulos fora do contrato total = pago + aberto', r.fora, 0,
-    r.fora > 0 ? `(desvio ${Number(r.desvio).toFixed(2)})` : '(perdidos e taxa embutida já descontados)')
+    r.fora > 0 ? `(desvio ${Number(r.desvio).toFixed(2)})` : '(perdidos e as duas convenções de taxa cobertos)')
+
+  // Espelho parado é a falha mais silenciosa que existe: o sync responde ok,
+  // zero alterações, e a base apodrece. Foi um mês assim em 09/2026 por causa
+  // do fuso do CDC. Mais de 26 horas sem UM payload novo numa empresa ativa é
+  // alarme, não coincidência.
+  const fresco = (await query(`
+    select extract(epoch from (now() - max(fetched_at)))/3600 as horas
+      from raw.api_payload where tenant_id=$1`, [T])).rows[0]
+  conta('espelho atualizado nas últimas 26h', Number(fresco.horas) <= 26 ? 1 : 0, 1,
+    `(último payload há ${Number(fresco.horas).toFixed(1)}h)`)
 
   const perdas = (await query(`
     select count(*) n, coalesce(sum(total),0) v from core.installment
      where tenant_id=$1 and deleted_at is null and status_traduzido='PERDIDO'`, [T])).rows[0]
   console.log(`  info  perdas reconhecidas pelo ERP: ${perdas.n} título(s), R$ ${Number(perdas.v).toFixed(2)} (fora do contrato acima de propósito)`)
 
-  // Baixas versus pago: o pago do ERP tem que ser explicável pelo bruto das
-  // baixas (líquido + taxa + juros − desconto).
+  // Baixas versus pago: nas duas convenções, o pago tem que ser explicável
+  // pelas baixas, ou como bruto (líquido+taxa+juros−desconto) ou como face
+  // (líquido+taxa quando a taxa saiu do caixa).
   const b = (await query(`
     select count(*) fora from (
       select i.id
         from core.installment i join core.settlement s on s.installment_id=i.id
        where i.tenant_id=$1 and i.deleted_at is null
        group by i.id, i.pago
-      having abs(coalesce(i.pago,0)
-        - (coalesce(sum(s.valor),0)+coalesce(sum(s.taxa),0)+coalesce(sum(s.juros),0)-coalesce(sum(s.desconto),0))) > 0.05
+      having least(
+        abs(coalesce(i.pago,0)
+          - (coalesce(sum(s.valor),0)+coalesce(sum(s.taxa),0)+coalesce(sum(s.juros),0)-coalesce(sum(s.desconto),0))),
+        abs(coalesce(i.pago,0) - coalesce(sum(s.valor),0))
+      ) > 0.05
     ) x`, [T])).rows[0]
-  conta('títulos onde bruto das baixas ≠ pago', b.fora, 0)
+  conta('títulos onde as baixas não explicam o pago', b.fora, 0)
 
   const nulos = (await query(`
     select count(*) filter (where data_vencimento is null and coalesce(nao_pago,0)>0.009) sem_venc

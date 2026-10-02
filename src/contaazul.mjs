@@ -145,7 +145,17 @@ export class ContaAzulClient {
 // A API recusa data-hora com fuso ou milissegundo. Quer exatamente
 // YYYY-MM-DDTHH:mm:ss, e a mensagem de erro fala de ISO 8601, o que leva a
 // pessoa a tentar justamente o toISOString() que ela nao aceita.
-export const dataHora = (d) => new Date(d).toISOString().slice(0, 19)
+// A API recusa data com fuso neste formato E interpreta o que recebe como
+// horário de Brasília, não UTC. Provado empiricamente em 02/10/2026: a mesma
+// janela de 100 minutos devolve 0 eventos formatada em UTC e 2 eventos
+// formatada em Brasília. Mandar UTC aqui desloca a janela 3 horas para a
+// frente dos eventos, e com janela de sincronização menor que 3 horas TODO
+// evento escapa, para sempre. Foi o bug que deixou o espelho um mês parado
+// com o sync reportando "ok, 0 alterações" de hora em hora.
+//
+// Brasília não tem mais horário de verão, então o deslocamento é fixo.
+export const dataHora = (d) =>
+  new Date(new Date(d).getTime() - 3 * 3600000).toISOString().slice(0, 19)
 
 // Janelas mensais [inicio, fim] em ISO date. A busca de contas a pagar e a
 // receber exige faixa de data_vencimento, entao a carga precisa ser fatiada.
