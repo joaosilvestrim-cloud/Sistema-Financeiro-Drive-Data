@@ -177,6 +177,20 @@ console.log('\n== FLUXO: a ponte com o Conta Azul fecha ==')
   }
 }
 
+console.log('\n== CONCILIACAO: o detalhe por conta explica o total ==')
+{
+  // O card diz "76 pendentes" e abre por conta. Se a soma das contas nao
+  // devolver o total, a pessoa concilia tudo que a tela mostra e o numero
+  // de cima nao zera, que e o jeito mais rapido de ela parar de confiar.
+  const { conciliacao } = await import('../lib/executivo.js')
+  const c = await conciliacao(sessao)
+  conferir('pendentes = soma das contas', Number(c.pendentes),
+           c.porConta.reduce((a, x) => a + Number(x.lancamentos), 0))
+  conferir('valor pendente = soma das contas', Number(c.valor_pendente),
+           c.porConta.reduce((a, x) => a + Number(x.valor), 0))
+  conferir('lista de lancamentos completa', c.itens.length, Math.min(Number(c.pendentes), 400))
+}
+
 console.log(falhas ? `\n${falhas} divergencia(s).` : '\nTudo fecha.')
 await pool.end()
 process.exit(falhas ? 1 : 0)

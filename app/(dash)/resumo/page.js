@@ -35,6 +35,26 @@ const FAIXA = {
 }
 const ORDEM = ['a_vencer', 'd1_30', 'd31_60', 'd61_90', 'd90_mais']
 
+// O que fazer em cada tipo de conta para a pendência sumir. Cada uma se
+// concilia contra um documento diferente no Conta Azul, e dizer só
+// "concilie" não ajuda quem não sabe contra o quê.
+const COMO_CONCILIAR = {
+  CONTA_CORRENTE: 'Conciliar com o extrato do banco em Financeiro > Conciliação bancária.',
+  POUPANCA: 'Conciliar com o extrato do banco em Financeiro > Conciliação bancária.',
+  CARTAO_CREDITO: 'Conciliar com a fatura do cartão: importe a fatura (OFX) no Conta Azul e case cada compra.',
+  MEIOS_RECEBIMENTO: 'Conciliar com o extrato do Asaas: importe o extrato do gateway no Conta Azul.',
+  CAIXINHA: 'Conta sem extrato de banco. Revise os lançamentos e marque como conciliado manualmente, ou exclua se for ajuste de carga inicial.',
+  INVESTIMENTO: 'Conciliar com o extrato da aplicação.',
+}
+
+const PENDENTES = [
+  { chave: 'data_pagamento', titulo: 'Data', tipo: 'data' },
+  { chave: 'sentido', titulo: 'Tipo', tipo: 'texto' },
+  { chave: 'pessoa', titulo: 'Quem', tipo: 'texto', largura: 170 },
+  { chave: 'descricao', titulo: 'Descrição', tipo: 'texto', largura: 260 },
+  { chave: 'valor', titulo: 'Valor', tipo: 'dinheiro' },
+]
+
 const FAIXA_CONC = {
   ate_7: 'até 7 dias', d8_15: '8 a 15 dias', d16_30: '16 a 30 dias', mais_30: 'mais de 30 dias',
 }
@@ -169,6 +189,47 @@ export default async function Resumo() {
               </tbody>
             </table>
           </>
+        )}
+        {conc.porConta?.length > 0 && (
+          <div style={{ marginTop: 18 }}>
+            <h3 style={{ fontSize: 14, margin: '0 0 4px' }}>Onde está a pendência</h3>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 8px' }}>
+              Cada conta se concilia contra um documento diferente. Clique numa
+              conta para ver os lançamentos que faltam.
+            </p>
+            <table>
+              <thead>
+                <tr>
+                  <th />
+                  <th>Conta</th><th>O que fazer</th>
+                  <th className="num">Lançamentos</th><th className="num">Valor</th><th>Desde</th>
+                </tr>
+              </thead>
+              <tbody>
+                {conc.porConta.map((c) => {
+                  const dela = conc.itens.filter((i) => i.conta === c.conta)
+                  return (
+                    <LinhaExpansivel
+                      key={c.conta} colunas={6} campos={PENDENTES}
+                      itens={dela.slice(0, 30)} total={dela.length}
+                      rotulo={`${dela.length} lançamento(s) sem conciliar em ${c.conta}`}
+                      celulas={
+                        <>
+                          <td>{c.conta}</td>
+                          <td style={{ fontSize: 12, color: 'var(--text-secondary)', maxWidth: 360 }}>
+                            {COMO_CONCILIAR[c.tipo] ?? 'Conciliar com o extrato desta conta.'}
+                          </td>
+                          <td className="num">{c.lancamentos}</td>
+                          <td className="num">{brl(c.valor)}</td>
+                          <td>{dataCurta(c.mais_antigo)}</td>
+                        </>
+                      }
+                    />
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
         {Number(conc.legado_titulos ?? 0) > 0 && (
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 10, marginBottom: 0 }}>
