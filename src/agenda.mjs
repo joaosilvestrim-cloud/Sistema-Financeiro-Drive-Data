@@ -96,7 +96,14 @@ export async function rodarAgenda({ orcamentoMs = ORCAMENTO_MS } = {}) {
     try {
       // O orcamento entra aqui dentro. Sem ele uma unica conexao grande
       // consumiria a funcao inteira e seria morta no meio, sem nunca terminar.
-      const r = await syncConnection(c.id, 'incremental', { orcamentoMs: Math.max(5_000, limite - Date.now()) })
+      //
+      // Uma vez por dia, na madrugada, a rodada vira reconcile: alem dos
+      // eventos, varre TODOS os titulos em aberto direto na API. E a rede de
+      // seguranca contra o buraco do CDC (baixa via conciliacao bancaria nao
+      // gera evento) e contra qualquer outro jeito de o espelho descolar.
+      const hora = new Date().getUTCHours()
+      const tipo = (hora === 6 || hora === 7) ? 'reconcile' : 'incremental'
+      const r = await syncConnection(c.id, tipo, { orcamentoMs: Math.max(5_000, limite - Date.now()) })
       feito.syncs.push({ nome: c.nome, itens: r.itens, incompleto: !!r.incompleto })
       if (r.incompleto) feito.pendenteSync = true
     } catch (e) {

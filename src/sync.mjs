@@ -181,6 +181,39 @@ export async function syncConnection(connectionId, kind = 'incremental', { orcam
       await limparCursor(connectionId)
     }
 
+    // A varredura dos abertos existe porque o CDC do Conta Azul tem um buraco
+    // provado em 06/10/2026: baixa feita pela CONCILIACAO BANCARIA nao gera
+    // evento no /alteracoes. A Venda 156 ficou RECEBIDO no ERP por dias com o
+    // cron saudavel e janela certa, e nenhum evento nunca veio. Entao, alem
+    // dos eventos, rebuscamos direto os titulos que o NOSSO espelho acha que
+    // estao em aberto: se algum foi pago por fora do CDC, e aqui que ele se
+    // corrige. Incremental varre so os vencidos (poucos, e sao exatamente os
+    // que doem na tela); reconcile varre todos os abertos.
+    if (kind !== 'backfill' && !semTempo()) {
+      const soVencidos = kind !== 'reconcile'
+      const abertos = await query(
+        `select external_id from core.installment
+          where connection_id = $1 and deleted_at is null
+            and coalesce(nao_pago, 0) > 0.009
+            ${soVencidos ? 'and data_vencimento < current_date' : ''}
+          order by data_vencimento nulls last
+          limit 400`,
+        [connectionId],
+      )
+      let varridos = 0, corrigidos = 0
+      for (const a of abertos.rows) {
+        if (semTempo()) break
+        const parcela = await api.getInstallment(a.external_id).catch(() => null)
+        if (!parcela) continue
+        const r = await ingestInstallments(ctx, maps, [parcela])
+        await sincronizarBaixas(ctx, api, maps, r.mudaram)
+        varridos += 1
+        corrigidos += r.alterados
+      }
+      detail.varredura = { tipo: soVencidos ? 'vencidos' : 'abertos', varridos, corrigidos }
+      itens += corrigidos
+    }
+
     detail.saldos = (await fotografarSaldos(ctx, api)).total
 
     // Watermark só avança depois que tudo entrou. Se cair no meio, a próxima
