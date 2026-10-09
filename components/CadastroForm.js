@@ -38,7 +38,10 @@ export default function CadastroForm({ origem, convite = null, conviteInvalido =
         data: convite
           ? { origem: 'convite', convite: convite.token }
           : { empresa, origem: origem || 'direto' },
-        emailRedirectTo: `${window.location.origin}/bem-vindo`,
+        // Volta por uma rota nossa, que troca o código por sessão e, se o
+        // link já tiver sido gasto pelo filtro do e-mail, manda para o login
+        // com explicação em vez de tela de erro.
+        emailRedirectTo: `${window.location.origin}/auth/confirmar?next=/bem-vindo`,
       },
     })
 
@@ -68,6 +71,11 @@ export default function CadastroForm({ origem, convite = null, conviteInvalido =
           <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
             Mandamos um link para <strong>{email}</strong>. Clique nele e sua conta
             abre já com os 14 dias de teste rodando.
+          </p>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            Não chegou? Confira o lixo eletrônico. Se o link disser que expirou,
+            é só <a href="/login" style={{ textDecoration: 'underline' }}>entrar com a sua senha</a>:
+            o e-mail já estará confirmado.
           </p>
         </div>
       </div>

@@ -69,9 +69,9 @@ export default async function BemVindo() {
         </form>
 
         <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 12, marginBottom: 0 }}>
-          Só funciona com o plano Conta Azul Pro, que é o único com API. Acesso
-          somente de leitura do financeiro, e você revoga quando quiser dentro do
-          próprio Conta Azul.
+          Só funciona com o plano Conta Azul Pro, que é o único com API. O painel
+          lê o financeiro, nada é alterado no seu Conta Azul sem você mandar, e
+          você revoga o acesso quando quiser dentro do próprio Conta Azul.
         </p>
       </div>
     </div>

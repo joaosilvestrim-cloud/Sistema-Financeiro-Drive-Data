@@ -14,18 +14,47 @@ export default function LoginForm() {
     ? 'Seu usuário não está vinculado a nenhuma empresa.'
     : '')
   const [enviando, setEnviando] = useState(false)
+  const [naoConfirmado, setNaoConfirmado] = useState(false)
+  const [reenviado, setReenviado] = useState(false)
+
+  // Quem chega pela volta do link de confirmação. Na maioria das vezes o
+  // e-mail já está confirmado (o filtro de segurança do e-mail abriu o link
+  // antes da pessoa), e o que falta é só entrar. Ver app/auth/confirmar.
+  const aviso = params.get('aviso') === 'confirmar'
+    ? 'Seu e-mail foi confirmado. Entre com a senha que você criou para continuar.'
+    : ''
+
+  const cliente = () => createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  )
+
+  async function reenviar() {
+    setErro('')
+    const { error } = await cliente().auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth/confirmar?next=/bem-vindo` },
+    })
+    if (error) { setErro('Não foi possível reenviar agora. Tente de novo em alguns minutos.'); return }
+    setReenviado(true)
+  }
 
   async function entrar(e) {
     e.preventDefault()
     setEnviando(true)
     setErro('')
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    )
-    const { error } = await supabase.auth.signInWithPassword({ email, password: senha })
+    setNaoConfirmado(false)
+    const { error } = await cliente().auth.signInWithPassword({ email, password: senha })
     if (error) {
-      setErro('E-mail ou senha inválidos.')
+      // E-mail não confirmado é outro problema, com outra saída. Dizer "senha
+      // inválida" aqui mandaria a pessoa trocar uma senha que está certa.
+      if (error.code === 'email_not_confirmed' || /not confirmed/i.test(error.message)) {
+        setNaoConfirmado(true)
+        setErro('Seu e-mail ainda não foi confirmado. Use o link que enviamos ou peça outro.')
+      } else {
+        setErro('E-mail ou senha inválidos.')
+      }
       setEnviando(false)
       return
     }
@@ -47,7 +76,20 @@ export default function LoginForm() {
           type="password" placeholder="Senha" value={senha} autoComplete="current-password"
           onChange={(e) => setSenha(e.target.value)} required
         />
+        {aviso && !erro && (
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{aviso}</div>
+        )}
         {erro && <div className="erro">{erro}</div>}
+        {naoConfirmado && !reenviado && (
+          <button type="button" className="toggle" onClick={reenviar} disabled={!email}>
+            Reenviar link de confirmação
+          </button>
+        )}
+        {reenviado && (
+          <div style={{ fontSize: 13, color: 'var(--good-text)' }}>
+            Link reenviado para {email}. Confira também o lixo eletrônico.
+          </div>
+        )}
         <button className="btn" type="submit" disabled={enviando}>
           {enviando ? 'Entrando...' : 'Entrar'}
         </button>
