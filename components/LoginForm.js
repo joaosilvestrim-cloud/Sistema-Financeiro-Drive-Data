@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
-import Marca from '@/components/Marca'
+import TelaAcesso from '@/components/TelaAcesso'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -20,9 +20,11 @@ export default function LoginForm() {
   // Quem chega pela volta do link de confirmação. Na maioria das vezes o
   // e-mail já está confirmado (o filtro de segurança do e-mail abriu o link
   // antes da pessoa), e o que falta é só entrar. Ver app/auth/confirmar.
-  const aviso = params.get('aviso') === 'confirmar'
-    ? 'Seu e-mail foi confirmado. Entre com a senha que você criou para continuar.'
-    : ''
+  const aviso = {
+    confirmar: 'Seu e-mail foi confirmado. Entre com a senha que você criou para continuar.',
+    'senha-nova': 'Senha trocada. Entre com a senha nova.',
+    'link-recuperacao': 'Esse link de troca de senha já foi usado ou expirou. Peça outro em "Esqueci minha senha".',
+  }[params.get('aviso')] ?? ''
 
   const cliente = () => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -63,11 +65,12 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="login">
+    <TelaAcesso
+      titulo="Entrar"
+      subtitulo="Bom te ver de novo. Os números estão atualizados."
+      acao={{ href: '/comecar', rotulo: 'Criar conta' }}
+    >
       <form onSubmit={entrar}>
-        <div style={{ marginBottom: 6 }}>
-          <Marca tamanho={38} />
-        </div>
         <input
           type="email" placeholder="E-mail" value={email} autoComplete="username"
           onChange={(e) => setEmail(e.target.value)} required
@@ -93,10 +96,14 @@ export default function LoginForm() {
         <button className="btn" type="submit" disabled={enviando}>
           {enviando ? 'Entrando...' : 'Entrar'}
         </button>
-        <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>
-          Ainda não tem conta? <Link href="/comecar">Testar 14 dias grátis</Link>
+        <p style={{ fontSize: 15, margin: '6px 0 0' }}>
+          <Link href="/redefinir-senha" style={{ textDecoration: 'underline', textUnderlineOffset: 3 }}>Esqueci minha senha</Link>
+        </p>
+        <p style={{ fontSize: 15, color: 'var(--text-muted)', margin: 0 }}>
+          Ainda não tem conta?{' '}
+          <Link href="/comecar" style={{ textDecoration: 'underline', textUnderlineOffset: 3 }}>Testar 14 dias grátis</Link>
         </p>
       </form>
-    </div>
+    </TelaAcesso>
   )
 }

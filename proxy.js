@@ -66,6 +66,7 @@ export async function proxy(request) {
   // login e a sincronizacao nunca rodar, em silencio.
   const publica = path.startsWith('/login')
     || path.startsWith('/inicio')
+    || path.startsWith('/redefinir-senha')
     || path.startsWith('/comecar')
     || path.startsWith('/termos')
     || path.startsWith('/privacidade')

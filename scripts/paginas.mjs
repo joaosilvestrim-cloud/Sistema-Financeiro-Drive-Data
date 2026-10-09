@@ -71,6 +71,7 @@ const PUBLICAS = [
   // em vez de ver o produto, e nada mais avisa.
   ['/', 'lido de verdade'],
   ['/inicio', 'Planos por empresa'],
+  ['/redefinir-senha', 'Esqueci minha senha'],
   ['/termos', 'Termos de Uso'],
   ['/privacidade', 'Política de Privacidade'],
 ]

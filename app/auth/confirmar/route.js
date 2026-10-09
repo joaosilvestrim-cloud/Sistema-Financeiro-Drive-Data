@@ -37,8 +37,10 @@ export async function GET(request) {
 
   // Sem código, código recusado ou erro devolvido pelo Supabase. Nos três
   // casos o próximo passo da pessoa é o mesmo: entrar com a senha.
+  // Na troca de senha não há o que salvar: se o filtro gastou o link, a
+  // pessoa não tem senha que sirva e precisa pedir outro.
   const login = new URL('/login', url.origin)
-  login.searchParams.set('aviso', 'confirmar')
+  login.searchParams.set('aviso', proxima === '/redefinir-senha' ? 'link-recuperacao' : 'confirmar')
   login.searchParams.set('proxima', proxima)
   return NextResponse.redirect(login)
 }

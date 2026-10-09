@@ -1,0 +1,152 @@
+/* Moldura das telas de entrada: login, cadastro, confirmação, troca de senha,
+   boas-vindas e primeira carga. Mesma linguagem da landing, sempre clara: a
+   pessoa sai da vitrine e entra no cadastro sem sentir que trocou de site.
+
+   As variáveis do painel são redefinidas aqui dentro. Assim os campos, o
+   botão e as mensagens de erro, que usam as classes globais, ficam claros
+   mesmo quando o navegador guardou o tema escuro do painel. */
+
+.raiz {
+  --ink: #0a1628;
+  --verde: #54da89;
+  --fog: #eef2f7;
+  --linha: #dbe2ea;
+  --on-ink: rgba(234, 240, 251, 0.82);
+  --on-ink-fraco: rgba(234, 240, 251, 0.56);
+  --linha-ink: rgba(234, 240, 251, 0.14);
+
+  --plane: #ffffff;
+  --surface: #ffffff;
+  --text-primary: #0a1628;
+  --text-secondary: #3d4a5c;
+  --text-muted: #5b6778;
+  --grid: #e3e8ef;
+  --axis: #c7d0db;
+  --border: rgba(10, 22, 40, 0.10);
+  --accent: #0a72c4;
+  --accent-forte: #085a9c;
+  --accent-suave: rgba(10, 114, 196, 0.10);
+  --good-text: #15803d;
+  --critical: #b42318;
+
+  color-scheme: light;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  color: var(--text-secondary);
+  font-family: var(--font-inter), 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+.topo { border-bottom: 1px solid var(--linha); }
+.topoMiolo {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.marca { display: flex; align-items: center; gap: 10px; color: var(--ink); font-weight: 800; font-size: 19px; letter-spacing: -0.03em; }
+.acao {
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  border-radius: 9999px;
+  padding: 8px 18px;
+  font-size: 15px;
+  font-weight: 550;
+}
+.acao:hover { background: var(--fog); }
+
+.grade {
+  flex: 1;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 56px 24px 72px;
+  display: grid;
+  grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+  gap: 72px;
+  align-items: start;
+  align-content: start;
+}
+.largo { grid-template-columns: minmax(0, 720px); justify-content: center; }
+
+.titulo {
+  font-weight: 900;
+  font-size: clamp(38px, 5vw, 56px);
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+  color: var(--ink);
+  margin: 0;
+  text-wrap: balance;
+}
+.sub {
+  font-size: 17px;
+  line-height: 1.5;
+  margin: 16px 0 0;
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+.corpo { min-width: 0; }
+.conteudo { margin-top: 28px; }
+
+/* O formulário perde o cartão: na referência o campo vive direto na página. */
+.conteudo form { display: grid; gap: 12px; }
+.conteudo input,
+.conteudo select {
+  font-size: 16px;
+  padding: 13px 15px;
+  border-radius: 10px;
+  border: 1px solid var(--axis);
+  background: #ffffff;
+  color: var(--ink);
+  width: 100%;
+}
+.conteudo input:focus-visible,
+.conteudo select:focus-visible { border-color: var(--ink); outline: none; box-shadow: none; }
+.conteudo :global(.btn) { width: 100%; padding: 14px 24px; font-size: 16px; margin-top: 4px; }
+.conteudo :global(.erro) { font-size: 14px; }
+.conteudo a { color: var(--ink); }
+
+/* Painel navy ao lado, a mesma superfície invertida das seções da landing. */
+.painel {
+  background: var(--ink);
+  color: var(--on-ink);
+  border-radius: 28px;
+  padding: 44px 40px;
+  position: sticky;
+  top: 32px;
+}
+.painelTitulo {
+  font-weight: 900;
+  font-size: 38px;
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  color: #ffffff;
+  margin: 0;
+}
+.painelTitulo b { color: var(--verde); font-weight: 900; }
+.lista { list-style: none; padding: 0; margin: 32px 0 0; }
+.lista li {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  padding: 16px 0;
+  border-top: 1px solid var(--linha-ink);
+  font-size: 16px;
+  line-height: 1.45;
+}
+.lista span {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  color: var(--verde);
+  padding-top: 2px;
+}
+.rodapePainel { margin: 24px 0 0; font-size: 14px; color: var(--on-ink-fraco); }
+
+@media (max-width: 900px) {
+  .grade { grid-template-columns: 1fr; gap: 40px; padding-top: 40px; }
+  .painel { position: static; padding: 32px 26px; }
+  .painelTitulo { font-size: 30px; }
+}

@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
-import Marca from '@/components/Marca'
+import TelaAcesso from '@/components/TelaAcesso'
 
 // Cadastro. O usuário nasce no Supabase Auth, pelo navegador, com a chave
 // pública. O tenant nasce depois, no primeiro acesso autenticado, em
@@ -16,6 +16,7 @@ export default function CadastroForm({ origem, convite = null, conviteInvalido =
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
   const [confirmar, setConfirmar] = useState(false)
+  const [existe, setExiste] = useState(false)
   const [enviando, setEnviando] = useState(false)
 
   async function criar(e) {
@@ -53,6 +54,17 @@ export default function CadastroForm({ origem, convite = null, conviteInvalido =
       return
     }
 
+    // E-mail que já tem conta. O Supabase responde sucesso e não manda nada,
+    // de propósito, para ninguém descobrir quais e-mails existem testando o
+    // cadastro. O sinal é o usuário voltar sem identidade nenhuma. Sem este
+    // teste a tela dizia "confirme seu e-mail" e o e-mail nunca chegava:
+    // aconteceu com o João em 09/10.
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      setExiste(true)
+      setEnviando(false)
+      return
+    }
+
     // Quando o projeto exige confirmação de e-mail, o signUp não devolve
     // sessão. Sem tratar isso a tela mandaria a pessoa para dentro do app e ela
     // cairia no login sem entender por quê.
@@ -64,40 +76,35 @@ export default function CadastroForm({ origem, convite = null, conviteInvalido =
 
   if (confirmar) {
     return (
-      <div className="login">
-        <div style={{ textAlign: 'center' }}>
-          <Marca tamanho={38} />
-          <h2 style={{ marginTop: 18 }}>Confirme seu e-mail</h2>
-          <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
-            Mandamos um link para <strong>{email}</strong>. Clique nele e sua conta
-            abre já com os 14 dias de teste rodando.
-          </p>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            Não chegou? Confira o lixo eletrônico. Se o link disser que expirou,
-            é só <a href="/login" style={{ textDecoration: 'underline' }}>entrar com a sua senha</a>:
-            o e-mail já estará confirmado.
-          </p>
-        </div>
-      </div>
+      <TelaAcesso
+        titulo="Confirme seu e-mail."
+        acao={{ href: '/login', rotulo: 'Entrar' }}
+      >
+        <p style={{ fontSize: 17, lineHeight: 1.5, margin: 0 }}>
+          Mandamos um link para <strong style={{ color: 'var(--text-primary)' }}>{email}</strong>.
+          Clique nele e sua conta abre já com os 14 dias de teste rodando.
+        </p>
+        <p style={{ fontSize: 15, lineHeight: 1.55, color: 'var(--text-muted)', margin: '16px 0 0' }}>
+          Não chegou em alguns minutos? Confira o lixo eletrônico. Se o link disser
+          que expirou, é só{' '}
+          <Link href="/login" style={{ textDecoration: 'underline', textUnderlineOffset: 3 }}>entrar com a sua senha</Link>:
+          o e-mail já estará confirmado.
+        </p>
+      </TelaAcesso>
     )
   }
 
   return (
-    <div className="login">
+    <TelaAcesso
+      titulo={convite ? 'Entre na equipe.' : 'Crie sua conta.'}
+      subtitulo={convite
+        ? `Você foi convidado para o painel da ${convite.empresa}. Crie sua senha para entrar.`
+        : '14 dias grátis, sem cartão de crédito. Em poucos minutos o painel está pronto.'}
+      acao={{ href: '/login', rotulo: 'Entrar' }}
+    >
       <form onSubmit={criar}>
-        <div style={{ marginBottom: 6 }}>
-          <Marca tamanho={38} />
-        </div>
-        {convite ? (
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 4px' }}>
-            Você foi convidado para o painel da <strong>{convite.empresa}</strong>.
-            Crie sua senha para entrar.
-          </p>
-        ) : (
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 4px' }}>
-            14 dias grátis. Sem cartão de crédito.
-            {conviteInvalido && ' Este link de convite não vale mais; peça outro a quem convidou.'}
-          </p>
+        {conviteInvalido && (
+          <div className="erro">Este link de convite não vale mais. Peça outro a quem convidou.</div>
         )}
         {!convite && (
           <input
@@ -115,13 +122,22 @@ export default function CadastroForm({ origem, convite = null, conviteInvalido =
           onChange={(e) => setSenha(e.target.value)} required
         />
         {erro && <div className="erro">{erro}</div>}
+        {existe && (
+          <div className="erro" style={{ lineHeight: 1.5 }}>
+            Já existe uma conta com esse e-mail.{' '}
+            <Link href="/login" style={{ textDecoration: 'underline' }}>Entre com a sua senha</Link>
+            {' '}ou{' '}
+            <Link href="/redefinir-senha" style={{ textDecoration: 'underline' }}>crie uma senha nova</Link>.
+          </div>
+        )}
         <button className="btn" type="submit" disabled={enviando}>
           {enviando ? 'Criando...' : 'Começar agora'}
         </button>
-        <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>
-          Já tem conta? <Link href="/login">Entrar</Link>
+        <p style={{ fontSize: 15, color: 'var(--text-muted)', margin: '6px 0 0' }}>
+          Já tem conta?{' '}
+          <Link href="/login" style={{ textDecoration: 'underline', textUnderlineOffset: 3 }}>Entrar</Link>
         </p>
       </form>
-    </div>
+    </TelaAcesso>
   )
 }
