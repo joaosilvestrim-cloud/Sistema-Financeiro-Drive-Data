@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light">
+<title>Crie sua senha nova · DriveAzul</title>
+</head>
+<body style="margin:0;padding:0;background:#eef2f7;-webkit-text-size-adjust:100%;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#eef2f7;">Use o botão para criar uma senha nova no DriveAzul. Nada muda até você salvar.&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef2f7;">
+<tr><td align="center" style="padding:40px 14px 32px;">
+
+  <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;background:#ffffff;border-radius:24px;overflow:hidden;">
+
+    <tr><td style="background:#0a1628;padding:22px 36px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td style="vertical-align:middle;padding-right:10px;"><img src="https://driveazul.drivedata.com.br/driveazul-marca.png" width="30" height="30" alt="" style="display:block;border:0;"></td>
+        <td style="vertical-align:middle;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:19px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;">DriveAzul</td>
+      </tr></table>
+    </td></tr>
+
+    <tr><td style="padding:40px 36px 0;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+      <h1 style="margin:0;font-size:34px;line-height:1.05;font-weight:900;letter-spacing:-1.4px;color:#0a1628;">Crie sua senha nova.</h1>
+      <p style="margin:18px 0 0;font-size:16px;line-height:1.6;color:#3d4a5c;">Recebemos um pedido para trocar a senha da conta <strong style="color:#0a1628;">{{ .Email }}</strong>. O botão abre a tela da senha nova, e nada muda até você salvar.</p>
+    </td></tr>
+
+    <tr><td style="padding:30px 36px 0;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td bgcolor="#54da89" style="border-radius:9999px;">
+          <a href="{{ .SiteURL }}/redefinir-senha?token_hash={{ .TokenHash }}&amp;type=recovery" style="display:inline-block;padding:16px 34px;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;color:#0a1628;text-decoration:none;border-radius:9999px;">Criar senha nova</a>
+        </td>
+      </tr></table>
+    </td></tr>
+
+    <tr><td style="padding:34px 36px 36px;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td style="background:#eef2f7;border-radius:14px;padding:16px 18px;font-size:14px;line-height:1.6;color:#3d4a5c;">
+          <strong style="color:#0a1628;">Não foi você?</strong> Ignore este e-mail. A senha atual continua valendo, e ninguém entra na sua conta sem ela. O link vale uma vez só e por pouco tempo.
+        </td>
+      </tr></table>
+      <p style="margin:18px 0 0;font-size:12px;line-height:1.6;color:#8d9ab0;">Se o botão não abrir, copie e cole este endereço no navegador:<br><span style="word-break:break-all;color:#5b6778;">{{ .SiteURL }}/redefinir-senha?token_hash={{ .TokenHash }}&amp;type=recovery</span></p>
+    </td></tr>
+
+  </table>
+
+  <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;">
+    <tr><td style="padding:22px 12px 0;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:#8d9ab0;text-align:center;">
+      DriveAzul · inteligência financeira sobre o seu Conta Azul · um produto DriveData<br>
+      Este e-mail foi enviado porque alguém pediu a troca de senha desta conta.
+    </td></tr>
+  </table>
+
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light">
+<title>Confirme seu e-mail · DriveAzul</title>
+</head>
+<body style="margin:0;padding:0;background:#eef2f7;-webkit-text-size-adjust:100%;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#eef2f7;">Falta um clique: confirme o seu e-mail e o painel do DriveAzul abre em seguida.&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef2f7;">
+<tr><td align="center" style="padding:40px 14px 32px;">
+
+  <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;background:#ffffff;border-radius:24px;overflow:hidden;">
+
+    <tr><td style="background:#0a1628;padding:22px 36px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td style="vertical-align:middle;padding-right:10px;"><img src="https://driveazul.drivedata.com.br/driveazul-marca.png" width="30" height="30" alt="" style="display:block;border:0;"></td>
+        <td style="vertical-align:middle;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:19px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;">DriveAzul</td>
+      </tr></table>
+    </td></tr>
+
+    <tr><td style="padding:40px 36px 0;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+      <h1 style="margin:0;font-size:34px;line-height:1.05;font-weight:900;letter-spacing:-1.4px;color:#0a1628;">Falta um clique.</h1>
+      <p style="margin:18px 0 0;font-size:16px;line-height:1.6;color:#3d4a5c;">Sua conta no DriveAzul foi criada. Confirme o e-mail <strong style="color:#0a1628;">{{ .Email }}</strong> e o seu teste de 14 dias começa na hora, sem cartão.</p>
+    </td></tr>
+
+    <tr><td style="padding:30px 36px 0;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td bgcolor="#54da89" style="border-radius:9999px;">
+          <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:16px 34px;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;color:#0a1628;text-decoration:none;border-radius:9999px;">Confirmar meu e-mail</a>
+        </td>
+      </tr></table>
+    </td></tr>
+
+    <tr><td style="padding:38px 36px 0;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+      <p style="margin:0 0 6px;font-size:15px;font-weight:700;color:#0a1628;">Do clique ao painel</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td width="38" valign="top" style="border-top:1px solid #dbe2ea;padding:14px 0;font-family:Consolas,Menlo,monospace;font-size:13px;color:#15803d;">01</td>
+          <td style="border-top:1px solid #dbe2ea;padding:14px 0;font-size:15px;line-height:1.5;color:#3d4a5c;"><strong style="color:#0a1628;">Confirmar o e-mail.</strong> É o botão acima.</td>
+        </tr>
+        <tr>
+          <td width="38" valign="top" style="border-top:1px solid #dbe2ea;padding:14px 0;font-family:Consolas,Menlo,monospace;font-size:13px;color:#15803d;">02</td>
+          <td style="border-top:1px solid #dbe2ea;padding:14px 0;font-size:15px;line-height:1.5;color:#3d4a5c;"><strong style="color:#0a1628;">Autorizar o Conta Azul.</strong> Você entra no próprio Conta Azul e confirma. Nunca vemos a sua senha.</td>
+        </tr>
+        <tr>
+          <td width="38" valign="top" style="border-top:1px solid #dbe2ea;border-bottom:1px solid #dbe2ea;padding:14px 0;font-family:Consolas,Menlo,monospace;font-size:13px;color:#15803d;">03</td>
+          <td style="border-top:1px solid #dbe2ea;border-bottom:1px solid #dbe2ea;padding:14px 0;font-size:15px;line-height:1.5;color:#3d4a5c;"><strong style="color:#0a1628;">Ver os números.</strong> Trazemos 36 meses de histórico em poucos minutos, e depois tudo se atualiza sozinho.</td>
+        </tr>
+      </table>
+    </td></tr>
+
+    <tr><td style="padding:28px 36px 36px;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td style="background:#eef2f7;border-radius:14px;padding:16px 18px;font-size:13px;line-height:1.6;color:#5b6778;">
+          Se o link disser que expirou, entre com a sua senha em
+          <a href="https://driveazul.drivedata.com.br/login" style="color:#0a1628;font-weight:600;">driveazul.drivedata.com.br/login</a>.
+          O seu e-mail já estará confirmado: alguns filtros de segurança abrem o link antes de você.
+        </td>
+      </tr></table>
+      <p style="margin:18px 0 0;font-size:12px;line-height:1.6;color:#8d9ab0;">Se o botão não abrir, copie e cole este endereço no navegador:<br><span style="word-break:break-all;color:#5b6778;">{{ .ConfirmationURL }}</span></p>
+    </td></tr>
+
+  </table>
+
+  <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;">
+    <tr><td style="padding:22px 12px 0;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:#8d9ab0;text-align:center;">
+      DriveAzul · inteligência financeira sobre o seu Conta Azul · um produto DriveData<br>
+      Você recebeu este e-mail porque uma conta foi criada com este endereço. Se não foi você, ignore.
+    </td></tr>
+  </table>
+
+</td></tr>
+</table>
+</body>
+</html>
