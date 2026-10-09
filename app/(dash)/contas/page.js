@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import FiltroContasUrl from '@/components/FiltroContasUrl'
+import { opcoesAging } from '@/lib/aging'
 import { requireSession } from '@/lib/session'
 import { razao, totaisDaRazao, razaoAgrupada, baixasDosTitulos, opcoesDaRazao, SITUACOES } from '@/lib/razao'
 import { brl, dataCurta } from '@/lib/format'
@@ -81,6 +83,7 @@ export default async function Contas({ searchParams }) {
   const categoria = busca?.categoria || null
   const ordem = busca?.ordem ?? 'vencimento'
   const pagina = Math.max(0, Number(busca?.pagina) || 0)
+  const contasSel = String(busca?.conta ?? '').split(',').filter((x) => /^[0-9a-f-]{36}$/i.test(x))
 
   // O intervalo do período convive com datas soltas na URL, que é como o fluxo
   // de caixa manda para cá: ele conhece o mês exato e não um preset.
@@ -92,16 +95,18 @@ export default async function Contas({ searchParams }) {
     pessoa,
     categoria,
     ordem,
+    contas: contasSel,
     de: busca?.de || doPeriodo.de,
     ate: busca?.ate || doPeriodo.ate,
   }
 
-  const [linhas, totais, porPessoa, porCategoria, opcoes] = await Promise.all([
+  const [linhas, totais, porPessoa, porCategoria, opcoes, opcoesContas] = await Promise.all([
     razao(sessao, f, { limite: POR_PAGINA, pagina }),
     totaisDaRazao(sessao, f),
     razaoAgrupada(sessao, f, 'pessoa', 8),
     razaoAgrupada(sessao, f, 'categoria', 8),
     opcoesDaRazao(sessao, { ...f, busca: '' }),
+    opcoesAging(sessao, tipo),
   ])
 
   const baixas = await baixasDosTitulos(sessao, linhas.filter((l) => Number(l.baixas) > 0).map((l) => l.id))
@@ -122,6 +127,7 @@ export default async function Contas({ searchParams }) {
     }
     if (busca?.de && !('periodo' in troca)) p.set('de', busca.de)
     if (busca?.ate && !('periodo' in troca)) p.set('ate', busca.ate)
+    if (contasSel.length) p.set('conta', contasSel.join(','))
     return `/contas?${p}`
   }
 
@@ -193,7 +199,9 @@ export default async function Contas({ searchParams }) {
           <input type="hidden" name="tipo" value={tipo} />
           <input type="hidden" name="situacao" value={situacao} />
           <input type="hidden" name="periodo" value={periodo} />
+          {contasSel.length > 0 && <input type="hidden" name="conta" value={contasSel.join(',')} />}
           <span style={{ fontSize: 12, color: 'var(--text-muted)', minWidth: 62 }}>filtrar</span>
+          <FiltroContasUrl contas={opcoesContas.contas} selecionadas={contasSel} />
           <input name="q" defaultValue={termo} placeholder="nome ou descrição" style={{ minWidth: 190 }} />
           <select name="pessoa" defaultValue={pessoa ?? ''}>
             <option value="">todo {rotuloPessoa.toLowerCase()}</option>

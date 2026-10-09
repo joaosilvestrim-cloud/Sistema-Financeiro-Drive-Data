@@ -6,6 +6,8 @@ import NavLink from '@/components/NavLink'
 import EmpresaSelect from '@/components/EmpresaSelect'
 import { desde } from '@/lib/format'
 import TemaToggle from '@/components/TemaToggle'
+import Paleta from '@/components/Paleta'
+import BotaoPaleta from '@/components/BotaoPaleta'
 
 // O menu segue a ordem em que um financeiro lê a empresa, e não a ordem em que
 // as telas foram construídas.
@@ -30,6 +32,7 @@ const MENU = [
     ['/previsao', 'Projeção de saldo', 'previsao'],
     ['/contas', 'Contas a pagar e receber', 'contas'],
     ['/recebiveis', 'Recebíveis', 'recebiveis'],
+    ['/aging', 'Aging', 'aging'],
   ]],
   ['Resultado', 'var(--cat-5)', [
     ['/dre', 'DRE gerencial', 'dre'],
@@ -95,6 +98,8 @@ export default async function DashLayout({ children }) {
           />
         </div>
 
+        <BotaoPaleta />
+
         <nav className="nav">
           {MENU.map(([grupo, cor, itens]) => (
             <div key={grupo} style={{ '--g': cor }}>
@@ -128,6 +133,8 @@ export default async function DashLayout({ children }) {
       </aside>
 
       <main className="content">{children}</main>
+      <Paleta itens={MENU.flatMap(([grupo, cor, itens]) =>
+        itens.map(([href, titulo]) => ({ href, titulo, grupo, cor })))} />
     </div>
   )
 }

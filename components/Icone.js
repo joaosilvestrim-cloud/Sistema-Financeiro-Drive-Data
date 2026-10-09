@@ -20,6 +20,8 @@ const D = {
   previsao: 'M1.8 11.8l3.8-3.9 2.5 2.5 4.3-4.6M10.5 5.3h3.9v3.9',
   // Seta entrando na bandeja.
   recebiveis: 'M8 1.8v6.6M5.4 6.2L8 8.8l2.6-2.6M2.4 10.4v2.2a1.1 1.1 0 0 0 1.1 1.1h9a1.1 1.1 0 0 0 1.1-1.1v-2.2',
+  // Barras que crescem com a idade da dívida.
+  aging: 'M2.6 13.6v-2.8M6.1 13.6V8.4M9.6 13.6V5.8M13.1 13.6V2.6M1.8 13.6h12.4',
   // Folha com dobra e linhas.
   dre: 'M3.4 1.6h5.7l3.5 3.5v9.3H3.4zM9.1 1.6v3.5h3.5M5.7 8.2h4.6M5.7 10.6h4.6M5.7 13h2.8',
   // Etiqueta de preço.

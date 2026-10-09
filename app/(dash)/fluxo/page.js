@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { requireSession } from '@/lib/session'
+import FiltroContasUrl from '@/components/FiltroContasUrl'
+import { opcoesAging } from '@/lib/aging'
 import { fluxoDeCaixa } from '@/lib/cashflow'
 import { brl, dataCurta, pct, rotuloMes } from '@/lib/format'
 import { Suspense } from 'react'
@@ -37,16 +39,28 @@ export default async function Fluxo({ searchParams }) {
   // que o Conta Azul não faz.
   //
   // `erp` segue aceito porque links já saíram assim.
-  const modo = ['projecao'].includes(busca?.modo) ? 'projecao' : 'real'
+  // Contas escolhidas no seletor. Só uuid passa; o resto da URL é ignorado.
+  const contasSel = String(busca?.conta ?? '').split(',')
+    .filter((x) => /^[0-9a-f-]{36}$/i.test(x))
+  const modo = ['projecao'].includes(busca?.modo) && !contasSel.length ? 'projecao' : 'real'
   const real = modo === 'real'
   const link = (extra) => {
     const p = new URLSearchParams({ meses: String(frente), modo, ...extra })
+    if (contasSel.length) p.set('conta', contasSel.join(','))
     return `/fluxo?${p}`
   }
 
-  const f = await fluxoDeCaixa(sessao, {
-    mesesAtras: 12, mesesFrente: frente, modo: real ? 'erp' : 'projecao',
-  })
+  const [f, opcoesContas] = await Promise.all([
+    fluxoDeCaixa(sessao, {
+      mesesAtras: 12, mesesFrente: frente, modo: real ? 'erp' : 'projecao', contas: contasSel,
+    }),
+    opcoesAging(sessao, 'receivable'),
+  ])
+
+  // As leituras de IA são da empresa inteira. Numa visão filtrada por conta
+  // elas contradiriam o número ao lado, então não aparecem.
+  const ia = (chave) => (f.porConta ? null
+    : <Suspense fallback={null}><BulletIA sessao={sessao} chave={chave} /></Suspense>)
 
   if (!f.meses.length) {
     return (
@@ -93,6 +107,7 @@ export default async function Fluxo({ searchParams }) {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+          <FiltroContasUrl contas={opcoesContas.contas} selecionadas={contasSel} rotulo="Contas bancárias" />
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>ver</span>
             {[['real', 'real'], ['projecao', 'com projeção']].map(([v, rotulo]) => (
@@ -118,25 +133,44 @@ export default async function Fluxo({ searchParams }) {
         </div>
       </div>
 
+      {f.porConta && (
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap',
+          padding: '12px 16px', borderRadius: 12, marginBottom: 14, fontSize: 13,
+          background: 'var(--accent-suave)', border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)',
+        }}>
+          <span>
+            Mostrando só <strong>{f.contas.map((c) => c.nome).join(', ') || 'as contas escolhidas'}</strong>: baixas que
+            caíram nelas e a agenda dos títulos previstos para elas.
+            {f.semConta?.titulos > 0 && (
+              <> {f.semConta.titulos} título(s) em aberto, {brl(f.semConta.valor)}, não têm conta prevista no
+              Conta Azul e ficam fora desta visão.</>
+            )}{' '}
+            A projeção vale para a empresa inteira e fica desligada aqui.
+          </span>
+          <a href={`/fluxo?meses=${frente}&modo=real`} className="toggle">Ver todas as contas</a>
+        </div>
+      )}
+
       <div className="grid cols-4" style={{ marginBottom: 14 }}>
         <Tile label="Saldo hoje" valor={brl(f.saldoHoje)}
               nota={`${f.contas.length} conta${f.contas.length === 1 ? '' : 's'} financeira${f.contas.length === 1 ? '' : 's'}`}
-              insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="saldo" /></Suspense>} />
+              insight={ia("saldo")} />
         <Tile label={`Saldo ${real ? 'pela agenda' : 'projetado'} em ${frente} meses`}
               valor={brl(f.saldoFinal)}
               nota={`${variacao >= 0 ? 'crescimento' : 'queda'} de ${brl(Math.abs(variacao))}`}
               tom={variacao >= 0 ? 'good' : 'bad'} 
-              insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="saldo_projetado" /></Suspense>} />
+              insight={ia("saldo_projetado")} />
         <Tile label="Menor saldo do período"
               valor={f.pior ? brl(f.pior.saldoFim) : '—'}
               nota={f.pior ? `em ${rotuloMes(f.pior.competencia)}` : 'sem meses à frente'}
               tom={f.pior && f.pior.saldoFim < 0 ? 'bad' : apertaAbaixoDe ? 'bad' : 'good'} 
-              insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="menor_saldo" /></Suspense>} />
+              insight={ia("menor_saldo")} />
         <Tile label={real ? 'Resultado já agendado' : 'Resultado projetado'}
               valor={brl(entradasPrev - saidasPrev)}
               nota={`${brl(entradasPrev)} a entrar, ${brl(saidasPrev)} a sair`}
               tom={entradasPrev - saidasPrev >= 0 ? 'good' : 'bad'} 
-              insight={<Suspense fallback={null}><BulletIA sessao={sessao} chave="resultado_projetado" /></Suspense>} />
+              insight={ia("resultado_projetado")} />
       </div>
 
       {/* O saldo por conta vem antes de qualquer curva.
@@ -174,7 +208,7 @@ export default async function Fluxo({ searchParams }) {
               </tr>
             </tfoot>
           </table>
-          <Suspense fallback={null}><BulletIA sessao={sessao} chave="contas" /></Suspense>
+          {ia("contas")}
         </div>
 
       {f.pior && f.pior.saldoFim < 0 && (
@@ -194,7 +228,7 @@ export default async function Fluxo({ searchParams }) {
           Até hoje é o saldo reconstruído a partir das baixas. Daí em diante é projeção.
         </p>
         <SaldoChart meses={f.meses} mesAtual={f.mesAtual} fracaoDoMes={f.fracaoDoMes} />
-        <Suspense fallback={null}><BulletIA sessao={sessao} chave="curva_saldo" /></Suspense>
+        {ia("curva_saldo")}
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
@@ -203,7 +237,7 @@ export default async function Fluxo({ searchParams }) {
           A distância entre as duas linhas é a margem do mês. Clique na legenda para isolar uma série.
         </p>
         <LinhasFluxo meses={f.meses} mesAtual={f.mesAtual} fracaoDoMes={f.fracaoDoMes} />
-        <Suspense fallback={null}><BulletIA sessao={sessao} chave="movimento" /></Suspense>
+        {ia("movimento")}
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
@@ -385,7 +419,7 @@ export default async function Fluxo({ searchParams }) {
               </>
             )}
           </p>
-          <Suspense fallback={null}><BulletIA sessao={sessao} chave="composicao_previsto" /></Suspense>
+          {ia("composicao_previsto")}
         </div>
     </>
   )
