@@ -1,0 +1,387 @@
+/* Landing do DriveAzul. Linguagem da referência Wise com a paleta DriveData:
+   tela branca, tinta navy com o peso, um verde só como pontuação, títulos de
+   peso extremo e seções que invertem para o escuro para dar ritmo. Sempre
+   clara, como o site institucional; o tema escuro do painel não vale aqui. */
+
+.raiz {
+  --ink: #0a1628;
+  --ink-2: #13233a;
+  --verde: #54da89;
+  --verde-hover: #6fe39d;
+  --mist: #e3f7ec;
+  --fog: #eef2f7;
+  --paper: #ffffff;
+  --body: #3d4a5c;
+  --slate: #5b6778;
+  --linha: #dbe2ea;
+  --linha-forte: #c7d0db;
+  --on-ink: rgba(234, 240, 251, 0.82);
+  --on-ink-fraco: rgba(234, 240, 251, 0.56);
+  --linha-ink: rgba(234, 240, 251, 0.14);
+
+  background: var(--paper);
+  color: var(--body);
+  font-family: var(--font-inter), 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.5;
+  letter-spacing: -0.007em;
+  font-feature-settings: 'calt';
+  -webkit-font-smoothing: antialiased;
+  color-scheme: light;
+}
+
+.miolo { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+/* ------------------------------------------------------------ topo */
+
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--linha);
+}
+.topo .miolo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 68px;
+  gap: 24px;
+}
+.marca { display: flex; align-items: center; gap: 10px; color: var(--ink); font-weight: 800; font-size: 19px; letter-spacing: -0.03em; }
+.links { display: flex; gap: 4px; }
+.links a {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: 9999px;
+}
+.links a:hover { background: var(--fog); }
+.acoes { display: flex; align-items: center; gap: 10px; }
+
+/* ---------------------------------------------------------- botões */
+
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--verde);
+  color: var(--ink);
+  font-weight: 650;
+  font-size: 16px;
+  padding: 12px 26px;
+  border: 0;
+  white-space: nowrap;
+  transition: background-color 130ms ease;
+}
+.botao:hover { background: var(--verde-hover); }
+.vazado {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  font-weight: 550;
+  font-size: 15px;
+  padding: 9px 20px;
+  white-space: nowrap;
+}
+.vazado:hover { background: var(--fog); }
+.linkTexto {
+  color: var(--ink);
+  font-weight: 550;
+  font-size: 16px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1.5px;
+}
+
+/* ------------------------------------------------------------ herói */
+
+.heroi { padding: 88px 0 0; text-align: center; }
+.titulo {
+  font-weight: 900;
+  font-size: clamp(48px, 8.4vw, 104px);
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  color: var(--ink);
+  margin: 0 auto;
+  max-width: 13ch;
+  text-wrap: balance;
+}
+.chamada {
+  font-size: clamp(18px, 2vw, 22px);
+  line-height: 1.45;
+  color: var(--body);
+  max-width: 44ch;
+  margin: 28px auto 0;
+  text-wrap: pretty;
+}
+.ctaLinha {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  margin-top: 36px;
+  flex-wrap: wrap;
+}
+.letraMiuda { font-size: 14px; color: var(--slate); margin-top: 16px; }
+
+/* O painel ilustrativo atravessa a borda de baixo do herói, como a
+   referência faz com a ilustração principal. */
+.vitrine { margin: 64px auto 0; max-width: 1080px; position: relative; }
+.vitrine::before {
+  content: '';
+  position: absolute;
+  left: -24px; right: -24px; bottom: -1px; height: 46%;
+  background: var(--fog);
+  border-radius: 28px 28px 0 0;
+  z-index: 0;
+}
+.vitrine > * { position: relative; z-index: 1; }
+.legendaVitrine { text-align: center; font-size: 13px; color: var(--slate); padding: 14px 0 0; position: relative; z-index: 1; }
+
+/* ---------------------------------------------------------- seções */
+
+.secao { padding: 96px 0; }
+.faixaFog { background: var(--fog); }
+.faixaInk { background: var(--ink); color: var(--on-ink); }
+
+.secaoTitulo {
+  font-weight: 900;
+  font-size: clamp(36px, 5vw, 64px);
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+  color: var(--ink);
+  margin: 0;
+  max-width: 16ch;
+  text-wrap: balance;
+}
+.faixaInk .secaoTitulo { color: #ffffff; }
+.faixaInk .destaque { color: var(--verde); }
+.secaoLead {
+  font-size: 20px;
+  line-height: 1.5;
+  max-width: 52ch;
+  margin: 22px 0 0;
+}
+
+/* Lista editorial: filete, número em mono e texto. É o formato que substitui
+   cartão com ícone e checkmark, que a casa já recusou por ter cara de modelo. */
+.editorial {
+  list-style: none;
+  padding: 0;
+  margin: 56px 0 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: 56px;
+}
+.editorial li {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 4px 16px;
+  padding: 26px 0;
+  border-top: 1px solid var(--linha-forte);
+}
+.faixaInk .editorial li { border-top-color: var(--linha-ink); }
+.num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 14px;
+  color: var(--slate);
+  padding-top: 5px;
+  grid-row: span 2;
+}
+.faixaInk .num { color: var(--verde); }
+.editorial h3 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  line-height: 1.25;
+}
+.faixaInk .editorial h3 { color: #ffffff; }
+.editorial p { margin: 0; font-size: 16px; line-height: 1.55; }
+
+/* Três passos em linha, também editoriais. */
+.passos { grid-template-columns: repeat(3, 1fr); }
+
+/* Bloco "também no DriveAzul": cartões de raio grande, chapados. */
+.trio {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 48px;
+}
+.cartao {
+  background: var(--paper);
+  border: 1px solid var(--linha);
+  border-radius: 28px;
+  padding: 32px 30px;
+}
+.faixaFog .cartao { border-color: transparent; }
+.cartao h3 { margin: 0 0 10px; font-size: 22px; font-weight: 750; letter-spacing: -0.02em; color: var(--ink); }
+.cartao p { margin: 0; font-size: 16px; line-height: 1.55; }
+
+/* ----------------------------------------------------------- planos */
+
+.planos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 48px;
+  align-items: stretch;
+}
+.plano {
+  border: 1px solid var(--linha-forte);
+  border-radius: 28px;
+  padding: 34px 30px 30px;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+}
+/* O plano do meio é a única superfície invertida da seção. */
+.planoForte { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.plano h3 { margin: 0; font-size: 20px; font-weight: 750; color: var(--ink); letter-spacing: -0.02em; }
+.planoForte h3 { color: #ffffff; }
+.preco {
+  font-weight: 900;
+  font-size: 52px;
+  letter-spacing: -0.05em;
+  color: var(--ink);
+  line-height: 1;
+  margin-top: 18px;
+}
+.planoForte .preco { color: var(--verde); }
+.preco small { font-size: 16px; font-weight: 500; letter-spacing: 0; color: var(--slate); }
+.planoForte .preco small { color: var(--on-ink-fraco); }
+.planoCapacidade { font-size: 15px; margin: 10px 0 0; }
+.planoItens { list-style: none; padding: 0; margin: 24px 0 28px; flex: 1; }
+.planoItens li {
+  padding: 11px 0;
+  border-top: 1px solid var(--linha);
+  font-size: 15px;
+  line-height: 1.45;
+}
+.planoForte .planoItens li { border-top-color: var(--linha-ink); }
+.plano .botao, .plano .vazado { align-self: flex-start; }
+.planoForte .vazado { border-color: rgba(234, 240, 251, 0.5); color: #ffffff; }
+.planoForte .vazado:hover { background: rgba(234, 240, 251, 0.08); }
+
+/* ---------------------------------------------------------- perguntas */
+
+.perguntas { margin-top: 40px; border-bottom: 1px solid var(--linha-forte); max-width: 860px; }
+.perguntas details { border-top: 1px solid var(--linha-forte); }
+.perguntas summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 24px 40px 24px 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  position: relative;
+}
+.perguntas summary::-webkit-details-marker { display: none; }
+.perguntas summary::after {
+  content: '+';
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--slate);
+  transition: transform 160ms ease;
+}
+.perguntas details[open] summary::after { transform: translateY(-50%) rotate(45deg); }
+.perguntas details p { margin: 0 0 24px; font-size: 17px; max-width: 70ch; }
+
+/* -------------------------------------------------------- chamada final */
+
+.final {
+  background: var(--ink);
+  border-radius: 28px;
+  padding: 72px 48px;
+  text-align: center;
+  color: var(--on-ink);
+}
+.final .secaoTitulo { color: #ffffff; margin: 0 auto; max-width: 18ch; }
+.final .secaoLead { margin-left: auto; margin-right: auto; }
+.final .ctaLinha .linkTexto { color: #ffffff; }
+
+/* ------------------------------------------------------------ rodapé */
+
+.rodape { padding: 48px 0 56px; border-top: 1px solid var(--linha); font-size: 14px; color: var(--slate); }
+.rodape .miolo { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; align-items: center; }
+.rodape nav { display: flex; gap: 22px; }
+.rodape a { color: var(--ink); }
+.rodape a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* --------------------------------------------------- painel ilustrativo
+   Feito em HTML e CSS, não em captura de tela: a tela real tem números de
+   empresa de verdade, e nenhum dado de cliente pode ir para uma página
+   pública. Os valores daqui são de exemplo e a legenda diz isso. */
+
+.painel {
+  display: grid;
+  grid-template-columns: 204px 1fr;
+  background: #eef2f7;
+  border: 1px solid var(--linha-forte);
+  border-radius: 20px;
+  overflow: hidden;
+  text-align: left;
+  font-size: 13px;
+  box-shadow: rgba(10, 22, 40, 0.10) 0 24px 60px -12px;
+}
+.pLateral { background: var(--ink); padding: 18px 14px; color: var(--on-ink); }
+.pMarca { display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 750; font-size: 14px; margin-bottom: 18px; }
+.pGrupo {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--on-ink-fraco); margin: 14px 0 6px 6px;
+}
+.pGrupo i { width: 12px; height: 3px; border-radius: 2px; display: block; }
+.pItem { padding: 6px 10px; border-radius: 9999px; font-size: 12.5px; color: var(--on-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pAtivo { background: rgba(84, 218, 137, 0.22); color: #fff; font-weight: 600; }
+.pConteudo { padding: 22px 24px 24px; display: grid; gap: 14px; align-content: start; }
+.pTitulo { font-weight: 850; font-size: 24px; letter-spacing: -0.035em; color: var(--ink); }
+.pSub { font-size: 12px; color: var(--slate); margin-top: -10px; }
+.pTiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.pTile { background: #fff; border: 1px solid var(--linha); border-radius: 12px; padding: 12px 13px; }
+.pRotulo { font-size: 10px; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--slate); }
+.pValor { font-weight: 800; font-size: 17px; letter-spacing: -0.03em; color: var(--ink); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.pNota { font-size: 10.5px; margin-top: 3px; }
+.pBom { color: #15803d; }
+.pRuim { color: #b42318; }
+.pLinha2 { display: grid; grid-template-columns: 1.7fr 1fr; gap: 10px; }
+.pCartao { background: #fff; border: 1px solid var(--linha); border-radius: 12px; padding: 14px 15px; }
+.pCartaoTitulo { font-weight: 700; font-size: 12.5px; color: var(--ink); margin-bottom: 8px; }
+.pBarra { display: grid; grid-template-columns: 84px 1fr 54px; align-items: center; gap: 8px; font-size: 11px; padding: 4px 0; }
+.pBarra span:last-child { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
+.pTrilho { height: 8px; border-radius: 9999px; background: #eef2f7; overflow: hidden; }
+.pTrilho b { display: block; height: 100%; border-radius: 9999px; }
+
+/* -------------------------------------------------------- responsivo */
+
+@media (max-width: 960px) {
+  .links { display: none; }
+  .editorial, .passos { grid-template-columns: 1fr; }
+  .trio, .planos { grid-template-columns: 1fr; }
+  .painel { grid-template-columns: 1fr; }
+  .pLateral { display: none; }
+  .pTiles { grid-template-columns: repeat(2, 1fr); }
+  .pLinha2 { grid-template-columns: 1fr; }
+  .final { padding: 56px 24px; }
+}
+@media (max-width: 560px) {
+  .acoes .vazado { display: none; }
+  .secao { padding: 72px 0; }
+  .heroi { padding-top: 56px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .botao, .perguntas summary::after { transition: none; }
+}

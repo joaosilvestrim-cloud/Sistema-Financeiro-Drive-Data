@@ -66,6 +66,11 @@ const ROTAS = [
 const PUBLICAS = [
   ['/login', 'Entrar'],
   ['/comecar', 'Começar agora'],
+  // A raiz sem sessao e a landing, por reescrita no proxy. Se o proxy voltar a
+  // mandar a raiz para o login, quem chega pelo dominio cai num formulario
+  // em vez de ver o produto, e nada mais avisa.
+  ['/', 'lido de verdade'],
+  ['/inicio', 'Planos por empresa'],
   ['/termos', 'Termos de Uso'],
   ['/privacidade', 'Política de Privacidade'],
 ]

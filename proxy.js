@@ -65,6 +65,7 @@ export async function proxy(request) {
   // pegou o cron faltando aqui, o que fazia a Vercel receber um 307 para o
   // login e a sincronizacao nunca rodar, em silencio.
   const publica = path.startsWith('/login')
+    || path.startsWith('/inicio')
     || path.startsWith('/comecar')
     || path.startsWith('/termos')
     || path.startsWith('/privacidade')
@@ -74,6 +75,15 @@ export async function proxy(request) {
     || path.startsWith('/api/webhooks')
     || path.startsWith('/auth')
     || path.startsWith('/api/oauth')
+
+  // A raiz é a vitrine para quem não está logado. Reescrita, não redirecionamento:
+  // o endereço continua driveazul.drivedata.com.br, que é o que vai em anúncio e
+  // cartão de visita, e quem está logado segue caindo no painel no mesmo lugar.
+  if (!user && path === '/') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/inicio'
+    return NextResponse.rewrite(url)
+  }
 
   if (!user && !publica) {
     const url = request.nextUrl.clone()

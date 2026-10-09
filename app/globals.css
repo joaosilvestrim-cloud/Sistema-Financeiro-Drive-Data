@@ -5,14 +5,14 @@
 :root {
   color-scheme: light;
 
-  --plane:          #f9f9f7;
-  --surface:        #fcfcfb;
-  --text-primary:   #0b0b0b;
-  --text-secondary: #52514e;
-  --text-muted:     #898781;
-  --grid:           #e1e0d9;
-  --axis:           #c3c2b7;
-  --border:         rgba(11, 11, 11, 0.10);
+  --plane:          #eef2f7;
+  --surface:        #ffffff;
+  --text-primary:   #0a1628;
+  --text-secondary: #3d4a5c;
+  --text-muted:     #5b6778;
+  --grid:           #e3e8ef;
+  --axis:           #c7d0db;
+  --border:         rgba(10, 22, 40, 0.10);
 
   --series-1:       #2a78d6;  /* entradas, receita */
   --series-2:       #eb6834;  /* saídas, despesa */
@@ -28,9 +28,9 @@
   /* Acento da marca. Estava faltando: eu ja usava var(--accent) no grafico de
      duas semanas e na barra de progresso, e como o token nao existia o navegador
      ignorava a declaracao. A linha do saldo saia sem cor. */
-  --accent:         #2a78d6;
-  --accent-forte:   #1c5cab;
-  --accent-suave:   rgba(42, 120, 214, 0.10);
+  --accent:         #0a72c4;
+  --accent-forte:   #085a9c;
+  --accent-suave:   rgba(10, 114, 196, 0.10);
 
   /* Paleta categorica. Para quando as fatias sao coisas diferentes (categorias
      de despesa, clientes, centros de custo), nao degraus da mesma coisa. A
@@ -59,20 +59,34 @@
   --critical:       #d03b3b;
 
   --radius:         10px;
+  /* Linguagem DriveAzul (out/2026): a estrutura da referencia Wise com a
+     paleta da DriveData, a mesma do site institucional. Tinta navy carrega o
+     peso (menu, secoes escuras, titulos) e um unico verde faz a pontuacao
+     (botao principal, item ativo). Trocar a paleta inteira e mudar este bloco. */
+  --ink:             #0a1628;
+  --ink-2:           #13233a;
+  --voltagem:        #54da89;
+  --voltagem-hover:  #6fe39d;
+  --on-voltagem:     #0a1628;
+  --mist:            #e3f7ec;
+  --lateral:         #0a1628;
+  --on-lateral:      rgba(234, 240, 251, 0.82);
+  --on-lateral-fraco: rgba(234, 240, 251, 0.52);
+  --linha-lateral:   rgba(234, 240, 251, 0.10);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
 
-    --plane:          #0d0d0d;
-    --surface:        #1a1a19;
-    --text-primary:   #ffffff;
-    --text-secondary: #c3c2b7;
-    --text-muted:     #898781;
-    --grid:           #2c2c2a;
-    --axis:           #383835;
-    --border:         rgba(255, 255, 255, 0.10);
+    --plane:          #070c16;
+    --surface:        #0f1b2e;
+    --text-primary:   #e8eef8;
+    --text-secondary: #b6c2d4;
+    --text-muted:     #8d9ab0;
+    --grid:           #1d2b42;
+    --axis:           #2e3d58;
+    --border:         rgba(232, 238, 248, 0.10);
 
     --series-1:       #3987e5;
     --series-2:       #d95926;
@@ -85,9 +99,9 @@
     --ramp-550:       #3987e5;
     --ramp-650:       #5598e7;
 
-    --accent:         #5598e7;
-    --accent-forte:   #86b6ef;
-    --accent-suave:   rgba(85, 152, 231, 0.16);
+    --accent:         #5aa9ff;
+    --accent-forte:   #8cc4ff;
+    --accent-suave:   rgba(90, 169, 255, 0.14);
 
     --cat-1:          #5598e7;
     --cat-2:          #2fc4ae;
@@ -104,6 +118,8 @@
     --good-text:      #0ca30c;
     --good:           #22b322;
     --critical:       #e05252;
+    --mist:            #16362a;
+    --lateral:         #0a1322;
   }
 }
 
@@ -114,14 +130,14 @@
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --plane:          #0d0d0d;
-  --surface:        #1a1a19;
-  --text-primary:   #ffffff;
-  --text-secondary: #c3c2b7;
-  --text-muted:     #898781;
-  --grid:           #2c2c2a;
-  --axis:           #383835;
-  --border:         rgba(255, 255, 255, 0.10);
+  --plane:          #070c16;
+  --surface:        #0f1b2e;
+  --text-primary:   #e8eef8;
+  --text-secondary: #b6c2d4;
+  --text-muted:     #8d9ab0;
+  --grid:           #1d2b42;
+  --axis:           #2e3d58;
+  --border:         rgba(232, 238, 248, 0.10);
 
   --series-1:       #3987e5;
   --series-2:       #d95926;
@@ -134,9 +150,9 @@
   --ramp-550:       #3987e5;
   --ramp-650:       #5598e7;
 
-  --accent:         #5598e7;
-  --accent-forte:   #86b6ef;
-  --accent-suave:   rgba(85, 152, 231, 0.16);
+  --accent:         #5aa9ff;
+  --accent-forte:   #8cc4ff;
+  --accent-suave:   rgba(90, 169, 255, 0.14);
 
   --cat-1:          #5598e7;
   --cat-2:          #2fc4ae;
@@ -153,6 +169,8 @@
   --good-text:      #0ca30c;
   --good:           #22b322;
   --critical:       #e05252;
+  --mist:      #16362a;
+  --lateral:     #0a1322;
 }
 
 * { box-sizing: border-box; }
@@ -951,3 +969,137 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
   .btn, .toggle, tbody tr, select, input, textarea { transition: none; }
   .btn:active:not(:disabled) { transform: none; }
 }
+
+/* ===================================================== linguagem DriveAzul
+   Pedido do João em 09/10/2026: aplicar a linguagem da referência Wise (chapado,
+   pílulas, títulos de peso extremo, um único destaque, seções invertidas) com a
+   paleta da DriveData. As regras abaixo vencem as anteriores por ordem, de
+   propósito: a camada é uma só e dá para ler o estilo inteiro aqui. */
+
+html, body {
+  font-family: var(--font-inter), 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-feature-settings: 'calt';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Títulos: peso extremo e espaçamento apertado. É a voz da marca; o resto da
+   interface fica quieto para ela poder falar. */
+.page-head h1 {
+  font-size: 32px;
+  font-weight: 850;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  margin-bottom: 6px;
+}
+.page-head p { font-size: 14px; }
+.card > h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.015em; }
+.tile .value { font-weight: 800; letter-spacing: -0.03em; }
+
+/* Cartões chapados: filete fino, sem sombra. A referência proíbe sombra além
+   do filete, e num painel denso isso tira ruído de todo lugar ao mesmo tempo. */
+.card {
+  border-radius: 16px;
+  box-shadow: none;
+  padding: 20px 22px;
+}
+.card:hover { box-shadow: none; }
+
+/* Botão principal: pílula verde com texto navy. Um por área visível; dois
+   botões cheios lado a lado é o que a referência manda não fazer. */
+.btn {
+  border-radius: 9999px;
+  background: var(--voltagem);
+  color: var(--on-voltagem);
+  font-weight: 650;
+  padding: 11px 24px;
+  box-shadow: none;
+}
+.btn:hover:not(:disabled) { background: var(--voltagem-hover); box-shadow: none; }
+.btn:active:not(:disabled) { transform: none; box-shadow: none; }
+
+/* Secundário: pílula vazada. */
+.toggle {
+  border-radius: 9999px;
+  border-color: var(--axis);
+  padding: 5px 13px;
+  font-weight: 550;
+}
+.toggle:hover { border-color: var(--text-primary); background: transparent; }
+
+.badge { border-radius: 9999px; padding: 3px 10px; }
+
+/* Campos: raio 10, filete, foco por cor de borda e sem anel brilhante. */
+select, input, textarea {
+  border-radius: 10px;
+  border-color: var(--axis);
+  padding: 9px 12px;
+}
+select:focus-visible, input:focus-visible, textarea:focus-visible {
+  border-color: var(--text-primary);
+  box-shadow: none;
+}
+
+.empty { border-radius: 16px; }
+
+/* ------------------------------------------------- barra lateral em tinta */
+
+.sidebar {
+  background: var(--lateral);
+  color: var(--on-lateral);
+  border-right: 0;
+}
+.sidebar .topo,
+.sidebar footer { border-color: var(--linha-lateral); }
+.sidebar .brand { color: #ffffff; font-weight: 750; letter-spacing: -0.02em; }
+.sidebar .brand span { color: var(--on-lateral-fraco); }
+
+.sidebar .topo select {
+  background-color: rgba(234, 240, 251, 0.06);
+  border-color: var(--linha-lateral);
+  color: #ffffff;
+  border-radius: 9999px;
+  padding-left: 14px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23c3cddc' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6.5L8 10.5L12 6.5'/%3E%3C/svg%3E");
+}
+.sidebar .topo select:hover {
+  background-color: rgba(234, 240, 251, 0.10);
+  border-color: rgba(234, 240, 251, 0.24);
+}
+.sidebar .topo select option { color: #0a1628; background: #ffffff; }
+
+.nav .grupo { color: var(--on-lateral-fraco); }
+.nav a { color: var(--on-lateral); border-radius: 9999px; }
+.nav a .icone { color: var(--on-lateral-fraco); }
+.nav a:hover { background: rgba(234, 240, 251, 0.07); color: #ffffff; }
+.nav a::before { display: none; }
+
+/* O item ativo é a única pílula cheia do menu, tingida com a cor da área. */
+.nav a[data-active='true'] {
+  background: color-mix(in srgb, var(--g, var(--voltagem)) 24%, transparent);
+  color: #ffffff;
+}
+.nav a[data-active='true'] .icone { color: var(--g, var(--voltagem)); }
+
+.sidebar .nav { scrollbar-color: rgba(234, 240, 251, 0.18) transparent; }
+.sidebar .nav::-webkit-scrollbar-thumb,
+.sidebar .nav:hover::-webkit-scrollbar-thumb { background: rgba(234, 240, 251, 0.18); }
+
+.sidebar footer { color: var(--on-lateral-fraco); }
+.sidebar footer > div:first-child { color: var(--on-lateral); }
+.sidebar footer .toggle { color: var(--on-lateral-fraco); }
+.sidebar footer .toggle:hover { color: #ffffff; border-color: var(--linha-lateral); }
+
+/* ----------------------------------------------------------- entrada */
+
+.login { background: var(--plane); }
+.login form {
+  border-radius: 16px;
+  box-shadow: none;
+  padding: 30px 28px;
+  width: 360px;
+}
+.login .btn { width: 100%; }
+
+/* A landing é sempre clara e não tem painel, então o botão flutuante de tema
+   não faz sentido nela. */
+body:has(.lp-raiz) .tema-flutuante { display: none; }
