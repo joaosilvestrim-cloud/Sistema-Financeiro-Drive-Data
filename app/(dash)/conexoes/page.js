@@ -40,6 +40,14 @@ export default async function Conexoes({ searchParams }) {
     'use server'
     await comAviso('/conexoes', async () => {
       const s = await requireSession()
+      // Conectar empresa e decisao do dono. Achado de 09/10: o Diogo, membro
+      // da conta DriveData com papel contador, abriu o fluxo para conectar o
+      // Conta Azul da BDGAL. Se a autorizacao passasse, os numeros da BDGAL
+      // entrariam na conta da DriveData e todo membro dela passaria a ver.
+      // Quem nao e dono e mandado criar a propria conta.
+      if (s.role !== 'owner') {
+        throw new Error('Só o dono desta conta conecta empresas. Para conectar a sua própria empresa, crie uma conta em driveazul.drivedata.com.br/comecar.')
+      }
       // O limite do plano vale aqui, e nao so na tela. Sem isso alguem no plano de
       // uma empresa conectaria cinco e o preco por empresa nao existiria.
       if (!s.conta.podeConectarMais) redirect('/assinar?motivo=limite')
@@ -144,6 +152,7 @@ export default async function Conexoes({ searchParams }) {
           <h1>Conexões</h1>
           <p>Cada empresa autorizada no ERP é uma conexão, com tokens e ritmo próprios.</p>
         </div>
+        {sessao.role === 'owner' && (
         <form action={conectar}>
           <button className="btn" type="submit" disabled={!sessao.conta.podeConectarMais}>
             {lista.length ? 'Conectar outra empresa' : 'Conectar Conta Azul'}
@@ -156,6 +165,7 @@ export default async function Conexoes({ searchParams }) {
             </p>
           )}
         </form>
+        )}
       </div>
 
       {busca?.erro && (
