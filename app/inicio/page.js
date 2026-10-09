@@ -39,7 +39,7 @@ const PASSOS = [
   ['Autorize o Conta Azul',
     'Você entra no próprio Conta Azul e confirma o acesso. Nunca vemos a sua senha, e dá para revogar quando quiser.'],
   ['Veja os números',
-    'Trazemos 36 meses de histórico em poucos minutos. Depois disso a atualização é sozinha, várias vezes ao dia.'],
+    'Você escolhe quanto histórico trazer, de 6 a 36 meses, e vê antes quanto tempo cada opção leva. Depois disso a atualização é sozinha.'],
 ]
 
 const TAMBEM = [
@@ -55,7 +55,7 @@ const PERGUNTAS = [
   ['Funciona com qualquer plano do Conta Azul?',
     'Funciona com o Conta Azul Pro, que é o plano que oferece a API de integração. Nos outros planos a conexão não é liberada pelo próprio Conta Azul.'],
   ['Quanto tempo até ver os números?',
-    'A primeira carga traz 36 meses de histórico e leva alguns minutos. Você acompanha o progresso na tela e pode fechar a aba: ela continua rodando.'],
+    'Você escolhe o período: de 6 a 36 meses de histórico. A tela mostra o tempo de cada opção calculado com o volume da sua empresa, em geral de poucos minutos a um quarto de hora, e dá para trazer mais histórico depois.'],
   ['O DriveAzul altera alguma coisa no meu Conta Azul?',
     'Não sem você mandar. O painel lê o financeiro. Só existe escrita quando você usa uma ação explícita para isso, como importar uma fatura de cartão.'],
   ['Dá para conectar mais de uma empresa?',

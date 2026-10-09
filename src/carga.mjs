@@ -1,5 +1,4 @@
 import { query } from './db.mjs'
-import { config } from './config.mjs'
 import { clientFor } from './connections.mjs'
 import { contaAzulProvider } from './providers/contaazul.mjs'
 import { monthWindows } from './contaazul.mjs'
@@ -33,6 +32,19 @@ const ORCAMENTO_MS = 40_000
 // chamada retoma. O ingest é idempotente, então repetir uma janela não duplica.
 const TRAVA_MIN = 3
 
+// As opções de histórico que a tela oferece, e o horizonte para frente, que é
+// fixo: o que vence nos próximos 24 meses vem sempre, em qualquer opção, porque
+// é barato (pouco lançamento por mês) e é o que alimenta o fluxo de caixa.
+export const PERIODOS = [6, 12, 24, 36]
+export const MESES_FRENTE = 24
+
+// Vazão usada na estimativa de tempo. Medida, não chutada: cada lançamento
+// já pago custa uma chamada para trazer as baixas, a API aceita 10 por
+// segundo e a ida e volta come parte disso. Conservadora de propósito: é
+// melhor a carga acabar antes do prometido do que depois.
+const LANCAMENTOS_POR_SEGUNDO = 3
+const SEGUNDOS_POR_JANELA = 1.2
+
 export async function criarCarga(tenantId, connectionId) {
   const { rows } = await query(
     `insert into core.onboarding_job (tenant_id, connection_id)
@@ -46,7 +58,8 @@ export async function criarCarga(tenantId, connectionId) {
 
 export async function progressoCarga(connectionId) {
   const { rows } = await query(
-    `select status, etapa, janela, janelas_total, itens, erro, atualizado_em
+    `select status, etapa, janela, janelas_total, itens, erro, atualizado_em,
+            meses_atras, meses_frente
        from core.onboarding_job where connection_id = $1`,
     [connectionId],
   )
@@ -59,6 +72,9 @@ export async function progressoCarga(connectionId) {
 const PESO = { dimensoes: 0, receivable: 0.08, payable: 0.52, saldos: 0.96, fim: 1 }
 
 function comPercentual(job) {
+  if (job.meses_atras == null) {
+    return { ...job, status: 'aguardando_periodo', percentual: 0, rotulo: 'Escolha o período para começar' }
+  }
   const base = PESO[job.etapa] ?? 0
   const proximo = job.etapa === 'receivable' ? PESO.payable
     : job.etapa === 'payable' ? PESO.saldos
@@ -95,6 +111,7 @@ export async function avancarCarga(connectionId, orcamentoMs = ORCAMENTO_MS) {
             atualizado_em = now()
       where connection_id = $1
         and status in ('pendente', 'rodando', 'erro')
+        and meses_atras is not null
         and (lease_ate is null or lease_ate < now())
       returning *`,
     [connectionId, TRAVA_MIN],
@@ -109,7 +126,9 @@ export async function avancarCarga(connectionId, orcamentoMs = ORCAMENTO_MS) {
 
   const ctx = { tenantId: conn.tenant_id, connectionId }
   const api = montar(connectionId)
-  const janelas = monthWindows(config.monthsBack, config.monthsForward)
+  // A lista de janelas sai do período gravado na carga, nunca do ambiente.
+  // A posição "janela N" só vale contra a lista que a gerou.
+  const janelas = monthWindows(job.meses_atras, job.meses_frente ?? MESES_FRENTE)
 
   let { etapa, janela, itens } = job
 
@@ -195,4 +214,69 @@ async function finalizarErro(connectionId, mensagem, campos) {
      campos?.etapa ?? null, campos?.janela ?? null, campos?.itens ?? null],
   )
   return progressoCarga(connectionId)
+}
+
+// A escolha do período, feita pela pessoa na tela de carga. Só vale para carga
+// que ainda não começou: trocar no meio mudaria a lista de janelas e a posição
+// gravada deixaria de corresponder a ela.
+export async function definirPeriodo(connectionId, tenantId, meses) {
+  if (!PERIODOS.includes(Number(meses))) throw new Error('Período inválido.')
+  const { rows } = await query(
+    `update core.onboarding_job
+        set meses_atras = $3, meses_frente = $4, janela = 0, atualizado_em = now()
+      where connection_id = $1 and tenant_id = $2 and meses_atras is null
+      returning id`,
+    [connectionId, tenantId, Number(meses), MESES_FRENTE],
+  )
+  if (!rows.length) throw new Error('Esta carga já começou ou não existe.')
+}
+
+// Trazer mais passado depois da carga pronta. Reabre a carga com o período
+// maior e refaz as janelas desde o começo; o ingest é idempotente, então o
+// que já estava no banco não duplica, só é conferido de novo.
+export async function ampliarHistorico(connectionId, tenantId, meses) {
+  if (!PERIODOS.includes(Number(meses))) throw new Error('Período inválido.')
+  const { rows } = await query(
+    `update core.onboarding_job
+        set meses_atras = $3, meses_frente = $4, status = 'pendente', etapa = 'dimensoes',
+            janela = 0, lease_ate = null, erro = null, atualizado_em = now()
+      where connection_id = $1 and tenant_id = $2
+        and status = 'concluido' and meses_atras < $3
+      returning id`,
+    [connectionId, tenantId, Number(meses), MESES_FRENTE],
+  )
+  if (!rows.length) throw new Error('Não há carga concluída com período menor que esse.')
+}
+
+// Estimativa de tempo de cada opção, com o volume real da empresa. Duas
+// chamadas baratas (uma página de cada tipo, só para ler o total) nos últimos
+// três meses fechados dão a média mensal. Se a API não responder, a tela
+// mostra as opções sem minutos em vez de travar.
+export async function estimarCarga(connectionId) {
+  try {
+    const client = clientFor(connectionId)
+    const hoje = new Date()
+    const ini = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() - 3, 1))
+    const fim = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), 0))
+    const d = (x) => x.toISOString().slice(0, 10)
+    let total = 0
+    for (const alvo of ['receber', 'pagar']) {
+      const page = await client.get(`/v1/financeiro/eventos-financeiros/contas-a-${alvo}/buscar`, {
+        data_vencimento_de: d(ini), data_vencimento_ate: d(fim), pagina: 1, tamanho_pagina: 10,
+      })
+      total += Number(page?.itens_totais ?? page?.total_itens ?? 0)
+    }
+    const porMes = total / 3
+    const minutos = (meses) => {
+      const janelas = (meses + MESES_FRENTE + 1) * 2
+      const segundos = (porMes * meses) / LANCAMENTOS_POR_SEGUNDO + janelas * SEGUNDOS_POR_JANELA
+      return Math.max(1, Math.ceil(segundos / 60))
+    }
+    return {
+      porMes: Math.round(porMes),
+      minutos: Object.fromEntries(PERIODOS.map((m) => [m, minutos(m)])),
+    }
+  } catch {
+    return null
+  }
 }

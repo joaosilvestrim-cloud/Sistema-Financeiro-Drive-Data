@@ -7,6 +7,7 @@ import { conexoes, ultimasRodadas } from '@/lib/queries'
 import { criarCredencial, revogarCredencial, credenciaisDoTenant } from '@/lib/tributostream'
 import { membros, convitesPendentes, convidar, criarAcessoManual, revogarConvite, removerMembro, PAPEL_ROTULO } from '@/lib/equipe'
 import CredencialBancaria from '@/components/CredencialBancaria'
+import { ampliarHistorico, PERIODOS } from '@/src/carga.mjs'
 import Equipe from '@/components/Equipe'
 import { desde, dataCurta } from '@/lib/format'
 import { criarState } from '@/lib/oauthState'
@@ -31,10 +32,13 @@ const STATUS = {
 export default async function Conexoes({ searchParams }) {
   const sessao = await requireSession()
   const busca = await searchParams
-  const [lista, rodadas, credenciais, equipe, convites] = await Promise.all([
+  const [lista, rodadas, credenciais, equipe, convites, cargas] = await Promise.all([
     conexoes(sessao.tenantId), ultimasRodadas(sessao.tenantId, 15),
     credenciaisDoTenant(sessao), membros(sessao), convitesPendentes(sessao),
+    q(`select connection_id, meses_atras, status from core.onboarding_job where tenant_id = $1`,
+      [sessao.tenantId]),
   ])
+  const cargaDe = Object.fromEntries(cargas.map((c) => [c.connection_id, c]))
 
   async function conectar() {
     'use server'
@@ -143,6 +147,19 @@ export default async function Conexoes({ searchParams }) {
     })
   }
 
+  async function trazerMaisHistorico(formData) {
+    'use server'
+    const id = formData.get('conexao')
+    await comAviso('/conexoes', async () => {
+      const s = await requireSession()
+      if (s.role !== 'owner') throw new Error('Só o dono da conta amplia o histórico.')
+      await ampliarHistorico(id, s.tenantId, Number(formData.get('meses')))
+    })
+    // A tela de carga é quem empurra a carga com a pessoa olhando; sem ela,
+    // o histórico novo só chegaria no ritmo do agendador.
+    redirect(`/carregando?conexao=${id}`)
+  }
+
   const precisaReconectar = lista.some((c) => c.status !== 'connected')
 
   return (
@@ -226,6 +243,23 @@ export default async function Conexoes({ searchParams }) {
                   <div style={{ color: 'var(--critical)', marginTop: 6, fontSize: 12 }}>{c.last_error}</div>
                 )}
               </div>
+              {cargaDe[c.id]?.meses_atras && (
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 8 }}>
+                  histórico carregado: {cargaDe[c.id].meses_atras} meses
+                </div>
+              )}
+              {sessao.role === 'owner' && cargaDe[c.id]?.status === 'concluido'
+                && PERIODOS.some((m) => m > cargaDe[c.id].meses_atras) && (
+                <form action={trazerMaisHistorico} style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input type="hidden" name="conexao" value={c.id} />
+                  <select name="meses" defaultValue={PERIODOS.find((m) => m > cargaDe[c.id].meses_atras)}>
+                    {PERIODOS.filter((m) => m > cargaDe[c.id].meses_atras).map((m) => (
+                      <option key={m} value={m}>{m} meses</option>
+                    ))}
+                  </select>
+                  <button className="toggle" type="submit">Trazer mais histórico</button>
+                </form>
+              )}
               {c.status === 'connected' && (
                 <form action={sincronizarAgora} style={{ marginTop: 10 }}>
                   <input type="hidden" name="conexao" value={c.id} />

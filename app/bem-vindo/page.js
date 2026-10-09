@@ -36,7 +36,7 @@ export default async function BemVindo() {
 
   const PASSOS = [
     ['Autorizar', 'Você entra na sua conta do Conta Azul e confirma o acesso. Nós nunca vemos a sua senha.'],
-    ['Esperar a carga', 'Trazemos contas, categorias, centros de custo, parcelas e baixas dos últimos 36 meses. Pode fechar a aba, continua rodando.'],
+    ['Esperar a carga', 'Você escolhe quanto histórico trazer, de 6 a 36 meses, vendo quanto tempo cada opção leva. Com a aba aberta, a carga anda sem parar.'],
     ['Olhar os números', 'Saldo, a receber, a pagar, fôlego de caixa e a leitura de cada indicador.'],
   ]
 
