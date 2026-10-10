@@ -45,10 +45,17 @@ export async function rodarAgenda({ orcamentoMs = ORCAMENTO_MS } = {}) {
 
   // 1. Carga inicial pendente. Alguém pode ter fechado a aba no meio, e essa é
   // a pessoa mais perto de desistir do produto.
+  //
+  // 'rodando' com o lease vencido também entra. A função que segurava a carga
+  // pode ter sido morta pelo limite de tempo da Vercel sem chegar a gravar
+  // 'pendente', e a linha fica dizendo rodando para sempre. Foi o que travou a
+  // carga do TEste2 em 09/10 na janela 5 de 19: metade das contas a pagar nunca
+  // chegou e o fluxo de caixa mostrava saída zero a partir de abril.
   const { rows: cargas } = await query(
     `select c.id, c.nome ${ATIVAS}
        and exists (select 1 from core.onboarding_job j
-                    where j.connection_id = c.id and j.status in ('pendente', 'erro')
+                    where j.connection_id = c.id and j.status in ('pendente', 'rodando', 'erro')
+                      and j.meses_atras is not null
                       and (j.lease_ate is null or j.lease_ate < now()))
      order by c.created_at limit 5`,
   )

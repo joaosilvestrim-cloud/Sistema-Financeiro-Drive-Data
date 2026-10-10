@@ -10,6 +10,8 @@ import Paleta from '@/components/Paleta'
 import BotaoPaleta from '@/components/BotaoPaleta'
 import BarraNavegacao from '@/components/BarraNavegacao'
 import { Suspense } from 'react'
+import Link from 'next/link'
+import { q } from '@/lib/db'
 
 // O menu segue a ordem em que um financeiro lê a empresa, e não a ordem em que
 // as telas foram construídas.
@@ -85,6 +87,17 @@ export default async function DashLayout({ children }) {
   const horas = ultimoSync ? (Date.now() - new Date(ultimoSync)) / 3600000 : Infinity
   const idade = horas < 2 ? 'novo' : horas < 12 ? 'velho' : 'parado'
 
+  // Carga inicial que não terminou deixa o espelho pela metade, e toda tela
+  // estaria certa sobre um dado incompleto. Foi o que aconteceu com o TEste2 em
+  // 09/10: a carga parou na metade das contas a pagar, o fluxo mostrou saída
+  // zero a partir de abril e saldo de −690 mil, e nada na tela avisava.
+  const cargas = await q(
+    `select j.connection_id, c.nome, j.status, j.meses_atras
+       from core.onboarding_job j join core.connection c on c.id = j.connection_id
+      where j.tenant_id = $1 and j.status <> 'concluido'`,
+    [sessao.tenantId],
+  ).catch(() => [])
+
   return (
     <div className="shell">
       <Suspense fallback={null}><BarraNavegacao /></Suspense>
@@ -135,7 +148,20 @@ export default async function DashLayout({ children }) {
         </footer>
       </aside>
 
-      <main className="content">{children}</main>
+      <main className="content">
+        {cargas.map((c) => (
+          <div key={c.connection_id} className="carga-aviso" role="status">
+            <span>
+              <b>Ainda estamos trazendo os dados de {c.nome} do Conta Azul.</b>{' '}
+              {c.meses_atras === null
+                ? 'Falta escolher o período.'
+                : 'Até terminar, os números desta empresa estão incompletos.'}
+            </span>
+            <Link href={`/carregando?conexao=${c.connection_id}`}>Acompanhar a carga</Link>
+          </div>
+        ))}
+        {children}
+      </main>
       <Paleta itens={MENU.flatMap(([grupo, cor, itens]) =>
         itens.map(([href, titulo]) => ({ href, titulo, grupo, cor })))} />
     </div>

@@ -5,7 +5,7 @@ import { contaAzulProvider } from './providers/contaazul.mjs'
 import { monthWindows, dataHora } from './contaazul.mjs'
 import {
   ingestDimension, ingestInstallments, ingestSettlements, loadDimensionMaps,
-  snapshotBalances, getWatermark, setWatermark,
+  snapshotBalances, getWatermark, setWatermark, marcarExcluidas, excluirAusentesDoEvento,
 } from './ingest.mjs'
 
 // Sobreposição na janela do CDC. Evita perder um evento salvo no exato segundo
@@ -67,6 +67,50 @@ export async function sincronizarBaixas(ctx, api, maps, parcelas) {
   return total
 }
 
+// Rebusca parcelas pelo detalhe, uma a uma. É o caminho que a varredura de
+// abertos e a etapa de detalhes da carga inicial compartilham.
+//
+// O detalhe traz o que a busca não traz: a conta financeira planejada (sem ela
+// o filtro por banco não enxerga o que está para vencer), o id do evento e o
+// valor bruto. E é o único jeito de saber que um título foi apagado: o detalhe
+// responde 404. Antes a varredura engolia o 404 e seguia, e o fantasma ficava.
+//
+// `estrito` faz um erro que não seja 404 subir. A carga inicial usa assim: lá
+// a fila só anda quando o detalhe entra, e engolir o erro faria a mesma
+// parcela voltar para sempre. Na varredura o erro é engolido, porque uma
+// parcela problemática não pode impedir a conferência das outras.
+export async function rebuscarParcelas(ctx, api, maps, externalIds, semTempo = () => false, { estrito = false } = {}) {
+  const r = { varridos: 0, corrigidos: 0, excluidos: 0 }
+  const sumiram = []
+  for (const externalId of externalIds) {
+    if (semTempo()) break
+    let parcela
+    try {
+      parcela = await api.getInstallment(externalId)
+    } catch (e) {
+      if (e.status !== 404) {
+        // Outro erro não prova nada sobre a parcela. Fica para a próxima rodada.
+        if (estrito) {
+          await marcarExcluidas(ctx, sumiram)
+          throw e
+        }
+      } else sumiram.push(externalId)
+      r.varridos += 1
+      continue
+    }
+    r.varridos += 1
+    if (!parcela) continue
+    const ing = await ingestInstallments(ctx, maps, [parcela])
+    // As baixas vêm dentro do detalhe, então sincronizar custa zero chamada.
+    // Vai para todas, e não só as que mudaram: a parcela pode estar igual e a
+    // baixa ter ganho a conciliação.
+    await sincronizarBaixas(ctx, api, maps, [parcela])
+    r.corrigidos += ing.alterados
+  }
+  r.excluidos = await marcarExcluidas(ctx, sumiram)
+  return r
+}
+
 export async function fotografarSaldos(ctx, api) {
   const { rows } = await query(
     'select id, external_id from core.account where connection_id = $1 and coalesce(ativo, true)',
@@ -124,13 +168,19 @@ export async function syncConnection(connectionId, kind = 'incremental', { orcam
         let doTipo = 0
         for (const [de, ate] of janelas) {
           const parcelas = await api.listInstallments({ kind: tipo, dueFrom: de, dueTo: ate })
-          const r = await ingestInstallments(ctx, maps, parcelas)
-          await sincronizarBaixas(ctx, api, maps, r.mudaram)
+          await ingestInstallments(ctx, maps, parcelas)
           doTipo += parcelas.length
         }
         detail[tipo] = doTipo
         itens += doTipo
       }
+      // Mesma regra da carga inicial: a busca não é fonte final. Ver carga.mjs.
+      const { rows: soBusca } = await query(
+        `select external_id from core.installment
+          where connection_id = $1 and deleted_at is null and event_external_id is null`,
+        [connectionId],
+      )
+      detail.detalhes = await rebuscarParcelas(ctx, api, maps, soBusca.map((x) => x.external_id))
     } else {
       // Incremental e reconcile compartilham o caminho: descobrir os eventos
       // tocados no período e rebuscar cada um por inteiro. A API só informa que
@@ -161,6 +211,10 @@ export async function syncConnection(connectionId, kind = 'incremental', { orcam
         const parcelas = await api.listInstallmentsByEvent(eventId)
         const r = await ingestInstallments(ctx, maps, parcelas)
         await sincronizarBaixas(ctx, api, maps, r.mudaram)
+        // Evento apagado volta como lista vazia, não como 404. O que o espelho
+        // ainda liga a ele e não veio na lista deixou de existir no ERP.
+        const excluidas = await excluirAusentesDoEvento(ctx, eventId, parcelas)
+        if (excluidas) detail.excluidos = (detail.excluidos ?? 0) + excluidas
         itens += parcelas.length
         detail.novos = (detail.novos ?? 0) + r.novos
         detail.alterados = (detail.alterados ?? 0) + r.alterados
@@ -189,6 +243,12 @@ export async function syncConnection(connectionId, kind = 'incremental', { orcam
     // estao em aberto: se algum foi pago por fora do CDC, e aqui que ele se
     // corrige. Incremental varre so os vencidos (poucos, e sao exatamente os
     // que doem na tela); reconcile varre todos os abertos.
+    //
+    // A fila anda por quem foi visto há mais tempo, não por vencimento. Por
+    // vencimento, com limite de 400, os mesmos 400 eram conferidos todo dia e
+    // o resto nunca: a DriveData tem 853 abertos, e os fantasmas de 2027 não
+    // entravam na fila. Toda parcela rebuscada atualiza o last_seen_at e vai
+    // para o fim, então em poucos dias a carteira inteira foi conferida.
     if (kind !== 'backfill' && !semTempo()) {
       const soVencidos = kind !== 'reconcile'
       const abertos = await query(
@@ -196,22 +256,13 @@ export async function syncConnection(connectionId, kind = 'incremental', { orcam
           where connection_id = $1 and deleted_at is null
             and coalesce(nao_pago, 0) > 0.009
             ${soVencidos ? 'and data_vencimento < current_date' : ''}
-          order by data_vencimento nulls last
+          order by last_seen_at asc nulls first
           limit 400`,
         [connectionId],
       )
-      let varridos = 0, corrigidos = 0
-      for (const a of abertos.rows) {
-        if (semTempo()) break
-        const parcela = await api.getInstallment(a.external_id).catch(() => null)
-        if (!parcela) continue
-        const r = await ingestInstallments(ctx, maps, [parcela])
-        await sincronizarBaixas(ctx, api, maps, r.mudaram)
-        varridos += 1
-        corrigidos += r.alterados
-      }
-      detail.varredura = { tipo: soVencidos ? 'vencidos' : 'abertos', varridos, corrigidos }
-      itens += corrigidos
+      const r = await rebuscarParcelas(ctx, api, maps, abertos.rows.map((a) => a.external_id), semTempo)
+      detail.varredura = { tipo: soVencidos ? 'vencidos' : 'abertos', ...r }
+      itens += r.corrigidos + r.excluidos
     }
 
     detail.saldos = (await fotografarSaldos(ctx, api)).total

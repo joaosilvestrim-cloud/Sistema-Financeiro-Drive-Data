@@ -195,7 +195,19 @@ export const mapBaixa = (installmentId) => (b) => {
 }
 
 // Formato da busca. Enxuto, sem evento e sem conta financeira.
+//
+// O `total` da busca vem LÍQUIDO da taxa do meio de pagamento, e o `pago` vem
+// bruto. A Venda 288 da DriveData volta com pago 7.500 e total 7.497,81 (boleto
+// de R$ 2,19). O detalhe diz bruto 7.500. Sem acertar aqui, a mesma parcela
+// tinha total diferente conforme o caminho que a trouxe, e dois tenants da
+// mesma empresa mostravam faturamento diferente. O bruto é pago mais o que
+// falta pagar; o maior dos dois preserva desconto (pago menor que o total) e
+// título perdido (nada pago, nada a pagar, total cheio).
 export function daBusca(r, kind) {
+  const pago = num(r.pago)
+  const naoPago = num(r.nao_pago)
+  const bruto = (pago ?? 0) + (naoPago ?? 0)
+  const total = num(r.total) === null ? null : Math.max(num(r.total), Math.round(bruto * 100) / 100)
   return {
     external_id: id(r.id),
     event_external_id: id(first(r.id_evento, r.evento?.id)),
@@ -205,9 +217,9 @@ export function daBusca(r, kind) {
     data_competencia: r.data_competencia ?? null,
     status: statusCanonico(r.status_traduzido, r.status),
     status_traduzido: r.status_traduzido ?? r.status ?? null,
-    total: num(r.total),
-    pago: num(r.pago),
-    nao_pago: num(r.nao_pago),
+    total,
+    pago,
+    nao_pago: naoPago,
     person_external_id: id(first(r.cliente?.id, r.fornecedor?.id, r.pessoa?.id, r.id_cliente)),
     account_external_id: id(first(r.id_conta_financeira, r.conta_financeira?.id)),
     category_external_id: id(r.categorias?.[0]?.id ?? r.categoria?.id),

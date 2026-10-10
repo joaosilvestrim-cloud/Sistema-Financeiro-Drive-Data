@@ -8,6 +8,10 @@
 // outro jeito de propósito. Um erro de lógica copiado para os dois lados
 // passa no detalheteste e cai aqui.
 //
+// Roda para todo tenant com conexão. Até 10/10/2026 olhava só o primeiro, e a
+// carga travada do TEste2 (metade das contas a pagar faltando, saldo de
+// −690 mil no fluxo) passou sem ninguém ver.
+//
 // Uso: node --env-file=.env scripts/auditoria.mjs
 import { pool, query } from '../src/db.mjs'
 
@@ -27,8 +31,36 @@ function conta(nome, a, b, nota = '') {
   console.log(`  ${ok ? 'ok  ' : 'DIVERGE'} ${nome.padEnd(52)} tela ${String(a).padStart(8)}  fonte ${String(b).padStart(8)} ${nota}`)
 }
 
-const t = (await query(`select id from core.tenant order by created_at limit 1`)).rows[0]
-const T = t.id
+const tenants = (await query(`
+  select t.id, t.nome from core.tenant t
+   where exists (select 1 from core.connection c where c.tenant_id = t.id)
+   order by t.created_at`)).rows
+
+for (const tenant of tenants) {
+const T = tenant.id
+console.log(`\n\n######## ${tenant.nome} ########`)
+
+console.log('\n== CARGA E COBERTURA · o espelho está completo? ==')
+{
+  // Carga não concluída quer dizer espelho pela metade, e toda tela abaixo
+  // estaria certa sobre um dado errado.
+  const j = (await query(`
+    select c.nome, j.status, j.etapa, j.janela, j.janelas_total
+      from core.connection c left join core.onboarding_job j on j.connection_id = c.id
+     where c.tenant_id = $1`, [T])).rows
+  for (const x of j) {
+    // Conexão carregada pela CLI não tem linha de carga, e está completa.
+    const ok = !x.status || x.status === 'concluido'
+    if (!ok) falhas++
+    console.log(`  ${ok ? 'ok  ' : 'DIVERGE'} carga inicial ${x.nome}: ${x.status ?? 'feita pela CLI'}`
+      + (ok ? '' : ` (parada em ${x.etapa} ${x.janela}/${x.janelas_total})`))
+  }
+  const c = (await query(`
+    select count(*) filter (where coalesce(nao_pago, 0) > 0.009 and account_id is null)::int as abertos_sem_conta,
+           count(*) filter (where event_external_id is null)::int as so_da_busca
+      from core.installment where tenant_id = $1 and deleted_at is null`, [T])).rows[0]
+  console.log(`  info  ${c.abertos_sem_conta} em aberto sem conta planejada no ERP, ${c.so_da_busca} ainda sem detalhe`)
+}
 
 console.log('\n== VISÃO GERAL · mart.kpi_overview ==')
 {
@@ -226,13 +258,18 @@ console.log('\n== AMOSTRA CONTRA O RAW · o espelho reflete o payload? ==')
        order by fetched_at desc limit 1`, [T, a.external_id])).rows[0]
     if (!raw) { console.log(`  info  ${a.external_id.slice(0, 8)}… sem payload bruto guardado`); continue }
     const p = raw.payload
-    // No detalhe da parcela o total mora em valor_total_liquido; nas buscas,
-    // em total. O rateio do evento é o mesmo número por outro caminho.
-    const totalRaw = p.total ?? p.valor_total_liquido
-      ?? p.evento?.rateio?.reduce((a, x) => a + Number(x.valor ?? 0), 0) ?? null
+    // O total do espelho é o BRUTO. No detalhe ele mora em
+    // valor_composicao.valor_bruto. Na busca o `total` vem líquido da taxa e o
+    // bruto é pago mais o que falta (ver daBusca no provider).
+    const totalRaw = p.valor_composicao?.valor_bruto
+      ?? (p.total !== undefined
+        ? Math.max(Number(p.total), Math.round((Number(p.pago ?? 0) + Number(p.nao_pago ?? 0)) * 100) / 100)
+        : p.evento?.rateio?.reduce((a, x) => a + Number(x.valor ?? 0), 0)) ?? null
     if (totalRaw === null) { console.log(`  info  ${a.external_id.slice(0, 8)}… payload sem campo de total reconhecido`); continue }
     linha(`parcela ${a.external_id.slice(0, 8)}… total`, a.total, totalRaw)
   }
+}
+
 }
 
 console.log('')

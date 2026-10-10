@@ -199,6 +199,39 @@ export async function ingestInstallments(ctx, maps, itens) {
   return resumo
 }
 
+// Exclusão no ERP. Até 10/10/2026 nenhum caminho do sync gravava deleted_at, e
+// título apagado no Conta Azul ficava em aberto no espelho para sempre. A
+// auditoria entre dois tenants da mesma empresa achou 39 assim na DriveData,
+// entre eles uma provisão de DAS de R$ 30 mil que o fluxo de caixa contava
+// como saída de setembro.
+//
+// Exclusão lógica: se a parcela reaparecer, o upsert do ingest zera o
+// deleted_at sozinho. Quem chama só pode passar id que a própria API disse que
+// não existe mais (404 no detalhe, ou ausente da lista de parcelas do evento).
+export async function marcarExcluidas(ctx, externalIds) {
+  if (!externalIds.length) return 0
+  const { rowCount } = await query(
+    `update core.installment set deleted_at = now()
+      where connection_id = $1 and external_id = any($2::text[]) and deleted_at is null`,
+    [ctx.connectionId, externalIds],
+  )
+  return rowCount
+}
+
+// As parcelas que o espelho liga a um evento e que a API não devolveu mais
+// quando o evento foi rebuscado. Cobre evento apagado (a API devolve lista
+// vazia, não 404) e parcelamento refeito, em que as parcelas antigas somem e
+// nascem outras com id novo.
+export async function excluirAusentesDoEvento(ctx, eventId, presentes) {
+  const { rowCount } = await query(
+    `update core.installment set deleted_at = now()
+      where connection_id = $1 and event_external_id = $2 and deleted_at is null
+        and not (external_id = any($3::text[]))`,
+    [ctx.connectionId, String(eventId), presentes.map((p) => p.external_id)],
+  )
+  return rowCount
+}
+
 export async function ingestSettlements(ctx, maps, baixas) {
   if (!baixas.length) return { total: 0 }
   await tx(async (client) => {

@@ -5,7 +5,7 @@ import { monthWindows } from './contaazul.mjs'
 import {
   ingestInstallments, loadDimensionMaps, setWatermark,
 } from './ingest.mjs'
-import { sincronizarDimensoes, sincronizarBaixas, fotografarSaldos } from './sync.mjs'
+import { sincronizarDimensoes, fotografarSaldos, rebuscarParcelas } from './sync.mjs'
 
 // Carga inicial retomável.
 //
@@ -39,7 +39,7 @@ export const PERIODOS = [6, 12, 24, 36]
 export const MESES_FRENTE = 24
 
 // Vazão usada na estimativa de tempo. Medida, não chutada: cada lançamento
-// já pago custa uma chamada para trazer as baixas, a API aceita 10 por
+// custa uma chamada ao detalhe (que traz as baixas junto), a API aceita 10 por
 // segundo e a ida e volta come parte disso. Conservadora de propósito: é
 // melhor a carga acabar antes do prometido do que depois.
 const LANCAMENTOS_POR_SEGUNDO = 3
@@ -69,7 +69,7 @@ export async function progressoCarga(connectionId) {
 // As etapas não custam o mesmo, então uma régua linear mentiria. Estes pesos
 // são grosseiros de propósito: o que importa é a barra andar sem parar e nunca
 // voltar atrás.
-const PESO = { dimensoes: 0, receivable: 0.08, payable: 0.52, saldos: 0.96, fim: 1 }
+const PESO = { dimensoes: 0, receivable: 0.04, payable: 0.12, detalhes: 0.2, saldos: 0.97, fim: 1 }
 
 function comPercentual(job) {
   if (job.meses_atras == null) {
@@ -77,7 +77,8 @@ function comPercentual(job) {
   }
   const base = PESO[job.etapa] ?? 0
   const proximo = job.etapa === 'receivable' ? PESO.payable
-    : job.etapa === 'payable' ? PESO.saldos
+    : job.etapa === 'payable' ? PESO.detalhes
+    : job.etapa === 'detalhes' ? PESO.saldos
     : job.etapa === 'dimensoes' ? PESO.receivable
     : 1
   const dentro = job.janelas_total > 0 ? Math.min(1, job.janela / job.janelas_total) : 0
@@ -93,6 +94,7 @@ const ROTULO = {
   dimensoes: 'Trazendo contas, categorias e pessoas',
   receivable: 'Trazendo o que você tem a receber',
   payable: 'Trazendo o que você tem a pagar',
+  detalhes: 'Conferindo cada lançamento: conta, baixas e conciliação',
   saldos: 'Fotografando o saldo das contas',
   fim: 'Pronto',
 }
@@ -142,21 +144,67 @@ export async function avancarCarga(connectionId, orcamentoMs = ORCAMENTO_MS) {
 
     const maps = await loadDimensionMaps(ctx)
 
+    // Só abre janela nova se ela couber. Checar apenas "passou do limite" deixava
+    // uma janela começar aos 39 s de um orçamento de 40 s numa função de 60 s, e
+    // um mês movimentado de contas a pagar passa de 20 s fácil. A Vercel mata a
+    // função no meio e a linha fica em 'rodando'. A conta usa a janela mais
+    // lenta vista nesta chamada, com folga de metade.
+    let maisLenta = 0
     for (const tipo of ['receivable', 'payable']) {
       if (etapa !== tipo) continue
       while (janela < janelas.length) {
-        if (Date.now() > limite) return await soltar(connectionId, { etapa, janela, itens })
+        if (Date.now() + maisLenta * 1.5 > limite) return await soltar(connectionId, { etapa, janela, itens })
+        const t0 = Date.now()
         const [de, ate] = janelas[janela]
         const parcelas = await api.listInstallments({ kind: tipo, dueFrom: de, dueTo: ate })
-        const r = await ingestInstallments(ctx, maps, parcelas)
-        await sincronizarBaixas(ctx, api, maps, r.mudaram)
+        await ingestInstallments(ctx, maps, parcelas)
         itens += parcelas.length
         janela += 1
         await salvar(connectionId, { etapa, janela, itens, janelas_total: janelas.length })
+        maisLenta = Math.max(maisLenta, Date.now() - t0)
       }
-      etapa = tipo === 'receivable' ? 'payable' : 'saldos'
+      etapa = tipo === 'receivable' ? 'payable' : 'detalhes'
       janela = 0
-      await salvar(connectionId, { etapa, janela, itens, janelas_total: janelas.length })
+      await salvar(connectionId, {
+        etapa, janela, itens,
+        janelas_total: etapa === 'detalhes' ? await faltaDetalhar(connectionId) : janelas.length,
+      })
+    }
+
+    // A busca do Conta Azul é enxuta demais para ser a fonte final: não traz a
+    // conta financeira, não traz o evento, não traz as baixas e devolve o total
+    // líquido da taxa. Até 10/10/2026 a carga parava na busca, e o TEste2, que
+    // espelha a mesma empresa que a DriveData, ficou com 441 títulos sem conta:
+    // o filtro por banco não enxergava nada do que estava para vencer.
+    //
+    // Cada título passa pelo detalhe uma vez. Para os pagos o custo é o mesmo
+    // de antes (era uma chamada para as baixas, agora é uma para o detalhe, que
+    // traz as baixas junto). Sai da fila quem ganha o id do evento, que só o
+    // detalhe tem; quem a API diz que não existe mais sai como excluído.
+    if (etapa === 'detalhes') {
+      const total = job.etapa === 'detalhes' ? job.janelas_total : await faltaDetalhar(connectionId)
+      // Um título cujo detalhe venha sem evento continuaria na fila para sempre.
+      // Quem já passou nesta chamada não volta; se só sobrou esse tipo, acabou.
+      const vistos = []
+      while (true) {
+        if (Date.now() + 5_000 > limite) return await soltar(connectionId, { etapa, janela, itens })
+        const { rows } = await query(
+          `select external_id from core.installment
+            where connection_id = $1 and deleted_at is null and event_external_id is null
+              and not (external_id = any($2::text[]))
+            order by data_vencimento limit 50`,
+          [connectionId, vistos],
+        )
+        if (!rows.length) break
+        vistos.push(...rows.map((x) => x.external_id))
+        const r = await rebuscarParcelas(ctx, api, maps, rows.map((x) => x.external_id),
+          () => Date.now() + 2_000 > limite, { estrito: true })
+        janela = Math.min(total, janela + r.varridos)
+        await salvar(connectionId, { etapa, janela, itens, janelas_total: total })
+      }
+      etapa = 'saldos'
+      janela = 0
+      await salvar(connectionId, { etapa, janela, itens, janelas_total: 0 })
     }
 
     if (etapa === 'saldos') {
@@ -183,6 +231,12 @@ export async function avancarCarga(connectionId, orcamentoMs = ORCAMENTO_MS) {
     return finalizarErro(connectionId, e.message, { etapa, janela, itens })
   }
 }
+
+const faltaDetalhar = async (connectionId) => Number((await query(
+  `select count(*) as n from core.installment
+    where connection_id = $1 and deleted_at is null and event_external_id is null`,
+  [connectionId],
+)).rows[0].n)
 
 const salvar = (connectionId, campos) => query(
   `update core.onboarding_job
