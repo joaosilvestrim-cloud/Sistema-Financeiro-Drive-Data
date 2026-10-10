@@ -55,8 +55,11 @@ export default async function Contas({ searchParams }) {
   const [linhas, totais, porPessoa, porCategoria, opcoes, opcoesContas] = await Promise.all([
     razao(sessao, f, { limite: POR_PAGINA, pagina }),
     totaisDaRazao(sessao, f),
-    razaoAgrupada(sessao, f, 'pessoa', 8),
-    razaoAgrupada(sessao, f, 'categoria', 8),
+    // Cada quadro ignora o próprio filtro e respeita o resto. Assim, com um
+    // cliente escolhido, o quadro de clientes continua mostrando os outros
+    // (para trocar com um clique) e o de categorias já mostra só as dele.
+    razaoAgrupada(sessao, { ...f, pessoa: null }, 'pessoa', 8),
+    razaoAgrupada(sessao, { ...f, categoria: null }, 'categoria', 8),
     opcoesDaRazao(sessao, { ...f, busca: '' }),
     opcoesAging(sessao, tipo),
   ])
@@ -84,6 +87,13 @@ export default async function Contas({ searchParams }) {
   }
 
   const rotuloTipo = tipo === 'receivable' ? 'a receber' : 'a pagar'
+  const valorAberto = !['todas', 'liquidado'].includes(situacao)
+  const nomePessoa = pessoa
+    ? (opcoes.pessoas.find((o) => o.id === pessoa)?.nome ?? porPessoa.find((d) => d.id === pessoa)?.chave ?? 'escolhido')
+    : null
+  const nomeCategoria = categoria
+    ? (opcoes.categorias.find((o) => o.id === categoria)?.nome ?? porCategoria.find((d) => d.id === categoria)?.chave ?? 'escolhida')
+    : null
   const rotuloPessoa = tipo === 'receivable' ? 'Cliente' : 'Fornecedor'
   const inicio = pagina * POR_PAGINA
   const temMais = inicio + linhas.length < totais.titulos
@@ -189,29 +199,43 @@ export default async function Contas({ searchParams }) {
       ) : (
         <>
           <div className="grid cols-2" style={{ marginBottom: 14 }}>
-            {[[rotuloPessoa, porPessoa, 'pessoa'], ['Categoria', porCategoria, 'categoria']].map(
-              ([titulo, dados, campo]) => (
+            {[[rotuloPessoa, porPessoa, 'pessoa', pessoa], ['Categoria', porCategoria, 'categoria', categoria]].map(
+              ([titulo, dados, campo, escolhido]) => (
                 <div className="card" key={campo}>
                   <h2>Por {titulo.toLowerCase()}</h2>
                   <p className="sub">
-                    Os oito maiores deste recorte. Clique para filtrar por um deles.
+                    {escolhido
+                      ? 'Filtrando os títulos abaixo. Clique em outro para trocar ou no marcado para tirar o filtro.'
+                      : 'Os oito maiores deste recorte. Clique em um para ver os títulos dele abaixo.'}
                   </p>
                   <table>
                     <thead>
                       <tr>
                         <th>{titulo}</th>
                         <th className="num">Títulos</th>
-                        <th className="num">Em aberto</th>
+                        <th className="num">{valorAberto ? 'Em aberto' : 'Total'}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {dados.map((d) => (
-                        <tr key={d.chave}>
-                          <td className="corta corta-m">{d.chave}</td>
-                          <td className="num">{d.titulos}</td>
-                          <td className="num">{brl(d.aberto)}</td>
-                        </tr>
-                      ))}
+                      {dados.map((d) => {
+                        const ativo = escolhido && d.id === escolhido
+                        // Sem cadastro não tem id para filtrar: fica como leitura.
+                        const destino = d.id
+                          ? `${link({ [campo]: ativo ? '' : d.id, pagina: '0' })}#titulos`
+                          : null
+                        return (
+                          <tr key={d.chave + (d.id ?? '')} className={destino ? 'linha-filtro' : undefined}
+                              data-ativo={ativo || undefined}>
+                            <td className="corta corta-m">
+                              {destino
+                                ? <Link href={destino} prefetch={false}>{d.chave}</Link>
+                                : d.chave}
+                            </td>
+                            <td className="num">{d.titulos}</td>
+                            <td className="num">{brl(valorAberto ? d.aberto : d.total)}</td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -219,10 +243,26 @@ export default async function Contas({ searchParams }) {
             )}
           </div>
 
-          <div className="card">
+          <div className="card" id="titulos" style={{ scrollMarginTop: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
               <div>
                 <h2>Títulos</h2>
+                {(nomePessoa || nomeCategoria) && (
+                  <div className="filtros-ativos">
+                    {nomePessoa && (
+                      <Link href={`${link({ pessoa: '', pagina: '0' })}#titulos`} className="filtro-ativo"
+                            title="Tirar este filtro">
+                        {rotuloPessoa}: {nomePessoa} <span aria-hidden>×</span>
+                      </Link>
+                    )}
+                    {nomeCategoria && (
+                      <Link href={`${link({ categoria: '', pagina: '0' })}#titulos`} className="filtro-ativo"
+                            title="Tirar este filtro">
+                        Categoria: {nomeCategoria} <span aria-hidden>×</span>
+                      </Link>
+                    )}
+                  </div>
+                )}
                 <p className="sub">
                   Linha com seta já teve baixa: clique para ver. Ordenado por{' '}
                   {ordem === 'valor' ? 'valor' : ordem === 'pessoa' ? 'nome' : 'vencimento'}.

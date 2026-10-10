@@ -57,9 +57,14 @@ console.log('\n== CARGA E COBERTURA · o espelho está completo? ==')
   }
   const c = (await query(`
     select count(*) filter (where coalesce(nao_pago, 0) > 0.009 and account_id is null)::int as abertos_sem_conta,
-           count(*) filter (where event_external_id is null)::int as so_da_busca
+           count(*) filter (where event_external_id is null)::int as so_da_busca,
+           count(*) filter (where kind = 'receivable' and coalesce(nao_pago, 0) > 0.009
+                              and person_id is null)::int as receber_sem_cliente
       from core.installment where tenant_id = $1 and deleted_at is null`, [T])).rows[0]
   console.log(`  info  ${c.abertos_sem_conta} em aberto sem conta planejada no ERP, ${c.so_da_busca} ainda sem detalhe`)
+  // Título a receber sem cliente quase sempre é falha de espelho (o detalhe
+  // não traz pessoa; ver sync.mjs). Em 10/10/2026 eram 44, R$ 154 mil.
+  console.log(`  ${c.receber_sem_cliente ? 'ATENÇÃO' : 'ok  '} ${c.receber_sem_cliente} título(s) a receber em aberto sem cliente`)
 }
 
 console.log('\n== VISÃO GERAL · mart.kpi_overview ==')

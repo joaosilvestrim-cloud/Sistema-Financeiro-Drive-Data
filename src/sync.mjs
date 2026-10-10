@@ -12,6 +12,11 @@ import {
 // em que o watermark foi gravado.
 const OVERLAP_MIN = 10
 
+// Faixa de vencimento para a busca que só quer filtrar por alteração. A API
+// exige o parâmetro; a faixa larga faz ele não filtrar nada.
+export const VENCIMENTO_DE = '2000-01-01'
+export const VENCIMENTO_ATE = '2099-12-31'
+
 const providers = {
   contaazul: (connectionId) => contaAzulProvider(clientFor(connectionId)),
 }
@@ -233,6 +238,26 @@ export async function syncConnection(connectionId, kind = 'incremental', { orcam
         return { runId, itens, detail, incompleto: true }
       }
       await limparCursor(connectionId)
+
+      // O detalhe da parcela, que é o que o CDC devolve, não traz cliente nem
+      // fornecedor. Título que nasceu depois da carga inicial e só passou pelo
+      // CDC ficava sem pessoa: em 10/10/2026 eram 873 de 1.799 na DriveData,
+      // R$ 154 mil a receber em "Sem cadastro" no quadro por cliente. A busca
+      // traz a pessoa e aceita filtrar por data de alteração (desde que receba
+      // uma faixa de vencimento, que aqui vai larga de propósito). Uma ou duas
+      // páginas por tipo cobrem o mesmo período do CDC.
+      if (!semTempo()) {
+        let viaBusca = 0
+        for (const tipo of ['receivable', 'payable']) {
+          const lista = await api.listInstallments({
+            kind: tipo, dueFrom: VENCIMENTO_DE, dueTo: VENCIMENTO_ATE,
+            changedFrom: dataHora(desde), changedTo: dataHora(ate),
+          })
+          await ingestInstallments(ctx, maps, lista)
+          viaBusca += lista.length
+        }
+        detail.busca_alteradas = viaBusca
+      }
     }
 
     // A varredura dos abertos existe porque o CDC do Conta Azul tem um buraco

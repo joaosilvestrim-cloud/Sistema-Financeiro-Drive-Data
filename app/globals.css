@@ -670,6 +670,26 @@ tr.expansivel { cursor: pointer; }
 /* A coluna da seta existe em toda linha da tabela, inclusive nas que nao abrem.
    Sem isso, uma tabela onde so algumas linhas tem historico ficaria com as
    colunas dancando entre uma linha e outra. */
+/* Linha de quadro que vira filtro (Contas: por cliente, por categoria). O link
+   está no nome, mas a linha inteira responde: o ::after do link cobre a linha. */
+tr.linha-filtro { position: relative; cursor: pointer; transition: background-color 120ms ease; }
+tr.linha-filtro:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+tr.linha-filtro a { color: inherit; text-decoration: none; }
+tr.linha-filtro a::after { content: ''; position: absolute; inset: 0; }
+tr.linha-filtro[data-ativo] { background: color-mix(in srgb, var(--accent) 13%, transparent); }
+tr.linha-filtro[data-ativo] td:first-child { box-shadow: inset 3px 0 0 var(--accent); font-weight: 650; }
+
+.filtros-ativos { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 2px; }
+.filtro-ativo {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 600; color: var(--text-primary);
+  padding: 4px 10px; border-radius: 9999px; text-decoration: none;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.filtro-ativo span { color: var(--text-muted); font-size: 14px; line-height: 1; }
+.filtro-ativo:hover span { color: var(--critical); }
+
 td.seta {
   width: 22px;
   padding-right: 0;

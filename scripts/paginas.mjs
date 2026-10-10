@@ -52,6 +52,9 @@ const ROTAS = [
   ['/contas?situacao=liquidado&periodo=mes', 'Contas a pagar e a receber'],
   ['/contas?situacao=todas&ordem=valor&pagina=1', 'Contas a pagar e a receber'],
   ['/recebiveis', 'mais antigos'],
+  // Clicar num cliente do quadro filtra a lista de títulos e deixa os outros
+  // clientes à vista para trocar. O marcador só aparece com o filtro ativo.
+  ['/contas?pessoa=4b7f979f-cf95-4445-97bf-65fbe5102555', 'Filtrando os títulos abaixo'],
   ['/aging?tipo=receivable&faixas=longo&futuro=nao&agrupar=faixa', 'Como a carteira se distribui'],
   // A exportação devolve CSV, não HTML. O cabeçalho prova que saiu o arquivo.
   ['/api/exportar/contas?tipo=payable&situacao=todas', 'Vencimento;Compet'],
