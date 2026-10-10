@@ -88,7 +88,9 @@ const PUBLICAS = [
   // em vez de ver o produto, e nada mais avisa.
   ['/', 'lido de verdade'],
   ['/inicio', 'Planos por empresa'],
-  ['/redefinir-senha', 'Esqueci minha senha'],
+  // Em produção a página é estática e o formulário só monta no navegador (ele
+  // lê o token da URL). O HTML que chega traz o título, não o formulário.
+  ['/redefinir-senha', 'Trocar senha'],
   ['/termos', 'Termos de Uso'],
   ['/privacidade', 'Política de Privacidade'],
 ]
