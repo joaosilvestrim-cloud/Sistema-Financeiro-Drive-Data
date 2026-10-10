@@ -8,6 +8,8 @@ import { desde } from '@/lib/format'
 import TemaToggle from '@/components/TemaToggle'
 import Paleta from '@/components/Paleta'
 import BotaoPaleta from '@/components/BotaoPaleta'
+import BarraNavegacao from '@/components/BarraNavegacao'
+import { Suspense } from 'react'
 
 // O menu segue a ordem em que um financeiro lê a empresa, e não a ordem em que
 // as telas foram construídas.
@@ -29,7 +31,7 @@ const MENU = [
   ]],
   ['Caixa', 'var(--cat-2)', [
     ['/fluxo', 'Fluxo de caixa', 'fluxo'],
-    ['/previsao', 'Projeção de saldo', 'previsao'],
+    ['/previsao', 'Simulador de caixa', 'previsao'],
     ['/contas', 'Contas a pagar e receber', 'contas'],
     ['/recebiveis', 'Recebíveis', 'recebiveis'],
     ['/aging', 'Aging', 'aging'],
@@ -85,6 +87,7 @@ export default async function DashLayout({ children }) {
 
   return (
     <div className="shell">
+      <Suspense fallback={null}><BarraNavegacao /></Suspense>
       <aside className="sidebar">
         {/* Marca e seletor de empresa formam um bloco só: os dois respondem
             "que sistema é este e de qual empresa estou vendo", e separá-los

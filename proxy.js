@@ -72,6 +72,7 @@ export async function proxy(request) {
     || path.startsWith('/privacidade')
     || path.startsWith('/api/billing')
     || path.startsWith('/api/cron')
+    || path.startsWith('/api/aquecer')
     || path.startsWith('/api/fiscal')
     || path.startsWith('/api/webhooks')
     || path.startsWith('/auth')

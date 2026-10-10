@@ -1,17 +1,30 @@
 import { requireSession } from '@/lib/session'
-import { projecao } from '@/lib/forecast'
+import { baseSimulacao } from '@/lib/simulador'
+import { opcoesAging } from '@/lib/aging'
+import FiltroContasUrl from '@/components/FiltroContasUrl'
+import SimuladorCaixa from '@/components/SimuladorCaixa'
 import { pipelineFuturo, tiposPreenchidos } from '@/lib/indicadoresAux'
 import { brl, pct, rotuloMes } from '@/lib/format'
-import ForecastChart from '@/components/charts/ForecastChart'
 import FaltaSerie from '@/components/FaltaSerie'
 
 export const dynamic = 'force-dynamic'
 
-export default async function Previsao() {
+const HORIZONTES = [6, 12, 24]
+
+export default async function Previsao({ searchParams }) {
   const sessao = await requireSession()
-  const [base, pipeline, tipos] = await Promise.all([
-    projecao(sessao, 6), pipelineFuturo(sessao), tiposPreenchidos(sessao),
+  const busca = await searchParams
+  const meses = HORIZONTES.includes(Number(busca?.meses)) ? Number(busca.meses) : 12
+  const contas = String(busca?.conta ?? '').split(',').filter((x) => /^[0-9a-f-]{36}$/i.test(x))
+  const [base, pipeline, tipos, opcoes] = await Promise.all([
+    baseSimulacao(sessao, { meses, contas }), pipelineFuturo(sessao), tiposPreenchidos(sessao),
+    opcoesAging(sessao, 'receivable'),
   ])
+  const link = (m) => {
+    const p = new URLSearchParams({ meses: String(m) })
+    if (contas.length) p.set('conta', contas.join(','))
+    return `/previsao?${p}`
+  }
 
   if (!base.linhas.length) {
     return (
@@ -26,13 +39,45 @@ export default async function Previsao() {
     <>
       <div className="page-head">
         <div>
-          <h1>Previsão de caixa</h1>
-          <p>Seis meses à frente, partindo do saldo de {brl(base.saldoInicial)}. Mexa nos cenários para testar hipóteses.</p>
+          <h1>Simulador de caixa</h1>
+          <p>
+            {meses} meses à frente, partindo de {brl(base.saldoInicial)} em caixa
+            {base.contas ? ` nas contas escolhidas` : ''}. Escolha um cenário pronto ou mexa nas
+            alavancas: tudo redesenha na hora.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <FiltroContasUrl contas={opcoes.contas} selecionadas={contas} rotulo="Contas bancárias" />
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>horizonte</span>
+            {HORIZONTES.map((h) => (
+              <a key={h} href={link(h)} className="toggle"
+                style={h === meses ? { borderColor: 'var(--text-primary)', color: 'var(--text-primary)', fontWeight: 650 } : undefined}>
+                {h} meses
+              </a>
+            ))}
+          </div>
         </div>
       </div>
 
+      {base.contas && (
+        <div style={{
+          padding: '12px 16px', borderRadius: 12, marginBottom: 14, fontSize: 13, lineHeight: 1.55,
+          background: 'var(--accent-suave)', border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)',
+        }}>
+          Simulando só <strong>{base.contas.nomes.join(', ')}</strong>. Saldo e agenda são os dessas contas.
+          O negócio novo, que ainda não tem conta, entra pela fatia que elas tiveram nos últimos seis meses:{' '}
+          <strong>{(base.contas.fatiaEntradas * 100).toFixed(0)}% das entradas</strong> e{' '}
+          <strong>{(base.contas.fatiaSaidas * 100).toFixed(0)}% das saídas</strong>.
+          {base.contas.semConta?.titulos > 0 && (
+            <> {base.contas.semConta.titulos} título(s) em aberto, {brl(base.contas.semConta.valor)}, não têm
+            conta prevista no Conta Azul e ficam fora.</>
+          )}
+        </div>
+      )}
+
       <div className="card" style={{ marginBottom: 14 }}>
-        <ForecastChart base={base} />
+        <SimuladorCaixa key={`${meses}-${contas.join()}`} base={base} />
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>

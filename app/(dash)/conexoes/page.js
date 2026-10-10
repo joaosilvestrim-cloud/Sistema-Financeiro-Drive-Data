@@ -9,6 +9,7 @@ import { membros, convitesPendentes, convidar, criarAcessoManual, revogarConvite
 import CredencialBancaria from '@/components/CredencialBancaria'
 import { ampliarHistorico, PERIODOS } from '@/src/carga.mjs'
 import Equipe from '@/components/Equipe'
+import BotaoSincronizar from '@/components/BotaoSincronizar'
 import { desde, dataCurta } from '@/lib/format'
 import { criarState } from '@/lib/oauthState'
 import { buildAuthorizeUrl } from '@/src/oauth.mjs'
@@ -130,11 +131,10 @@ export default async function Conexoes({ searchParams }) {
     })
   }
 
-  async function sincronizarAgora(formData) {
+  async function sincronizarAgora(id) {
     'use server'
-    await comAviso('/conexoes', async () => {
+    return comRetorno(async () => {
       const s = await requireSession()
-      const id = formData.get('conexao')
       // Dono da conexao e quem pode puxa-la. Sem esta checagem, qualquer
       // usuario logado dispararia sync na conexao de outro tenant.
       const dona = s.conexoes.some((c) => c.id === id)
@@ -142,8 +142,9 @@ export default async function Conexoes({ searchParams }) {
       const { syncConnection } = await import('@/src/sync.mjs')
       // Orcamento de 45s: o que nao couber fica salvo como retomada e o
       // cron termina. Melhor um sync parcial agora que um timeout mudo.
-      await syncConnection(id, 'incremental', { orcamentoMs: 45_000 })
+      const r = await syncConnection(id, 'incremental', { orcamentoMs: 45_000 })
       revalidatePath('/', 'layout')
+      return { itens: Number(r?.itens ?? 0) }
     })
   }
 
@@ -260,12 +261,7 @@ export default async function Conexoes({ searchParams }) {
                   <button className="toggle" type="submit">Trazer mais histórico</button>
                 </form>
               )}
-              {c.status === 'connected' && (
-                <form action={sincronizarAgora} style={{ marginTop: 10 }}>
-                  <input type="hidden" name="conexao" value={c.id} />
-                  <button className="toggle" type="submit">Sincronizar agora</button>
-                </form>
-              )}
+              {c.status === 'connected' && <BotaoSincronizar acao={sincronizarAgora} conexao={c.id} />}
             </div>
           )
         })}

@@ -29,7 +29,6 @@ const ROTAS = [
   ['/', 'Saldo em conta'],
   ['/resumo', 'Dá para confiar no saldo'],
   ['/fluxo', 'Fluxo de caixa'],
-  ['/previsao', 'Projeção'],
   ['/recebiveis', 'Títulos em aberto'],
   ['/contas', 'Contas a pagar e a receber'],
   // O fluxo abre no real. Se o padrao voltar a ser projecao, a tela passa a
@@ -39,6 +38,9 @@ const ROTAS = [
   ['/contas?tipo=payable&situacao=vencido', 'Contas a pagar e a receber'],
   ['/notas', 'Notas fiscais'],
   ['/aging', 'Como a carteira se distribui'],
+  ['/previsao', 'Simulador de caixa'],
+  ['/previsao?meses=24&conta=99d91ecb-438e-4ad4-8024-599d14d982f1', 'Simulando só'],
+  ['/fluxo?conta=99d91ecb-438e-4ad4-8024-599d14d982f1', 'Mostrando só'],
   ['/aging?tipo=payable&faixas=10,45,200&futuro=detalhado&agrupar=conta', 'Mais de 200 dias'],
   ['/aging?data=2026-09-30&agrupar=categoria', 'Carteira como o DriveAzul a via'],
   ['/notas/ativar?outra=1', 'Ativar emiss'],
