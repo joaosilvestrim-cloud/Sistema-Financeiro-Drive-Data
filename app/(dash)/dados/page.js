@@ -8,13 +8,14 @@ import {
 } from '@/lib/auxiliares'
 import { rotuloMes } from '@/lib/format'
 import GradeMensal from '@/components/GradeMensal'
+import { hojeUTC } from '@/lib/hoje'
 
 export const dynamic = 'force-dynamic'
 
 // Meses que a grade oferece para digitar: doze para trás e doze para frente,
 // que cobre fechar o ano corrente e orçar o seguinte.
 function mesesDaGrade() {
-  const hoje = new Date()
+  const hoje = hojeUTC()
   const lista = []
   for (let i = -12; i <= 12; i++) {
     const d = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() + i, 1))

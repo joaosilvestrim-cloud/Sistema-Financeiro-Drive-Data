@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { rotuloMes } from '@/lib/format'
+import { mesAtualISO } from '@/lib/hoje'
 
 // Grade de digitação mês a mês.
 //
@@ -27,7 +28,7 @@ export default function GradeMensal({ meses, valores, unidade }) {
     if (e.key === 'ArrowUp') { e.preventDefault(); mover(i, -1) }
   }
 
-  const hoje = new Date().toISOString().slice(0, 7)
+  const hoje = mesAtualISO()
   const preenchidos = Object.values(estado).filter((v) => v !== '').length
 
   return (

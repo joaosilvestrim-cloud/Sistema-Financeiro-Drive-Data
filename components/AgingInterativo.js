@@ -5,6 +5,7 @@ import { brl, dataCurta } from '@/lib/format'
 import Exportar from '@/components/Exportar'
 import Multi from '@/components/MultiSelecao'
 import s from './aging.module.css'
+import { hojeISO } from '@/lib/hoje'
 
 // O aging inteiro como uma superfície de exploração. Cada clique em filtro vira
 // URL na hora (a visão é compartilhável e sobrevive ao F5), sem botão de
@@ -185,7 +186,7 @@ export default function AgingInterativo({ filtros: f, opcoes, dados }) {
     } catch { /* navegador sem permissão de área de transferência */ }
   }
 
-  const hoje = new Date().toISOString().slice(0, 10)
+  const hoje = hojeISO()
 
   return (
     <>

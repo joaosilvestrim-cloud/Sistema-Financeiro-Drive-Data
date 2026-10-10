@@ -3,15 +3,18 @@ import { paraCsv, nomeDoArquivo } from '@/lib/csv'
 
 // Botão de exportar tabela.
 //
-// Gera o arquivo no navegador, a partir dos mesmos dados que a tela já recebeu.
-// Não existe rota de exportação de propósito: uma rota refaria a consulta e
-// abriria a chance de o arquivo sair diferente do que está na tela, que é
-// exatamente o tipo de divergência que ninguém percebe até o cliente perceber.
+// Dois modos. Sem `href`, gera o arquivo no navegador a partir das linhas que
+// a tela já recebeu: serve quando a tela mostra tudo o que exporta.
+//
+// Com `href`, baixa de uma rota. Serve quando a tela é paginada: a tela de
+// Contas mostra 80 linhas por vez e o botão exportava só essas 80, de uma
+// carteira de 850. A rota usa o mesmo leitor de URL e a mesma consulta da tela,
+// então o arquivo não tem como sair com outro recorte.
 //
 // O objeto de URL é liberado depois do clique. Sem isso, cada exportação deixa
 // o arquivo preso na memória da aba até ela fechar.
-export default function Exportar({ linhas, colunas, arquivo, rotulo = 'Exportar' }) {
-  const quantidade = linhas?.length ?? 0
+export default function Exportar({ linhas, colunas, arquivo, rotulo = 'Exportar', href = null, quantidade = null }) {
+  const total = quantidade ?? linhas?.length ?? 0
 
   function baixar() {
     const csv = paraCsv(linhas, colunas)
@@ -23,11 +26,14 @@ export default function Exportar({ linhas, colunas, arquivo, rotulo = 'Exportar'
     URL.revokeObjectURL(url)
   }
 
+  const titulo = total ? `${total} linha(s) para Excel` : 'nada para exportar'
+
+  if (href && total) {
+    return <a className="toggle" href={href} download title={titulo}>↓ {rotulo}</a>
+  }
+
   return (
-    <button
-      className="toggle" type="button" onClick={baixar} disabled={!quantidade}
-      title={quantidade ? `${quantidade} linha(s) para Excel` : 'nada para exportar'}
-    >
+    <button className="toggle" type="button" onClick={baixar} disabled={!total} title={titulo}>
       ↓ {rotulo}
     </button>
   )

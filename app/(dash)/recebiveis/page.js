@@ -33,13 +33,16 @@ const VERSOES = [
 
 export default async function Recebiveis() {
   const sessao = await requireSession()
-  const [rec, pag, titulos, versoes] = await Promise.all([
-    aging(sessao, 'receivable'), aging(sessao, 'payable'), recebiveisAbertos(sessao, 80),
+  // A tabela mostra os 80 mais antigos; o arquivo leva todos. Antes o botão
+  // exportava as mesmas 80 linhas da tabela e o resto da carteira ficava fora.
+  const [rec, pag, todos, versoes] = await Promise.all([
+    aging(sessao, 'receivable'), aging(sessao, 'payable'), recebiveisAbertos(sessao, 5000),
     historicoDosTitulos(sessao, 'receivable', 80),
   ])
 
   // Agrupado uma vez, não uma vez por linha: com oitenta títulos, filtrar a
   // lista inteira dentro do map seria oitenta varreduras da mesma lista.
+  const titulos = todos.slice(0, 80)
   const historico = new Map()
   for (const v of versoes) {
     if (!historico.has(v.installment_id)) historico.set(v.installment_id, [])
@@ -98,10 +101,14 @@ export default async function Recebiveis() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 12 }}>
           <div>
             <h2>Títulos em aberto</h2>
-            <p className="sub">Os {titulos.length} mais antigos primeiro.</p>
+            <p className="sub">
+              {todos.length > titulos.length
+                ? `Os ${titulos.length} mais antigos de ${todos.length}. O arquivo leva todos.`
+                : `Os ${titulos.length} títulos, mais antigos primeiro.`}
+            </p>
           </div>
           <Exportar
-            linhas={titulos} arquivo="titulos-em-aberto"
+            linhas={todos} arquivo="titulos-em-aberto"
             colunas={[
               ['data_vencimento', 'Vencimento', 'data'],
               ['cliente', 'Cliente', 'texto'],

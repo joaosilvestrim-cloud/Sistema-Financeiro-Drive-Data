@@ -1,6 +1,7 @@
 'use client'
 import { useState, useId } from 'react'
 import { brl, compacto, rotuloMes } from '@/lib/format'
+import { mesAtualISO } from '@/lib/hoje'
 
 // Fluxo de caixa mensal.
 //
@@ -21,7 +22,7 @@ export default function CashflowChart({ dados }) {
 
   if (!dados.length) return <p className="empty">Sem movimento no período.</p>
 
-  const mesAtual = new Date().toISOString().slice(0, 7)
+  const mesAtual = mesAtualISO()
   const linhas = dados.map((d) => {
     const entR = Number(d.entradas_realizadas ?? 0)
     const entP = Number(d.entradas_previstas ?? 0)
@@ -159,7 +160,7 @@ export default function CashflowChart({ dados }) {
                   <Barra x={centro + 2} realizado={l.saiR} previsto={l.saiP}
                          cor="var(--series-2)" padrao={`p2${uid}`} />
                   <text x={centro} y={H - 12} textAnchor="middle" fontSize="11"
-                        fill={i === new Date().getMonth() % 12 && l.competencia === mesAtual ? 'var(--text-primary)' : 'var(--text-muted)'}>
+                        fill={l.competencia === mesAtual ? 'var(--text-primary)' : 'var(--text-muted)'}>
                     {rotuloMes(l.competencia)}
                   </text>
                   <rect x={x0} y={M.top} width={grupoW} height={plotH} fill="transparent"

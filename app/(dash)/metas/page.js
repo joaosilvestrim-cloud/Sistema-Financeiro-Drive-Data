@@ -4,6 +4,7 @@ import { brl, rotuloMes } from '@/lib/format'
 import Tile from '@/components/Tile'
 import BarrasMeta from '@/components/charts/BarrasMeta'
 import FaltaSerie from '@/components/FaltaSerie'
+import { mesAtualISO } from '@/lib/hoje'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,7 +21,7 @@ export default async function Metas() {
   ])
 
   const temMeta = tipos.has('meta_receita') || tipos.has('meta_despesa') || tipos.has('meta_resultado')
-  const mesAtual = new Date().toISOString().slice(0, 7)
+  const mesAtual = mesAtualISO()
   const fechados = linhas.filter((l) => l.competencia < mesAtual)
   const emCurso = linhas.find((l) => l.competencia === mesAtual)
 

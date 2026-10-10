@@ -19,7 +19,7 @@ const HORIZONTES = [3, 6, 12]
 // isso evita a tabela de quantos dias tem cada mes e o caso de fevereiro.
 function fimDoMes(competencia) {
   const [ano, mes] = competencia.split('-').map(Number)
-  return new Date(ano, mes, 0).toISOString().slice(0, 10)
+  return new Date(Date.UTC(ano, mes, 0)).toISOString().slice(0, 10)
 }
 
 export default async function Fluxo({ searchParams }) {

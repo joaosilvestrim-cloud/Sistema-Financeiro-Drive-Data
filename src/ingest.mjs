@@ -276,7 +276,7 @@ export async function snapshotBalances(ctx, saldos) {
       await client.query(
         `insert into core.account_balance_snapshot
            (tenant_id, connection_id, account_id, snapshot_date, saldo)
-         values ($1, $2, $3, current_date, $4)
+         values ($1, $2, $3, core.hoje(), $4)
          on conflict (account_id, snapshot_date) do update
            set saldo = excluded.saldo, captured_at = now()`,
         [ctx.tenantId, ctx.connectionId, s.account_id, s.saldo],

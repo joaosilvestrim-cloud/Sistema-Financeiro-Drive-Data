@@ -43,6 +43,18 @@ const ROTAS = [
   ['/fluxo?conta=99d91ecb-438e-4ad4-8024-599d14d982f1', 'Mostrando só'],
   ['/aging?tipo=payable&faixas=10,45,200&futuro=detalhado&agrupar=conta', 'Mais de 200 dias'],
   ['/aging?data=2026-09-30&agrupar=categoria', 'Carteira como o DriveAzul a via'],
+  // O grupo Caixa inteiro, com os filtros que cada tela oferece. Conferido
+  // em 10/10/2026 junto com o caixateste, que confere os números.
+  ['/fluxo?meses=12&modo=real', 'Fluxo de caixa'],
+  ['/fluxo?meses=3&modo=projecao', 'com a nossa estimativa por cima'],
+  ['/previsao?meses=6', 'Simulador de caixa'],
+  ['/contas?tipo=payable&situacao=parcial', 'Contas a pagar e a receber'],
+  ['/contas?situacao=liquidado&periodo=mes', 'Contas a pagar e a receber'],
+  ['/contas?situacao=todas&ordem=valor&pagina=1', 'Contas a pagar e a receber'],
+  ['/recebiveis', 'mais antigos'],
+  ['/aging?tipo=receivable&faixas=longo&futuro=nao&agrupar=faixa', 'Como a carteira se distribui'],
+  // A exportação devolve CSV, não HTML. O cabeçalho prova que saiu o arquivo.
+  ['/api/exportar/contas?tipo=payable&situacao=todas', 'Vencimento;Compet'],
   ['/notas/ativar?outra=1', 'Ativar emiss'],
   // O caminho que derrubou a tela em producao: a acao falhou, o erro voltou
   // pela URL, e a pagina tem que mostrar o recado em vez de morrer.

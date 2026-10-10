@@ -2,14 +2,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { brl, compacto, rotuloMes } from '@/lib/format'
 import s from './simulador.module.css'
+import { NEUTRO, calcular, resumoDe } from '@/lib/simuladorCalculo'
 
 // Simulador de caixa.
 //
 // Tudo roda no navegador sobre a base que o servidor mandou, então mexer numa
 // alavanca redesenha na hora, sem ida ao servidor. A linha tracejada é a base
 // sem nenhuma alavanca, para a pessoa ver quanto o cenário dela mexe.
-
-const NEUTRO = { atraso: 0, corte: 0, perda: 0, novos: 0, vencidos: 100, antecipar: 0, custoAntecipar: 2 }
 
 // Os quatro cenários com o nome que o cliente usa (reunião de 11/09):
 // conservador, base, agressivo e drástico.
@@ -22,71 +21,13 @@ const PRESETS = [
 
 const ALAVANCAS = [
   ['atraso', 'Atraso no recebimento', 0, 50, 5, '%', 'parte do que entraria no mês escorrega para o mês seguinte'],
-  ['vencidos', 'Vencidos que entram', 0, 100, 10, '%', 'quanto do que já está vencido você acredita receber no primeiro mês'],
+  ['vencidos', 'Vencidos que entram', 0, 100, 10, '%', 'quanto do que já está vencido você acredita receber no mês que vem'],
   ['novos', 'Negócio novo', -60, 60, 10, '%', 'ajuste sobre o que ainda não foi lançado no ERP'],
   ['perda', 'Perda do maior cliente', 0, 100, 25, '%', 'quanto do faturamento do maior cliente deixa de entrar'],
   ['corte', 'Corte de despesa', 0, 40, 5, '%', 'redução sobre todas as saídas previstas'],
   ['antecipar', 'Antecipar recebíveis', 0, 80, 10, '%', 'parte dos dois meses seguintes trazida para agora'],
   ['custoAntecipar', 'Custo da antecipação', 0, 6, 0.5, '% a.m.', 'taxa cobrada por mês antecipado'],
 ]
-
-function calcular(base, c, movimentos) {
-  const fatorNovos = 1 + c.novos / 100
-  const fatorPerda = 1 - (c.perda / 100) * base.participacaoMaiorCliente
-  const fatorCorte = 1 - c.corte / 100
-  const fatorAtraso = c.atraso / 100
-
-  const meses = base.linhas.map((l) => ({
-    competencia: l.competencia,
-    entradas: (l.carteiraEntradas * base.taxaNoPrazo + l.novosEntradas * base.taxaNoPrazo * fatorNovos) * fatorPerda,
-    saidas: (l.carteiraSaidas + l.novosSaidas * fatorNovos) * fatorCorte,
-  }))
-  if (!meses.length) return []
-
-  // Vencidos: entram no primeiro mês, na proporção que a pessoa acredita. As
-  // obrigações vencidas saem inteiras, porque conta atrasada se paga.
-  meses[0].entradas += base.vencidosEntradas * (c.vencidos / 100)
-  meses[0].saidas += base.vencidosSaidas * fatorCorte
-
-  // Atraso: parte da entrada escorrega para o mês seguinte. O último mês
-  // carrega o resto, senão o dinheiro sumiria do horizonte.
-  const adiado = meses.map((m) => m.entradas * fatorAtraso)
-  meses.forEach((m, i) => { m.entradas -= adiado[i] })
-  adiado.forEach((v, i) => { meses[Math.min(i + 1, meses.length - 1)].entradas += v })
-
-  // Antecipação: puxa parte dos dois meses seguintes para o primeiro, pagando
-  // a taxa por mês de antecedência.
-  for (let i = 1; i <= 2 && i < meses.length; i++) {
-    const puxado = meses[i].entradas * (c.antecipar / 100)
-    meses[i].entradas -= puxado
-    meses[0].entradas += puxado * (1 - (c.custoAntecipar / 100) * i)
-  }
-
-  // Lançamentos hipotéticos, pontuais ou mensais a partir do mês escolhido.
-  for (const mv of movimentos) {
-    const valor = Number(mv.valor) || 0
-    if (!valor) continue
-    const ini = meses.findIndex((m) => m.competencia === mv.mes)
-    if (ini === -1) continue
-    for (let i = ini; i < meses.length; i++) {
-      if (mv.tipo === 'entrada') meses[i].entradas += valor
-      else meses[i].saidas += valor
-      if (!mv.recorrente) break
-    }
-  }
-
-  let saldo = base.saldoInicial
-  return meses.map((m) => {
-    saldo += m.entradas - m.saidas
-    return { ...m, liquido: m.entradas - m.saidas, saldo }
-  })
-}
-
-function resumoDe(linhas, saldoInicial) {
-  const menor = linhas.reduce((a, l) => (l.saldo < a.saldo ? l : a), { saldo: saldoInicial, competencia: null })
-  const negativo = linhas.find((l) => l.saldo < 0)
-  return { final: linhas.at(-1)?.saldo ?? saldoInicial, menor, negativo }
-}
 
 const CHAVE_SALVOS = 'driveazul:cenarios'
 

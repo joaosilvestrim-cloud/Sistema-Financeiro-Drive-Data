@@ -7,6 +7,7 @@ import { brl, dataCurta } from '@/lib/format'
 import Tile from '@/components/Tile'
 import Exportar from '@/components/Exportar'
 import LinhaExpansivel from '@/components/LinhaExpansivel'
+import { PERIODOS, filtrosDaUrl, colunasContas } from '@/lib/contasFiltro'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,16 +25,8 @@ export const dynamic = 'force-dynamic'
 // Tudo por URL, nada por estado de navegador. Um recorte útil é um link, e link
 // se manda por WhatsApp, se salva nos favoritos e volta igual amanhã.
 
-const PERIODOS = [
-  ['vencidos', 'vencidos'],
-  ['mes', 'este mês'],
-  ['30', 'próximos 30 dias'],
-  ['90', 'próximos 90 dias'],
-  ['tudo', 'tudo'],
-]
-
 const SITUACAO_ROTULO = {
-  a_vencer: 'a vencer', vencido: 'vencido', parcial: 'baixa parcial', liquidado: 'liquidado',
+  a_vencer: 'a vencer', vencido: 'vencido', parcial: 'parcial', liquidado: 'liquidado',
 }
 const SITUACAO_TOM = {
   vencido: 'var(--critical)', liquidado: 'var(--text-muted)', parcial: 'var(--warning)',
@@ -48,25 +41,6 @@ const BAIXAS = [
   { chave: 'taxa', titulo: 'Taxa', tipo: 'dinheiro' },
 ]
 
-// Traduz o período escolhido em duas datas. Fica aqui e não no SQL porque o
-// rótulo e o intervalo precisam ser a mesma coisa: se a tela diz "próximos 30
-// dias" e a consulta faz outra conta, ninguém descobre.
-function intervalo(periodo) {
-  const hoje = new Date()
-  const iso = (d) => d.toISOString().slice(0, 10)
-  const mais = (n) => { const d = new Date(hoje); d.setDate(d.getDate() + n); return d }
-  if (periodo === 'vencidos') return { ate: iso(mais(-1)) }
-  if (periodo === 'mes') {
-    return {
-      de: iso(new Date(hoje.getFullYear(), hoje.getMonth(), 1)),
-      ate: iso(new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)),
-    }
-  }
-  if (periodo === '30') return { de: iso(hoje), ate: iso(mais(30)) }
-  if (periodo === '90') return { de: iso(hoje), ate: iso(mais(90)) }
-  return {}
-}
-
 // Oitenta por página. Cento e cinquenta cabia na tela e custava 330 KB: numa
 // razão cada linha viaja inteira no payload, e a paginação é barata.
 const POR_PAGINA = 80
@@ -75,30 +49,8 @@ export default async function Contas({ searchParams }) {
   const sessao = await requireSession()
   const busca = await searchParams
 
-  const tipo = ['receivable', 'payable'].includes(busca?.tipo) ? busca.tipo : 'receivable'
-  const situacao = SITUACOES.some(([v]) => v === busca?.situacao) ? busca.situacao : 'aberto'
-  const periodo = PERIODOS.some(([v]) => v === busca?.periodo) ? busca.periodo : 'tudo'
-  const termo = (busca?.q ?? '').slice(0, 80)
-  const pessoa = busca?.pessoa || null
-  const categoria = busca?.categoria || null
-  const ordem = busca?.ordem ?? 'vencimento'
-  const pagina = Math.max(0, Number(busca?.pagina) || 0)
-  const contasSel = String(busca?.conta ?? '').split(',').filter((x) => /^[0-9a-f-]{36}$/i.test(x))
-
-  // O intervalo do período convive com datas soltas na URL, que é como o fluxo
-  // de caixa manda para cá: ele conhece o mês exato e não um preset.
-  const doPeriodo = intervalo(periodo)
-  const f = {
-    kind: tipo,
-    situacao,
-    busca: termo,
-    pessoa,
-    categoria,
-    ordem,
-    contas: contasSel,
-    de: busca?.de || doPeriodo.de,
-    ate: busca?.ate || doPeriodo.ate,
-  }
+  const { tipo, situacao, periodo, termo, pessoa, categoria, ordem, pagina, contasSel, f } =
+    filtrosDaUrl(busca)
 
   const [linhas, totais, porPessoa, porCategoria, opcoes, opcoesContas] = await Promise.all([
     razao(sessao, f, { limite: POR_PAGINA, pagina }),
@@ -150,21 +102,15 @@ export default async function Contas({ searchParams }) {
             e é aqui que ele se confere.
           </p>
         </div>
+        {/* O arquivo traz o recorte inteiro, não só a página aberta. Antes o
+            botão exportava as 80 linhas visíveis de uma carteira de 850. A
+            rota usa o mesmo filtrosDaUrl e a mesma consulta da tela. */}
         <Exportar
-          linhas={linhas} arquivo={`contas-${tipo === 'receivable' ? 'receber' : 'pagar'}`}
-          colunas={[
-            ['data_vencimento', 'Vencimento', 'data'],
-            ['data_competencia', 'Competência', 'data'],
-            ['pessoa', rotuloPessoa, 'texto'],
-            ['pessoa_documento', 'CPF ou CNPJ', 'texto'],
-            ['descricao', 'Descrição', 'texto'],
-            ['categoria', 'Categoria', 'texto'],
-            ['total', 'Total', 'dinheiro'],
-            ['pago', 'Pago', 'dinheiro'],
-            ['nao_pago', 'Em aberto', 'dinheiro'],
-            ['situacao', 'Situação', 'texto'],
-            ['dias', 'Dias do vencimento', 'inteiro'],
-          ]}
+          linhas={linhas} quantidade={totais.titulos}
+          href={`/api/exportar/contas?${new URLSearchParams(Object.entries(busca ?? {})
+            .filter(([, v]) => typeof v === 'string'))}`}
+          arquivo={`contas-${tipo === 'receivable' ? 'receber' : 'pagar'}`}
+          colunas={colunasContas(tipo)}
         />
       </div>
 

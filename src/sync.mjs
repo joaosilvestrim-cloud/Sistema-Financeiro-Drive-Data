@@ -255,7 +255,7 @@ export async function syncConnection(connectionId, kind = 'incremental', { orcam
         `select external_id from core.installment
           where connection_id = $1 and deleted_at is null
             and coalesce(nao_pago, 0) > 0.009
-            ${soVencidos ? 'and data_vencimento < current_date' : ''}
+            ${soVencidos ? 'and data_vencimento < core.hoje()' : ''}
           order by last_seen_at asc nulls first
           limit 400`,
         [connectionId],
